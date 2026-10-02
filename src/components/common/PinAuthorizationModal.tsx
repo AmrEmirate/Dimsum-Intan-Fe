@@ -6,7 +6,7 @@ interface PinModalProps {
   isOpen: boolean;
   title: string;
   description: string;
-  onSuccess: () => void;
+  onSuccess: (pin: string) => void;
   onClose: () => void;
 }
 
@@ -42,10 +42,10 @@ export const PinAuthorizationModal: React.FC<PinModalProps> = ({
     if (verifyPin(inputPin)) {
       setPin('');
       setIsError(false);
-      onSuccess();
+      onSuccess(inputPin);
     } else {
       setIsError(true);
-      showNotification('PIN Supervisor Salah! Gunakan PIN default: 1234', 'error');
+      showNotification('PIN Supervisor Salah! Gunakan PIN default: 1234 atau PIN Owner: 9999', 'error');
       setTimeout(() => {
         setPin('');
         setIsError(false);

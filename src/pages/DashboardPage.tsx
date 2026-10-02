@@ -78,9 +78,9 @@ export const DashboardPage: React.FC = () => {
     setIsPinModalOpen(true);
   };
 
-  const handlePinSuccess = () => {
+  const handlePinSuccess = (pin: string) => {
     if (orderToVoid) {
-      voidOrder(orderToVoid.id, voidReason, '1234');
+      voidOrder(orderToVoid.id, voidReason, pin);
       setIsPinModalOpen(false);
       setOrderToVoid(null);
     }

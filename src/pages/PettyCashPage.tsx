@@ -159,9 +159,9 @@ export const PettyCashPage: React.FC = () => {
     setIsPinModalOpen(true);
   };
 
-  const handlePinDeleteSuccess = () => {
+  const handlePinDeleteSuccess = (pin: string) => {
     if (itemToDelete) {
-      deletePettyCash(itemToDelete.id, '1234');
+      deletePettyCash(itemToDelete.id, pin);
       setIsPinModalOpen(false);
       setItemToDelete(null);
     }
