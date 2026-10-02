@@ -14,6 +14,7 @@ import {
   Key,
   X,
   QrCode,
+  Menu,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
@@ -29,6 +30,7 @@ export const Header: React.FC = () => {
     updatePin,
     whatsappStatus,
     fetchWhatsAppStatus,
+    setIsSidebarOpen,
   } = useApp();
 
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -87,19 +89,34 @@ export const Header: React.FC = () => {
 
   return (
     <>
-      <header className="fixed top-0 left-72 right-0 h-16 bg-surface/90 backdrop-blur-md border-b border-border-subtle z-40 flex items-center justify-between px-6 shadow-xs select-none">
-        {/* Left items: Active shift status & Factory supply status & Network status */}
-        <div className="flex items-center gap-2.5">
+      <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/90 backdrop-blur-md border-b border-border-subtle z-40 flex items-center justify-between px-3 sm:px-6 shadow-xs select-none">
+        {/* Left items: Mobile hamburger & Active shift status & Network status */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          {/* Hamburger toggle button for Mobile/Tablet */}
+          <button
+            type="button"
+            onClick={() => setIsSidebarOpen(true)}
+            className="lg:hidden p-2 rounded-xl text-brand-espresso hover:bg-surface-container active:scale-95 transition-all cursor-pointer"
+            title="Buka Menu Navigasi"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+
           {/* Shift status pill */}
-          <div className="flex items-center gap-2 bg-surface-container-high px-3 py-1.5 rounded-full border border-border-subtle">
-            <Timer className="w-4 h-4 text-primary" />
-            <span className="text-xs font-bold text-brand-espresso tracking-tight">
-              {activeShift?.status === 'ACTIVE'
-                ? `${activeShift.shiftName}: ${currentTime} WIB`
-                : 'Shift Kasir Ditutup'}
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-surface-container-high px-2.5 sm:px-3 py-1.5 rounded-full border border-border-subtle">
+            <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
+            <span className="text-[11px] sm:text-xs font-bold text-brand-espresso tracking-tight whitespace-nowrap">
+              {activeShift?.status === 'ACTIVE' ? (
+                <>
+                  <span>{activeShift.shiftName}</span>
+                  <span className="hidden sm:inline">: {currentTime} WIB</span>
+                </>
+              ) : (
+                'Shift Tutup'
+              )}
             </span>
             {activeShift?.status === 'ACTIVE' && (
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-0.5"></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-0.5 shrink-0"></span>
             )}
           </div>
 
@@ -144,10 +161,10 @@ export const Header: React.FC = () => {
         </div>
 
         {/* Right items: Notifications & Interactive Role Switcher */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Notification Bell */}
           <button
-            className="relative p-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-brand-espresso transition-colors"
+            className="relative p-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-brand-espresso transition-colors cursor-pointer"
             title="Notifikasi Operasional"
           >
             <Bell className="w-5 h-5" />
@@ -158,7 +175,7 @@ export const Header: React.FC = () => {
           <div className="relative">
             <button
               onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
-              className="flex items-center gap-2.5 bg-surface-card hover:bg-surface-container-low px-3 py-1.5 rounded-2xl border border-border-subtle shadow-xs transition-all cursor-pointer"
+              className="flex items-center gap-2 bg-surface-card hover:bg-surface-container-low px-2.5 sm:px-3 py-1.5 rounded-2xl border border-border-subtle shadow-xs transition-all cursor-pointer"
               title="Klik untuk mengganti role pengguna atau pengaturan"
             >
               {/* Role Badge Capsule */}
@@ -170,8 +187,8 @@ export const Header: React.FC = () => {
                 {currentUser.role}
               </span>
 
-              {/* User details */}
-              <div className="flex flex-col text-left leading-tight pr-1">
+              {/* User details (hidden on small mobile to avoid overflow) */}
+              <div className="hidden sm:flex flex-col text-left leading-tight pr-1">
                 <span className="text-xs font-bold text-brand-espresso truncate max-w-[130px]">
                   {currentUser.name}
                 </span>

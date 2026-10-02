@@ -287,7 +287,7 @@ export const PosPage: React.FC = () => {
 
         {/* RIGHT COLUMN: Cart & Billing Column (4 Cols) */}
         <div className="col-span-12 xl:col-span-4 flex flex-col gap-4 sticky top-20">
-          <div className="bg-surface-card rounded-2xl border border-border-subtle shadow-md overflow-hidden flex flex-col">
+          <div id="pos-cart-section" className="bg-surface-card rounded-2xl border border-border-subtle shadow-md overflow-hidden flex flex-col">
             {/* Cart Header */}
             <div className="p-4 border-b border-border-subtle bg-surface-container-low flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -447,6 +447,48 @@ export const PosPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Floating Bottom Cart Bar for Mobile & Tablet (xl:hidden) */}
+      {cart.length > 0 && (
+        <div className="fixed bottom-0 left-0 lg:left-72 right-0 z-30 p-3 bg-surface-card/95 backdrop-blur-md border-t border-border-subtle shadow-2xl xl:hidden animate-in slide-in-from-bottom duration-200">
+          <div className="flex items-center justify-between gap-3 max-w-xl mx-auto">
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById('pos-cart-section');
+                el?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="flex flex-col text-left cursor-pointer"
+            >
+              <span className="text-[11px] font-bold text-secondary flex items-center gap-1">
+                <Receipt className="w-3.5 h-3.5 text-primary" />
+                {cart.reduce((s, i) => s + i.quantity, 0)} Porsi • Lihat Nota
+              </span>
+              <span className="font-serif-title font-bold text-base text-brand-espresso">
+                Rp {finalTotal.toLocaleString('id-ID')}
+              </span>
+            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleOpenCheckout('CASH')}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-brand-espresso text-brand-gold text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
+              >
+                <Banknote className="w-4 h-4" />
+                <span>Tunai</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleOpenCheckout('QRIS')}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-brand-gold text-brand-espresso text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
+              >
+                <QrCode className="w-4 h-4" />
+                <span>QRIS</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Checkout Dialog Modal */}
       {isCheckoutModalOpen && (

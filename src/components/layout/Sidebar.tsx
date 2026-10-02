@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Lock,
   LogOut,
+  X,
 } from 'lucide-react';
 import { useApp, AppView } from '../../context/AppContext';
 
@@ -23,9 +24,16 @@ export const Sidebar: React.FC = () => {
     setSelectedOutletId,
     currentView,
     setCurrentView,
+    isSidebarOpen,
+    setIsSidebarOpen,
     activeShift,
     logout,
   } = useApp();
+
+  const handleSelectView = (view: AppView) => {
+    setCurrentView(view);
+    setIsSidebarOpen(false);
+  };
 
 
   const isKasir = currentUser.role === 'KASIR';
@@ -101,31 +109,55 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col justify-between py-4 border-r border-border-subtle shadow-sm select-none">
-      <div className="flex flex-col h-full overflow-hidden">
-        {/* Brand Header */}
-        <div className="px-5 pb-4 flex items-center justify-between border-b border-border-subtle/70">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-espresso p-1.5 flex items-center justify-center shadow-sm">
-              <img
-                src="/logo_intan.png"
-                alt="Logo Dimsum Intan"
-                className="w-full h-full object-contain filter drop-shadow"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
+    <>
+      {/* Mobile Drawer Backdrop Overlay */}
+      {isSidebarOpen && (
+        <div
+          onClick={() => setIsSidebarOpen(false)}
+          className="fixed inset-0 bg-brand-espresso/60 backdrop-blur-xs z-40 lg:hidden transition-opacity cursor-pointer"
+          aria-label="Tutup Menu Navigasi"
+        />
+      )}
+
+      <aside
+        className={`fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col justify-between py-4 border-r border-border-subtle shadow-2xl lg:shadow-sm select-none transition-transform duration-300 ease-in-out ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        <div className="flex flex-col h-full overflow-hidden">
+          {/* Brand Header */}
+          <div className="px-5 pb-4 flex items-center justify-between border-b border-border-subtle/70">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-espresso p-1.5 flex items-center justify-center shadow-sm">
+                <img
+                  src="/logo_intan.png"
+                  alt="Logo Dimsum Intan"
+                  className="w-full h-full object-contain filter drop-shadow"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="flex flex-col leading-tight">
+                <span className="font-serif-title font-bold text-lg text-brand-espresso tracking-tight">
+                  Dimsum Intan
+                </span>
+                <span className="text-[11px] font-bold text-secondary tracking-wider uppercase">
+                  POS & Accounting
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col leading-tight">
-              <span className="font-serif-title font-bold text-lg text-brand-espresso tracking-tight">
-                Dimsum Intan
-              </span>
-              <span className="text-[11px] font-bold text-secondary tracking-wider uppercase">
-                POS & Accounting
-              </span>
-            </div>
+
+            {/* Mobile Close Button */}
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(false)}
+              className="lg:hidden p-1.5 rounded-xl text-secondary hover:bg-surface-container hover:text-brand-espresso transition-colors cursor-pointer"
+              title="Tutup Menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-        </div>
 
         {/* Branch / Outlet Selector Box */}
         <div className="px-4 py-3">
@@ -184,8 +216,8 @@ export const Sidebar: React.FC = () => {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setCurrentView(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  onClick={() => handleSelectView(item.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                     isActive
                       ? 'bg-brand-gold text-brand-espresso font-bold shadow-xs'
                       : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
@@ -213,8 +245,8 @@ export const Sidebar: React.FC = () => {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setCurrentView(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  onClick={() => handleSelectView(item.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                     isActive
                       ? 'bg-brand-gold text-brand-espresso font-bold shadow-xs'
                       : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
@@ -247,8 +279,8 @@ export const Sidebar: React.FC = () => {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setCurrentView(item.id)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  onClick={() => handleSelectView(item.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                     isActive
                       ? 'bg-brand-gold text-brand-espresso font-bold shadow-xs'
                       : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
@@ -282,7 +314,10 @@ export const Sidebar: React.FC = () => {
 
           {/* Logout Button */}
           <button
-            onClick={logout}
+            onClick={() => {
+              logout();
+              setIsSidebarOpen(false);
+            }}
             className="w-full mt-2.5 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-red-700 hover:bg-red-50 hover:text-red-800 border border-red-200/60 transition-all active:scale-[0.99] cursor-pointer"
             title="Keluar dari akun saat ini"
           >
@@ -292,6 +327,7 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
     </aside>
-  );
+  </>
+);
 };
 

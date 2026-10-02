@@ -48,6 +48,8 @@ interface AppContextType {
   // View Navigation
   currentView: AppView;
   setCurrentView: (view: AppView) => void;
+  isSidebarOpen: boolean;
+  setIsSidebarOpen: (open: boolean) => void;
 
   // Notifications
   notification: NotificationState | null;
@@ -163,6 +165,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [outlets, setOutlets] = useState<Outlet[]>([]);
   const [currentView, setCurrentView] = useState<AppView>('dashboard-utama');
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [notification, setNotification] = useState<NotificationState | null>(null);
 
   // 2. Domain Data from Backend
@@ -953,6 +956,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         getActiveOutlet,
         currentView,
         setCurrentView,
+        isSidebarOpen,
+        setIsSidebarOpen,
         notification,
         showNotification,
         menuItems: menuItems.filter((m) => !m.isSoftDeleted),

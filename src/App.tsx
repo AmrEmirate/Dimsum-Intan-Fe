@@ -55,12 +55,12 @@ export const AppContent: React.FC = () => {
       <Sidebar />
 
       {/* Main Content Area */}
-      <div className="flex-1 pl-72 flex flex-col min-h-screen">
+      <div className="flex-1 pl-0 lg:pl-72 flex flex-col min-h-screen w-full overflow-x-hidden">
         {/* Fixed Top Header */}
         <Header />
 
         {/* Dynamic Page Workspace */}
-        <main className="flex-1 pt-20 px-6 pb-12 w-full max-w-[1600px] mx-auto">
+        <main className="flex-1 pt-20 px-3.5 sm:px-6 pb-24 lg:pb-12 w-full max-w-[1600px] mx-auto">
           {renderCurrentView()}
         </main>
       </div>
