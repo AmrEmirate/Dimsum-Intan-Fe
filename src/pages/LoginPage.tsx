@@ -1,0 +1,241 @@
+import React, { useState } from 'react';
+import {
+  Lock,
+  User as UserIcon,
+  Eye,
+  EyeOff,
+  Sparkles,
+  ArrowRight,
+  ShieldCheck,
+  Store,
+  ChefHat,
+  AlertCircle,
+} from 'lucide-react';
+import { useApp } from '../context/AppContext';
+import { UserRole } from '../types';
+
+export const LoginPage: React.FC = () => {
+  const { login } = useApp();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username.trim() || !password.trim()) {
+      setErrorMessage('Harap masukkan username dan password');
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    const success = await login(username, password);
+    setIsLoading(false);
+    if (!success) {
+      setErrorMessage('Username atau password yang Anda masukkan salah.');
+    }
+  };
+
+  const handleQuickFill = (role: UserRole) => {
+    if (role === 'OWNER') {
+      setUsername('owner');
+      setPassword('owner123');
+    } else if (role === 'SUPERVISOR') {
+      setUsername('supervisor');
+      setPassword('spv123');
+    } else {
+      setUsername('kasir');
+      setPassword('kasir123');
+    }
+    setErrorMessage(null);
+  };
+
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#1E1715] via-[#2A1F1C] to-[#16100E] p-4 sm:p-6 antialiased relative overflow-hidden">
+      {/* Background Decorative Rings */}
+      <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-brand-gold/10 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-brand-terracotta/10 blur-3xl pointer-events-none" />
+
+      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-surface-card/95 backdrop-blur-xl z-10">
+        {/* Left Side: Brand Heritage Banner */}
+        <div className="lg:col-span-5 bg-gradient-to-br from-brand-espresso via-[#382622] to-brand-espresso p-8 flex flex-col justify-between text-white relative">
+          <div className="relative z-10">
+            <div className="flex items-center gap-2.5 mb-6">
+              <div className="w-11 h-11 rounded-2xl bg-brand-gold text-brand-espresso flex items-center justify-center font-serif font-black text-xl shadow-lg">
+                <ChefHat className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="font-serif-title font-bold text-lg leading-tight text-white">
+                  DIMSUM INTAN
+                </h1>
+                <p className="text-[10px] tracking-wider uppercase font-semibold text-brand-gold">
+                  Bandung • 3 Outlet
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3 my-8">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-brand-gold text-xs font-semibold backdrop-blur-md">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Sistem Kasir POS & Akuntansi</span>
+              </div>
+              <h2 className="font-serif-title text-2xl font-bold leading-snug text-white">
+                Pengelolaan Operasional Terintegrasi Cloud
+              </h2>
+              <p className="text-xs text-white/70 leading-relaxed">
+                Kelola penjualan 3 cabang (Dipatiukur, Riau, Buah Batu), pantau modal laci shift, rekonsiliasi kas kecil, dan analisis laba rugi dalam satu pintu aman.
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Outlet Badges */}
+          <div className="pt-6 border-t border-white/15 relative z-10">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-white/60 block mb-2">
+              Jaringan Cabang Aktif:
+            </span>
+            <div className="flex flex-wrap gap-1.5 text-[11px]">
+              <span className="px-2.5 py-1 rounded-lg bg-white/10 text-white font-medium">
+                DU-01 Dipatiukur
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-white/10 text-white font-medium">
+                RU-02 Riau
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-white/10 text-white font-medium">
+                BB-03 Buah Batu
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Login Form */}
+        <div className="lg:col-span-7 p-8 sm:p-10 flex flex-col justify-between bg-surface-card">
+          <div>
+            <div className="mb-6">
+              <h3 className="font-serif-title text-2xl font-bold text-brand-espresso">
+                Selamat Datang Kembali
+              </h3>
+              <p className="text-xs text-secondary mt-1">
+                Silakan masuk dengan akun resmi perusahaan Dimsum Intan
+              </p>
+            </div>
+
+            {/* Error Notification */}
+            {errorMessage && (
+              <div className="mb-5 p-3.5 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2.5 animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-600" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-brand-espresso mb-1.5">
+                  Username Akun
+                </label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-secondary" />
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Contoh: owner, supervisor, kasir"
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-container border border-border-subtle text-xs font-medium text-brand-espresso placeholder:text-secondary/60 focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-brand-espresso mb-1.5">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-secondary" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-surface-container border border-border-subtle text-xs font-medium text-brand-espresso placeholder:text-secondary/60 focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-secondary hover:text-brand-espresso"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full py-3 rounded-xl bg-brand-gold hover:bg-brand-gold-hover active:scale-[0.99] text-brand-espresso text-xs font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {isLoading ? (
+                    <span>Memproses Autentikasi...</span>
+                  ) : (
+                    <>
+                      <span>Masuk ke Sistem</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Quick Demo Fill Accounts for Testing / Convenience */}
+          <div className="mt-8 pt-6 border-t border-border-subtle">
+            <span className="text-[11px] font-bold text-secondary uppercase tracking-wider block mb-2.5">
+              Pintasan Akun Demo (Klik untuk Isi Cepat):
+            </span>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickFill('OWNER')}
+                className="p-2.5 rounded-xl bg-surface-container hover:bg-brand-gold/10 hover:border-brand-gold/40 border border-border-subtle text-left transition-all group"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold text-brand-espresso group-hover:text-brand-gold-hover">
+                  <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                  <span>Owner</span>
+                </div>
+                <span className="text-[10px] text-secondary block mt-0.5">owner / owner123</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickFill('SUPERVISOR')}
+                className="p-2.5 rounded-xl bg-surface-container hover:bg-brand-gold/10 hover:border-brand-gold/40 border border-border-subtle text-left transition-all group"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold text-brand-espresso group-hover:text-brand-gold-hover">
+                  <Store className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Supervisor</span>
+                </div>
+                <span className="text-[10px] text-secondary block mt-0.5">supervisor / spv123</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleQuickFill('KASIR')}
+                className="p-2.5 rounded-xl bg-surface-container hover:bg-brand-gold/10 hover:border-brand-gold/40 border border-border-subtle text-left transition-all group"
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold text-brand-espresso group-hover:text-brand-gold-hover">
+                  <ChefHat className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Kasir</span>
+                </div>
+                <span className="text-[10px] text-secondary block mt-0.5">kasir / kasir123</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};

@@ -1,0 +1,297 @@
+import React from 'react';
+import {
+  LayoutGrid,
+  Clock,
+  Store,
+  UtensilsCrossed,
+  Receipt,
+  Factory,
+  WalletCards,
+  BarChart3,
+  Store as StoreIcon,
+  RefreshCw,
+  Lock,
+  LogOut,
+} from 'lucide-react';
+import { useApp, AppView } from '../../context/AppContext';
+
+export const Sidebar: React.FC = () => {
+  const {
+    currentUser,
+    outlets,
+    selectedOutletId,
+    setSelectedOutletId,
+    currentView,
+    setCurrentView,
+    activeShift,
+    logout,
+  } = useApp();
+
+
+  const isKasir = currentUser.role === 'KASIR';
+  const isSupervisor = currentUser.role === 'SUPERVISOR';
+  const isOwner = currentUser.role === 'OWNER';
+
+  // Navigation Items with RBAC
+  const navItems: {
+    id: AppView;
+    label: string;
+    section: 'utama' | 'pos' | 'akuntansi';
+    icon: React.ComponentType<{ className?: string }>;
+    allowedRoles: ('OWNER' | 'SUPERVISOR' | 'KASIR')[];
+    badge?: string;
+  }[] = [
+    {
+      id: 'dashboard-utama',
+      label: 'Dashboard Utama',
+      section: 'utama',
+      icon: LayoutGrid,
+      allowedRoles: ['OWNER', 'SUPERVISOR'],
+    },
+    {
+      id: 'sesi-shift-kasir',
+      label: 'Sesi Shift Kasir',
+      section: 'pos',
+      icon: Clock,
+      allowedRoles: ['OWNER', 'SUPERVISOR', 'KASIR'],
+      badge: activeShift?.status === 'ACTIVE' ? 'Aktif' : undefined,
+    },
+    {
+      id: 'transaksi-kasir-pos',
+      label: 'Transaksi Kasir (POS)',
+      section: 'pos',
+      icon: Store,
+      allowedRoles: ['OWNER', 'SUPERVISOR', 'KASIR'],
+    },
+    {
+      id: 'master-menu-dimsum-hpp',
+      label: 'Master Menu & HPP',
+      section: 'pos',
+      icon: UtensilsCrossed,
+      allowedRoles: ['OWNER', 'SUPERVISOR'],
+    },
+    {
+      id: 'kas-kecil-outlet',
+      label: 'Kas Kecil (Petty Cash)',
+      section: 'akuntansi',
+      icon: Receipt,
+      allowedRoles: ['OWNER', 'SUPERVISOR', 'KASIR'],
+    },
+    {
+      id: 'tagihan-suplai-pabrik',
+      label: 'Tagihan Suplai Pabrik',
+      section: 'akuntansi',
+      icon: Factory,
+      allowedRoles: ['OWNER'],
+    },
+    {
+      id: 'beban-operasional-tetap',
+      label: 'Beban Operasional Tetap',
+      section: 'akuntansi',
+      icon: WalletCards,
+      allowedRoles: ['OWNER'],
+    },
+    {
+      id: 'laporan-laba-rugi-arus-kas',
+      label: 'Laba Rugi & Arus Kas',
+      section: 'akuntansi',
+      icon: BarChart3,
+      allowedRoles: ['OWNER'],
+    },
+  ];
+
+  return (
+    <aside className="fixed left-0 top-0 h-full w-72 bg-surface-container-low z-50 flex flex-col justify-between py-4 border-r border-border-subtle shadow-sm select-none">
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Brand Header */}
+        <div className="px-5 pb-4 flex items-center justify-between border-b border-border-subtle/70">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-brand-espresso p-1.5 flex items-center justify-center shadow-sm">
+              <img
+                src="/logo_intan.png"
+                alt="Logo Dimsum Intan"
+                className="w-full h-full object-contain filter drop-shadow"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
+            </div>
+            <div className="flex flex-col leading-tight">
+              <span className="font-serif-title font-bold text-lg text-brand-espresso tracking-tight">
+                Dimsum Intan
+              </span>
+              <span className="text-[11px] font-bold text-secondary tracking-wider uppercase">
+                POS & Accounting
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Branch / Outlet Selector Box */}
+        <div className="px-4 py-3">
+          <div className="bg-surface-card rounded-xl p-2.5 border border-border-subtle shadow-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <StoreIcon className="w-4 h-4 text-primary" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
+                  Cabang Aktif
+                </span>
+              </div>
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            </div>
+
+            <div className="mt-1.5 relative">
+              {isKasir ? (
+                <div className="flex items-center justify-between py-1 px-1.5 rounded-lg bg-surface-container text-xs font-semibold text-brand-espresso">
+                  <span>Outlet 01 - Dipatiukur</span>
+                  <div className="flex items-center gap-1 text-[10px] text-secondary bg-surface-card px-1.5 py-0.5 rounded">
+                    <Lock className="w-3 h-3 text-secondary" /> Terkunci
+                  </div>
+                </div>
+              ) : (
+                <select
+                  value={selectedOutletId}
+                  onChange={(e) => setSelectedOutletId(e.target.value)}
+                  className="w-full bg-transparent text-xs font-bold text-brand-espresso focus:outline-none cursor-pointer py-1"
+                >
+                  <option value="all">Semua Outlet (3 Cabang)</option>
+                  {outlets.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Navigation List */}
+        <nav className="flex-1 px-4 mt-2 overflow-y-auto space-y-1">
+          {/* Section: Utama */}
+          {(isOwner || isSupervisor) && (
+            <div className="pt-2 pb-1">
+              <span className="px-2 text-[10px] font-bold uppercase tracking-wider text-secondary/80">
+                Utama
+              </span>
+            </div>
+          )}
+          {navItems
+            .filter((item) => item.section === 'utama' && item.allowedRoles.includes(currentUser.role))
+            .map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setCurrentView(item.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                    isActive
+                      ? 'bg-brand-gold text-brand-espresso font-bold shadow-xs'
+                      : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </div>
+                </button>
+              );
+            })}
+
+          {/* Section: POS & Operasional */}
+          <div className="pt-3 pb-1">
+            <span className="px-2 text-[10px] font-bold uppercase tracking-wider text-secondary/80">
+              POS & Operasional
+            </span>
+          </div>
+          {navItems
+            .filter((item) => item.section === 'pos' && item.allowedRoles.includes(currentUser.role))
+            .map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setCurrentView(item.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                    isActive
+                      ? 'bg-brand-gold text-brand-espresso font-bold shadow-xs'
+                      : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </div>
+                  {item.badge && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+
+          {/* Section: Finansial & Akuntansi */}
+          <div className="pt-3 pb-1">
+            <span className="px-2 text-[10px] font-bold uppercase tracking-wider text-secondary/80">
+              Finansial & Akuntansi
+            </span>
+          </div>
+          {navItems
+            .filter((item) => item.section === 'akuntansi' && item.allowedRoles.includes(currentUser.role))
+            .map((item) => {
+              const Icon = item.icon;
+              const isActive = currentView === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setCurrentView(item.id)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                    isActive
+                      ? 'bg-brand-gold text-brand-espresso font-bold shadow-xs'
+                      : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </div>
+                </button>
+              );
+            })}
+        </nav>
+
+        {/* Cloud Sync Status Indicator */}
+        <div className="px-4 pt-3 border-t border-border-subtle/70">
+          <div className="bg-surface-container p-2.5 rounded-xl flex items-center justify-between border border-border-subtle">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="w-3.5 h-3.5 text-secondary animate-[spin_6s_linear_infinite]" />
+              <div className="flex flex-col">
+                <span className="text-[11px] font-bold text-brand-espresso leading-none">
+                  Cloud Ledger Sync
+                </span>
+                <span className="text-[10px] text-secondary mt-0.5">
+                  PostgreSQL Realtime
+                </span>
+              </div>
+            </div>
+            <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
+          </div>
+
+          {/* Logout Button */}
+          <button
+            onClick={logout}
+            className="w-full mt-2.5 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-red-700 hover:bg-red-50 hover:text-red-800 border border-red-200/60 transition-all active:scale-[0.99] cursor-pointer"
+            title="Keluar dari akun saat ini"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Keluar Akun (Logout)</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+  );
+};
+
