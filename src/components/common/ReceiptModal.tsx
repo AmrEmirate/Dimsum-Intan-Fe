@@ -1,5 +1,5 @@
-import React from 'react';
-import { Printer, X, CheckCircle2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Printer, X, CheckCircle2, Share2, Smartphone } from 'lucide-react';
 import { Order } from '../../types';
 
 interface ReceiptModalProps {
@@ -11,38 +11,110 @@ interface ReceiptModalProps {
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClose }) => {
   if (!isOpen || !order) return null;
 
+  const [paperSize, setPaperSize] = useState<'80mm' | '58mm'>('80mm');
+
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleShareWhatsApp = () => {
+    const itemsText = order.items
+      .map((it) => `- ${it.name} (${it.quantity}x) = Rp ${(it.price * it.quantity).toLocaleString('id-ID')}`)
+      .join('%0A');
+    const text = `*NOTA PEMBAYARAN DIMSUM INTAN*%0A` +
+      `No. Nota: ${order.invoiceNumber}%0A` +
+      `Outlet: ${order.outletName}%0A` +
+      `Waktu: ${new Date(order.createdAt).toLocaleString('id-ID')}%0A` +
+      `Kasir: ${order.cashierName}%0A` +
+      `--------------------------------%0A` +
+      `${itemsText}%0A` +
+      `--------------------------------%0A` +
+      `Subtotal: Rp ${order.subtotal.toLocaleString('id-ID')}%0A` +
+      (order.discount > 0 ? `Diskon: -Rp ${order.discount.toLocaleString('id-ID')}%0A` : '') +
+      `*TOTAL BAYAR: Rp ${order.total.toLocaleString('id-ID')}*%0A` +
+      `Metode: ${order.paymentMethod}%0A` +
+      (order.paymentMethod === 'CASH' ? `Tunai: Rp ${(order.cashReceived || order.total).toLocaleString('id-ID')}%0AKembalian: Rp ${(order.changeAmount || 0).toLocaleString('id-ID')}%0A` : '') +
+      `%0AHatur nuhun tos jajan di Dimsum Intan! 🙏`;
+    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="w-full max-w-md bg-surface-card rounded-3xl border border-border-subtle shadow-2xl overflow-hidden my-6">
         {/* Modal Top Controls (Not in print) */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-surface-container-low">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-            <span className="font-bold text-sm text-brand-espresso">Nota Pembayaran Sah</span>
+        <div className="flex flex-col gap-2 px-6 py-4 border-b border-border-subtle bg-surface-container-low">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              <span className="font-bold text-sm text-brand-espresso">Nota Pembayaran Sah</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleShareWhatsApp}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+                title="Kirim Struk Digital via WhatsApp"
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                <span>Kirim WA</span>
+              </button>
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-espresso hover:bg-brand-espresso-muted text-brand-gold rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>Cetak ({paperSize})</span>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1.5 text-secondary hover:bg-surface-container rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-espresso hover:bg-brand-espresso-muted text-brand-gold rounded-xl text-xs font-bold shadow-xs transition-all"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Cetak Struk</span>
-            </button>
-            <button
-              onClick={onClose}
-              className="p-1.5 text-secondary hover:bg-surface-container rounded-lg"
-            >
-              <X className="w-5 h-5" />
-            </button>
+
+          {/* Paper Size Selector */}
+          <div className="flex items-center justify-between pt-2 border-t border-border-subtle/80 text-[11px]">
+            <span className="text-secondary font-medium flex items-center gap-1">
+              <Smartphone className="w-3.5 h-3.5 text-primary" /> Format Kertas Kasir:
+            </span>
+            <div className="flex items-center bg-surface-container p-0.5 rounded-lg">
+              <button
+                type="button"
+                onClick={() => setPaperSize('80mm')}
+                className={`px-2.5 py-1 rounded-md font-bold transition-all ${
+                  paperSize === '80mm'
+                    ? 'bg-brand-espresso text-brand-gold shadow-xs'
+                    : 'text-secondary hover:text-brand-espresso'
+                }`}
+              >
+                80mm (Standar POS)
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaperSize('58mm')}
+                className={`px-2.5 py-1 rounded-md font-bold transition-all ${
+                  paperSize === '58mm'
+                    ? 'bg-brand-espresso text-brand-gold shadow-xs'
+                    : 'text-secondary hover:text-brand-espresso'
+                }`}
+              >
+                58mm (Mini BT)
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Thermal Receipt Body (Target of @media print) */}
-        <div className="p-6 bg-white text-gray-900 font-mono text-xs" id="thermal-receipt">
+        <div
+          className={`p-6 bg-white text-gray-900 font-mono text-xs ${
+            paperSize === '58mm' ? 'receipt-58mm max-w-[280px] mx-auto text-[11px]' : 'receipt-80mm'
+          }`}
+          id="thermal-receipt"
+        >
           {/* Header Store */}
           <div className="text-center pb-3 border-b border-dashed border-gray-300">
             <h2 className="font-serif-title font-bold text-lg tracking-wider text-black">

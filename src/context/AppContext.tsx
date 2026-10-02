@@ -91,7 +91,7 @@ interface AppContextType {
     amount: number,
     category: PettyCashExpense['category'],
     description: string,
-    receiptImageUrl?: string
+    receiptImage?: File | string | null
   ) => Promise<boolean>;
   updatePettyCash: (
     id: string,
@@ -123,6 +123,13 @@ interface AppContextType {
 
   // Financial Reports
   fetchProfitLossReport: (outletId?: string) => Promise<any>;
+
+  // Security & Settings
+  updatePin: (newPin: string) => Promise<boolean>;
+
+  // WhatsApp Integration Status
+  whatsappStatus: { isReady: boolean; hasQr: boolean; qrCode: string | null } | null;
+  fetchWhatsAppStatus: () => Promise<void>;
 
   // Refresh helper
   refreshData: () => Promise<void>;
@@ -166,6 +173,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [pettyCashList, setPettyCashList] = useState<PettyCashExpense[]>([]);
   const [factoryInvoices, setFactoryInvoices] = useState<FactoryInvoice[]>([]);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
+  const [whatsappStatus, setWhatsappStatus] = useState<{ isReady: boolean; hasQr: boolean; qrCode: string | null } | null>(null);
 
   // 3. Cart State
   const [cart, setCart] = useState<OrderCartItem[]>([]);
@@ -194,6 +202,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     localStorage.setItem('dimsum_outlet_id', selectedOutletId);
   }, [selectedOutletId]);
+
+  // Fetch WhatsApp Status
+  const fetchWhatsAppStatus = useCallback(async () => {
+    try {
+      const res = await api.get<{ success: boolean; data: any }>('/whatsapp/status').catch(() => null);
+      if (res?.success) {
+        setWhatsappStatus(res.data);
+      }
+    } catch (err) {
+      console.warn('[WA Status Error]', err);
+    }
+  }, []);
 
   // Fetch Shift History
   const fetchShiftHistory = useCallback(async () => {
@@ -254,10 +274,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (expRes?.success && Array.isArray(expRes.data)) {
         setFixedExpenses(expRes.data);
       }
+
+      // 9. Fetch WhatsApp Integration Status
+      await fetchWhatsAppStatus();
     } catch (err: any) {
       console.warn('[Data Fetch Error]', err);
     }
-  }, [fetchShiftHistory]);
+  }, [fetchShiftHistory, fetchWhatsAppStatus]);
 
   // Full Login Method (Supports username/password or quick-role fill)
   const login = async (username: string, password?: string, role?: UserRole): Promise<boolean> => {
@@ -594,22 +617,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     amount: number,
     category: PettyCashExpense['category'],
     description: string,
-    receiptImageUrl?: string
+    receiptImage?: File | string | null
   ): Promise<boolean> => {
     const currentOutlet = getActiveOutlet() || outlets[0];
     const targetOutletId = currentOutlet ? currentOutlet.id : 'du';
 
     try {
-      const res = await api.post<{ success: boolean; message: string; data: PettyCashExpense }>(
-        '/petty-cash',
-        {
-          outletId: targetOutletId,
-          amount,
-          category,
-          description,
-          receiptImageUrl,
-        }
-      );
+      let res: { success: boolean; message: string; data: PettyCashExpense };
+      if (typeof File !== 'undefined' && receiptImage instanceof File) {
+        const formData = new FormData();
+        formData.append('outletId', targetOutletId);
+        formData.append('amount', String(amount));
+        formData.append('category', category);
+        formData.append('description', description);
+        formData.append('receipt', receiptImage);
+        res = await api.postForm<{ success: boolean; message: string; data: PettyCashExpense }>(
+          '/petty-cash',
+          formData
+        );
+      } else {
+        res = await api.post<{ success: boolean; message: string; data: PettyCashExpense }>(
+          '/petty-cash',
+          {
+            outletId: targetOutletId,
+            amount,
+            category,
+            description,
+            receiptImageUrl: typeof receiptImage === 'string' ? receiptImage : undefined,
+          }
+        );
+      }
 
       if (res.success && res.data) {
         setPettyCashList((prev) => [res.data, ...prev]);
@@ -888,6 +925,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return null;
   };
 
+  // Update PIN Security
+  const updatePin = async (newPin: string): Promise<boolean> => {
+    try {
+      const res = await api.put<{ success: boolean; message: string }>('/auth/pin', { newPin });
+      if (res.success) {
+        showNotification(res.message, 'success');
+        return true;
+      }
+    } catch (err: any) {
+      showNotification(`Gagal memperbarui PIN: ${err.message}`, 'error');
+    }
+    return false;
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -921,6 +972,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         orders,
         voidOrder,
         verifyPin,
+        updatePin,
         activeShift,
         shiftHistory,
         openShift,
@@ -945,6 +997,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         toggleFixedExpenseStatus,
         deleteFixedExpense,
         fetchProfitLossReport,
+        whatsappStatus,
+        fetchWhatsAppStatus,
         refreshData,
       }}
     >
