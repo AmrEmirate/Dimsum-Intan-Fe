@@ -65,6 +65,10 @@
   .tabular-nums {
     font-variant-numeric: tabular-nums;
   }
+
+  .safe-area-pb {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
+  }
 }
 
 /* Custom scrollbar */

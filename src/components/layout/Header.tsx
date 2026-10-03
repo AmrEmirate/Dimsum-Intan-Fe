@@ -120,9 +120,9 @@ export const Header: React.FC = () => {
             )}
           </div>
 
-          {/* Network Connection Indicator */}
+          {/* Network Connection Indicator - Compact icon on mobile, full pill on sm+ */}
           <div
-            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-[10px] font-bold border ${
               isOnline
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 : 'bg-red-50 text-red-700 border-red-200 animate-pulse'
@@ -130,17 +130,17 @@ export const Header: React.FC = () => {
             title={isOnline ? 'Jaringan Online & Terhubung' : 'Koneksi Internet Terputus!'}
           >
             {isOnline ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
-            <span>{isOnline ? 'Online' : 'Offline'}</span>
+            <span className="hidden xs:inline">{isOnline ? 'Online' : 'Offline'}</span>
           </div>
 
-          {/* WhatsApp Bot Status Button */}
+          {/* WhatsApp Bot Status Button - Compact icon on mobile, full pill on sm+ */}
           <button
             type="button"
             onClick={() => {
               fetchWhatsAppStatus();
               setIsWaModalOpen(true);
             }}
-            className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
               whatsappStatus?.isReady
                 ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
                 : whatsappStatus?.hasQr
@@ -150,13 +150,14 @@ export const Header: React.FC = () => {
             title="Klik untuk melihat status Bot WhatsApp"
           >
             <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-            <span>
+            <span className="hidden md:inline">
               {whatsappStatus?.isReady
                 ? 'WA Bot: Aktif'
                 : whatsappStatus?.hasQr
                 ? 'WA Bot: Scan QR'
                 : 'WA Bot: Standby'}
             </span>
+            <span className="md:hidden w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
           </button>
         </div>
 

@@ -314,7 +314,7 @@ export const PosPage: React.FC = () => {
 
         {/* RIGHT COLUMN: Cart & Billing Column (Side-by-Side on Tablet md: 5 cols, Desktop xl: 4 cols) */}
         <div className="hidden md:flex md:col-span-5 xl:col-span-4 flex-col gap-4 sticky top-20">
-          <div id="pos-cart-section" className="bg-surface-card rounded-2xl border border-border-subtle shadow-md overflow-hidden flex flex-col max-h-[calc(100vh-6rem)]">
+          <div id="pos-cart-section" className="bg-surface-card rounded-2xl border border-border-subtle shadow-md overflow-hidden flex flex-col max-h-[calc(100vh-10.5rem)] lg:max-h-[calc(100vh-6.5rem)]">
             {/* Cart Header */}
             <div className="p-3.5 sm:p-4 border-b border-border-subtle bg-surface-container-low flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -477,7 +477,7 @@ export const PosPage: React.FC = () => {
 
       {/* Floating Bottom Cart Capsule for Mobile Phone (< md screen) */}
       {cart.length > 0 && (
-        <div className="fixed bottom-20 left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto z-30 md:hidden animate-in slide-in-from-bottom duration-200">
+        <div className="fixed bottom-[4.75rem] left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto z-30 md:hidden animate-in slide-in-from-bottom duration-200">
           <div className="bg-brand-espresso text-brand-gold rounded-2xl p-2.5 pl-4 shadow-2xl border border-brand-gold/30 flex items-center justify-between gap-3 backdrop-blur-md">
             <button
               type="button"
@@ -616,7 +616,7 @@ export const PosPage: React.FC = () => {
             </div>
 
             {/* Bottom Checkout Actions inside Bottom Sheet */}
-            <div className="p-4 bg-surface-container-low border-t border-border-subtle flex flex-col gap-3">
+            <div className="p-4 safe-area-pb pb-6 bg-surface-container-low border-t border-border-subtle flex flex-col gap-3">
               {/* Promo discounts */}
               <div className="flex items-center justify-between text-xs">
                 <span className="text-secondary font-medium">Diskon Promo:</span>

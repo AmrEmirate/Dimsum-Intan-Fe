@@ -331,7 +331,83 @@ export const DashboardPage: React.FC = () => {
           </button>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Card List (< md screen) */}
+        <div className="md:hidden divide-y divide-border-subtle p-3">
+          {filteredOrders.length === 0 ? (
+            <div className="py-8 text-center text-secondary text-xs">
+              Belum ada transaksi penjualan pada outlet ini.
+            </div>
+          ) : (
+            filteredOrders.slice(0, 8).map((order) => {
+              const isVoided = order.status === 'VOIDED';
+              return (
+                <div
+                  key={order.id}
+                  className={`py-3 flex flex-col gap-2 ${isVoided ? 'opacity-75' : ''}`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="font-bold text-xs text-brand-espresso">
+                        {order.invoiceNumber}
+                      </span>
+                      <div className="text-[10px] text-secondary">
+                        {new Date(order.createdAt).toLocaleTimeString('id-ID', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}{' '}
+                        WIB • {order.cashierName} • {order.orderType === 'dine-in' ? order.tableNumber || 'Dine-In' : 'Takeaway'}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-serif-title font-bold text-sm text-brand-espresso tabular-nums">
+                        Rp {order.total.toLocaleString('id-ID')}
+                      </div>
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                          isVoided
+                            ? 'bg-status-unpaid-bg text-status-unpaid-text border border-status-unpaid-border'
+                            : 'bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border'
+                        }`}
+                      >
+                        {isVoided ? 'VOIDED' : 'LUNAS'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-secondary truncate font-medium">
+                    {order.items.map((i) => `${i.quantity}x ${i.name}`).join(', ')}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-container text-brand-espresso border border-border-subtle">
+                      {order.paymentMethod}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setSelectedOrderForReceipt(order)}
+                        className="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-bold text-brand-espresso transition-all active:scale-95"
+                      >
+                        Lihat Nota
+                      </button>
+                      {!isVoided && (
+                        <button
+                          onClick={() => handleTriggerVoid(order)}
+                          className="px-2.5 py-1.5 rounded-xl bg-brand-terracotta/10 hover:bg-brand-terracotta hover:text-white text-xs font-bold text-brand-terracotta transition-all active:scale-95"
+                          title="Batalkan Nota (Wajib PIN Supervisor)"
+                        >
+                          Void
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Tablet & Desktop View: Full Table (md+ screen) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low border-b border-border-subtle text-[11px] font-bold uppercase tracking-wider text-secondary">

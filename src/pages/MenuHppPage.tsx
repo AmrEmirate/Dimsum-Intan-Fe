@@ -278,7 +278,81 @@ export const MenuHppPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Menu Cards (< md screen) */}
+        <div className="md:hidden divide-y divide-border-subtle p-3">
+          {menuItems.map((item) => {
+            const profitPerPortion = item.price - item.costPrice;
+            const marginPct = ((profitPerPortion / item.price) * 100).toFixed(1);
+            const isOutOfStock = !item.isAvailable || item.stock <= 0;
+
+            return (
+              <div key={item.id} className="py-3.5 flex flex-col gap-2.5">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="w-14 h-14 rounded-2xl object-cover border border-border-subtle shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-brand-espresso truncate">
+                        {item.name}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 shrink-0">
+                        {marginPct}%
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-secondary uppercase font-semibold block">
+                      {item.code} • {item.category}
+                    </span>
+                    <div className="flex items-baseline gap-2 mt-0.5">
+                      <span className="text-xs font-bold text-brand-espresso">
+                        Rp {item.price.toLocaleString('id-ID')}
+                      </span>
+                      <span className="text-[10px] text-secondary">
+                        (HPP: Rp {item.costPrice.toLocaleString('id-ID')})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    onClick={() => toggleMenuAvailability(item.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                      !isOutOfStock
+                        ? 'bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border'
+                        : 'bg-status-unpaid-bg text-status-unpaid-text border border-status-unpaid-border'
+                    }`}
+                  >
+                    {!isOutOfStock ? `Tersedia (Stok: ${item.stock})` : 'Stok Habis'}
+                  </button>
+
+                  {isOwner && (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleOpenEdit(item)}
+                        className="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-bold text-brand-espresso transition-all active:scale-95"
+                      >
+                        Edit HPP
+                      </button>
+                      <button
+                        onClick={() => deleteMenuItem(item.id)}
+                        className="p-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100"
+                        title="Hapus"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Tablet & Desktop View: Table (md+ screen) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low border-b border-border-subtle text-[11px] font-bold uppercase tracking-wider text-secondary">

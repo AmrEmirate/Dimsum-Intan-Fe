@@ -315,7 +315,104 @@ export const PettyCashPage: React.FC = () => {
           )}
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Petty Cash Cards (< md screen) */}
+        <div className="md:hidden divide-y divide-border-subtle p-3">
+          {filteredList.length === 0 ? (
+            <div className="py-8 text-center text-secondary text-xs">
+              Belum ada pencatatan kas kecil pada outlet ini.
+            </div>
+          ) : (
+            filteredList.map((item) => (
+              <div key={item.id} className="py-3.5 flex flex-col gap-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="font-bold text-xs text-brand-espresso">
+                      {item.expenseNumber}
+                    </span>
+                    <div className="text-[10px] text-secondary">
+                      {new Date(item.createdAt).toLocaleDateString('id-ID')} • {new Date(item.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB • {item.cashierName}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-serif-title font-bold text-sm text-brand-espresso tabular-nums">
+                      Rp {item.amount.toLocaleString('id-ID')}
+                    </div>
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                        item.status === 'DISETUJUI'
+                          ? 'bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border'
+                          : item.status === 'DITOLAK'
+                          ? 'bg-status-unpaid-bg text-status-unpaid-text border border-status-unpaid-border'
+                          : 'bg-status-pending-bg text-status-pending-text border border-status-pending-border'
+                      }`}
+                    >
+                      {item.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-surface-container text-brand-espresso">
+                    {item.category.replace('_', ' ')}
+                  </span>
+                  <span className="text-xs text-secondary truncate">{item.description}</span>
+                </div>
+
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    onClick={() => setPreviewReceiptImage(item.receiptImageUrl)}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-brand-espresso text-xs font-semibold transition-colors"
+                  >
+                    <ImageIcon className="w-3.5 h-3.5 text-primary" />
+                    <span>Lihat Struk</span>
+                  </button>
+
+                  <div className="flex items-center gap-1.5">
+                    {isSupervisorOrOwner && item.status === 'MENUNGGU_VERIFIKASI' && (
+                      <>
+                        <button
+                          onClick={() => verifyPettyCash(item.id, 'DISETUJUI')}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Setujui
+                        </button>
+                        <button
+                          onClick={() => verifyPettyCash(item.id, 'DITOLAK')}
+                          className="px-2.5 py-1 rounded-lg bg-red-100 text-red-700 text-xs font-bold flex items-center gap-1"
+                        >
+                          <XCircle className="w-3.5 h-3.5" /> Tolak
+                        </button>
+                      </>
+                    )}
+
+                    {item.status === 'MENUNGGU_VERIFIKASI' && (
+                      <button
+                        onClick={() => handleOpenEdit(item)}
+                        className="p-1.5 rounded-lg bg-surface-container text-secondary hover:text-brand-espresso"
+                        title="Edit Catatan"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    {isSupervisorOrOwner && (
+                      <button
+                        onClick={() => handleTriggerDelete(item)}
+                        className="p-1.5 rounded-lg bg-surface-container text-secondary hover:text-red-600"
+                        title="Hapus"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Tablet & Desktop View: Table (md+ screen) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low border-b border-border-subtle text-[11px] font-bold uppercase tracking-wider text-secondary">
@@ -404,7 +501,6 @@ export const PettyCashPage: React.FC = () => {
                       )}
 
                       {item.status === 'MENUNGGU_VERIFIKASI' && (
-
                         <button
                           onClick={() => handleOpenEdit(item)}
                           className="p-1 rounded-lg bg-surface-container hover:bg-brand-gold/20 text-secondary hover:text-brand-espresso transition-colors cursor-pointer"
@@ -425,7 +521,6 @@ export const PettyCashPage: React.FC = () => {
                       )}
                     </div>
                   </td>
-
                 </tr>
               ))}
             </tbody>

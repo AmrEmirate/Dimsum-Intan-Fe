@@ -349,7 +349,70 @@ export const ShiftPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Shift History Cards (< md screen) */}
+        <div className="md:hidden divide-y divide-border-subtle">
+          {shiftHistory.length === 0 ? (
+            <div className="py-8 text-center text-secondary text-xs">
+              Belum ada riwayat shift yang ditutup.
+            </div>
+          ) : (
+            shiftHistory.map((s) => {
+              const diff = s.difference ?? 0;
+              return (
+                <div key={s.id} className="py-3.5 flex flex-col gap-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-bold text-xs text-brand-espresso">{s.shiftName}</div>
+                      <div className="text-[10px] text-secondary">
+                        {new Date(s.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} -{' '}
+                        {s.endTime ? new Date(s.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'} • {s.cashierName}
+                      </div>
+                    </div>
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        diff === 0
+                          ? 'bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border'
+                          : diff < 0
+                          ? 'bg-status-unpaid-bg text-status-unpaid-text border border-status-unpaid-border'
+                          : 'bg-status-pending-bg text-status-pending-text border border-status-pending-border'
+                      }`}
+                    >
+                      {diff === 0
+                        ? 'SEIMBANG'
+                        : diff < 0
+                        ? `-Rp ${Math.abs(diff).toLocaleString('id-ID')}`
+                        : `+Rp ${diff.toLocaleString('id-ID')}`}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 bg-surface-container-low p-2.5 rounded-xl text-xs">
+                    <div>
+                      <span className="text-[10px] text-secondary block">Modal & Penjualan</span>
+                      <span className="font-semibold text-brand-espresso">
+                        Rp {s.startingCash.toLocaleString('id-ID')} + <span className="text-emerald-700">Rp {s.cashSales.toLocaleString('id-ID')}</span>
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-secondary block">Kas Fisik Laci</span>
+                      <span className="font-bold text-brand-espresso">
+                        Rp {(s.actualEndingCash ?? 0).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {s.notes && (
+                    <p className="text-[11px] text-secondary italic">
+                      "{s.notes}"
+                    </p>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Tablet & Desktop View: Table (md+ screen) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low border-b border-border-subtle text-[11px] font-bold uppercase tracking-wider text-secondary">
