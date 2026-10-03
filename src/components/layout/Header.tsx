@@ -174,7 +174,12 @@ export const Header: React.FC = () => {
           {/* Interactive Role Switcher Pill */}
           <div className="relative">
             <button
-              onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
+              id="btn-user-profile"
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsRoleDropdownOpen((prev) => !prev);
+              }}
               className="flex items-center gap-2 bg-surface-card hover:bg-surface-container-low px-2.5 sm:px-3 py-1.5 rounded-2xl border border-border-subtle shadow-xs transition-all cursor-pointer"
               title="Klik untuk mengganti role pengguna atau pengaturan"
             >
@@ -214,83 +219,18 @@ export const Header: React.FC = () => {
             {/* Role Switcher Dropdown */}
             {isRoleDropdownOpen && (
               <div className="absolute right-0 top-full mt-2 w-64 bg-surface-card border border-border-subtle rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150">
-                <div className="px-3 py-1.5 border-b border-border-subtle mb-1">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">
-                    Ganti Role (Simulasi Hak Akses)
+                <div className="px-3 py-2 border-b border-border-subtle mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-secondary block">
+                    Informasi Akun
                   </span>
+                  <p className="text-xs font-bold text-brand-espresso mt-0.5">{currentUser.name}</p>
+                  <p className="text-[11px] text-secondary">{currentUser.outletName || 'Dimsum Intan'}</p>
+                  <div className="mt-1">
+                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-brand-espresso text-brand-gold font-bold">
+                      {currentUser.role}
+                    </span>
+                  </div>
                 </div>
-
-                <button
-                  onClick={() => {
-                    switchRole('OWNER');
-                    setIsRoleDropdownOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-colors cursor-pointer ${
-                    currentUser.role === 'OWNER'
-                      ? 'bg-brand-espresso text-white'
-                      : 'hover:bg-surface-container'
-                  }`}
-                >
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold flex items-center gap-1.5">
-                      Hj. Intan Permata
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-brand-gold text-brand-espresso font-black">
-                        OWNER
-                      </span>
-                    </span>
-                    <span className="text-[10px] opacity-80 mt-0.5">
-                      Akses penuh 3 outlet, HPP, tagihan & laba rugi
-                    </span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    switchRole('SUPERVISOR');
-                    setIsRoleDropdownOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-colors cursor-pointer ${
-                    currentUser.role === 'SUPERVISOR'
-                      ? 'bg-brand-terracotta text-white'
-                      : 'hover:bg-surface-container'
-                  }`}
-                >
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold flex items-center gap-1.5">
-                      Hendra Wijaya (SPV)
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-white text-brand-terracotta font-black">
-                        SPV
-                      </span>
-                    </span>
-                    <span className="text-[10px] opacity-80 mt-0.5">
-                      Verifikasi kas kecil & otorisasi PIN void
-                    </span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => {
-                    switchRole('KASIR');
-                    setIsRoleDropdownOpen(false);
-                  }}
-                  className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-colors cursor-pointer ${
-                    currentUser.role === 'KASIR'
-                      ? 'bg-brand-gold text-brand-espresso font-bold'
-                      : 'hover:bg-surface-container'
-                  }`}
-                >
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold flex items-center gap-1.5">
-                      Siti Rahma
-                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-surface-muted text-brand-espresso font-black">
-                        KASIR
-                      </span>
-                    </span>
-                    <span className="text-[10px] opacity-80 mt-0.5">
-                      Terkunci di Dipatiukur, shift kasir & POS
-                    </span>
-                  </div>
-                </button>
 
                 {/* Additional Settings: PIN Update for Owner/SPV */}
                 {(currentUser.role === 'OWNER' || currentUser.role === 'SUPERVISOR') && (
@@ -310,6 +250,7 @@ export const Header: React.FC = () => {
 
                 <div className="pt-1.5 mt-1 border-t border-border-subtle">
                   <button
+                    id="btn-logout"
                     onClick={() => {
                       setIsRoleDropdownOpen(false);
                       logout();
@@ -422,7 +363,7 @@ export const Header: React.FC = () => {
                     ? 'TERHUBUNG (ONLINE)'
                     : whatsappStatus?.hasQr
                     ? 'MENUNGGU SCAN QR'
-                    : 'MODE STANDBY / SIMULASI'}
+                    : 'STANDBY / BELUM TERHUBUNG'}
                 </span>
               </div>
 
@@ -446,11 +387,11 @@ export const Header: React.FC = () => {
                 <div className="p-3 bg-surface-card rounded-xl text-xs text-secondary leading-relaxed">
                   {whatsappStatus?.isReady ? (
                     <p className="text-emerald-700 font-medium">
-                      Bot siap mengirimkan nota transaksi POS secara otomatis ke nomor pembeli saat checkout berhasil.
+                      Bot siap mengirimkan nota transaksi POS secara otomatis ke nomor pelanggan saat checkout berhasil.
                     </p>
                   ) : (
                     <p>
-                      Bot saat ini dalam mode aman (*mock simulation*). Transaksi kasir tetap berjalan lancar dan nota tetap tercatat rapi ke database.
+                      WhatsApp bot saat ini dalam mode standby. Transaksi kasir tetap berjalan lancar dan nota tetap tersimpan rapi ke database.
                     </p>
                   )}
                 </div>

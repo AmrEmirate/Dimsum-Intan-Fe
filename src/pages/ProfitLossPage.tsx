@@ -24,7 +24,7 @@ export const ProfitLossPage: React.FC = () => {
     selectedOutletId,
     setSelectedOutletId,
     currentUser,
-    switchRole,
+    logout,
     outlets,
     showNotification,
   } = useApp();
@@ -44,13 +44,13 @@ export const ProfitLossPage: React.FC = () => {
           Akses Laporan Finansial Terkunci
         </h2>
         <p className="text-xs text-secondary mt-1.5 max-w-md leading-relaxed">
-          Berdasarkan Blueprint Sistem Dimsum Intan, modul Laporan Laba Rugi, HPP, dan Arus Kas hanya dapat diakses oleh akun dengan peran <strong>OWNER</strong>.
+          Modul Laporan Laba Rugi, HPP, dan Arus Kas hanya dapat diakses oleh akun berwenang dengan hak akses <strong>OWNER</strong>.
         </p>
         <button
-          onClick={() => switchRole('OWNER')}
-          className="mt-6 px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all active:scale-95"
+          onClick={logout}
+          className="mt-6 px-5 py-2.5 rounded-xl bg-brand-espresso hover:bg-brand-espresso-muted text-brand-gold text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
         >
-          Beralih ke Akun Owner (Hj. Intan Permata)
+          Masuk dengan Akun Owner
         </button>
       </div>
     );

@@ -273,6 +273,11 @@ export const PosPage: React.FC = () => {
                       Rp {menu.price.toLocaleString('id-ID')}
                     </span>
                     <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isOutOfStock) addToCart(menu);
+                      }}
                       disabled={isOutOfStock}
                       className="w-8 h-8 rounded-full bg-brand-gold text-brand-espresso flex items-center justify-center font-bold shadow-xs group-hover:bg-brand-espresso group-hover:text-brand-gold transition-colors"
                     >
@@ -554,10 +559,10 @@ export const PosPage: React.FC = () => {
             ) : (
               <div className="flex flex-col items-center py-2 space-y-3">
                 <div className="p-4 bg-white rounded-2xl border-2 border-brand-espresso shadow-xs">
-                  {/* QRIS Mock QR */}
+                  {/* QRIS Pembayaran POS */}
                   <img
                     src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=00020101021226580016ID.CO.DIMSUMINTAN.POS015204581253033605802ID5912Dimsum+Intan6007Bandung62070703A0163046D5E"
-                    alt="QRIS Dimsum Intan"
+                    alt="QRIS Resmi Dimsum Intan"
                     className="w-40 h-40 object-contain"
                   />
                 </div>

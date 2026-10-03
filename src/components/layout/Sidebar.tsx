@@ -216,6 +216,7 @@ export const Sidebar: React.FC = () => {
               return (
                 <button
                   key={item.id}
+                  id={`nav-${item.id}`}
                   onClick={() => handleSelectView(item.id)}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                     isActive
@@ -245,6 +246,7 @@ export const Sidebar: React.FC = () => {
               return (
                 <button
                   key={item.id}
+                  id={`nav-${item.id}`}
                   onClick={() => handleSelectView(item.id)}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                     isActive
@@ -279,6 +281,7 @@ export const Sidebar: React.FC = () => {
               return (
                 <button
                   key={item.id}
+                  id={`nav-${item.id}`}
                   onClick={() => handleSelectView(item.id)}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all cursor-pointer ${
                     isActive
@@ -314,6 +317,7 @@ export const Sidebar: React.FC = () => {
 
           {/* Logout Button */}
           <button
+            id="sidebar-btn-logout"
             onClick={() => {
               logout();
               setIsSidebarOpen(false);

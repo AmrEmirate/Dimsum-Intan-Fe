@@ -139,11 +139,11 @@ interface AppContextType {
 
 
 const DEFAULT_USER: User = {
-  id: 'usr_owner_01',
-  name: 'Hj. Intan Permata',
-  role: 'OWNER',
-  outletName: 'Seluruh Outlet (Pusat)',
-  avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+  id: '',
+  name: '',
+  role: 'KASIR',
+  outletName: '',
+  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -181,7 +181,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // 3. Cart State
   const [cart, setCart] = useState<OrderCartItem[]>([]);
   const [orderType, setOrderType] = useState<OrderType>('dine-in');
-  const [tableNumber, setTableNumber] = useState('Meja 04 (Lantai 1)');
+  const [tableNumber, setTableNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
 
   // Notifications Helper
@@ -285,18 +285,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [fetchShiftHistory, fetchWhatsAppStatus]);
 
-  // Full Login Method (Supports username/password or quick-role fill)
-  const login = async (username: string, password?: string, role?: UserRole): Promise<boolean> => {
+  // Full Login Method
+  const login = async (username: string, password?: string): Promise<boolean> => {
     try {
-      const payload: any = { username, password };
-      if (role && !username) payload.role = role;
+      if (!username || !password) {
+        showNotification('Username dan password wajib diisi!', 'warning');
+        return false;
+      }
 
       const res = await api.post<{
         success: boolean;
         message: string;
         token: string;
         user: User;
-      }>('/auth/login', payload);
+      }>('/auth/login', { username, password });
 
       if (res.success && res.token) {
         setAuthToken(res.token);
@@ -347,56 +349,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showNotification('Anda telah berhasil keluar dari sistem.', 'info');
   };
 
-  // Switch Role Shortcut
-  const switchRole = async (role: UserRole) => {
-    try {
-      const res = await api.post<{
-        success: boolean;
-        message: string;
-        token: string;
-        user: User;
-      }>('/auth/login', { role });
-
-      if (res.success && res.token) {
-        setAuthToken(res.token);
-        setIsAuthenticated(true);
-        const u = res.user;
-        const avatarMap: Record<UserRole, string> = {
-          OWNER: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-          SUPERVISOR: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-          KASIR: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-        };
-        const updatedUser: User = {
-          id: u.id,
-          name: u.name,
-          role: u.role,
-          outletId: u.outletId,
-          outletName: u.outletName,
-          avatar: avatarMap[u.role] || avatarMap.OWNER,
-        };
-        setCurrentUser(updatedUser);
-
-        if (role === 'KASIR') {
-          setSelectedOutletIdState(u.outletId || 'du');
-          if (
-            currentView !== 'transaksi-kasir-pos' &&
-            currentView !== 'sesi-shift-kasir' &&
-            currentView !== 'kas-kecil-outlet'
-          ) {
-            setCurrentView('transaksi-kasir-pos');
-          }
-          showNotification(`Beralih ke KASIR (${updatedUser.outletName})`, 'info');
-        } else if (role === 'SUPERVISOR') {
-          showNotification(`Beralih ke SUPERVISOR (Otorisasi & Monitoring)`, 'info');
-        } else {
-          showNotification(`Beralih ke OWNER (Akses Penuh Seluruh Sistem)`, 'success');
-        }
-
-        await refreshData();
-      }
-    } catch (err: any) {
-      showNotification(`Gagal beralih peran: ${err.message}`, 'error');
-    }
+  // Switch Role Guide
+  const switchRole = async (_role: UserRole) => {
+    showNotification('Silakan logout terlebih dahulu dan masuk dengan kredensial akun yang sesuai.', 'info');
   };
 
   // Mount Effect: Authenticate & Load Data
@@ -420,9 +375,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return outlets.find((o) => o.id === selectedOutletId) || outlets[0];
   };
 
-  // Supervisor PIN Validation (Default fallback PINs: 1234 or 9999)
-  const verifyPin = (pin: string): boolean => {
-    return pin === '1234' || pin === '9999';
+  // Supervisor PIN Validation
+  const verifyPin = (_pin: string): boolean => {
+    return true; // PIN diperiksa langsung oleh backend bcrypt
   };
 
   // Cart Management
@@ -551,7 +506,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         clearCart();
-        showNotification(`Transaksi ${created.invoiceNumber} berhasil diselesaikan! (Tersimpan ke Database)`, 'success');
+        showNotification(`Transaksi ${created.invoiceNumber} berhasil diselesaikan!`, 'success');
         return created;
       }
     } catch (error: any) {

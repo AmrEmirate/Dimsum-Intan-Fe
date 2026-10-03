@@ -6,13 +6,11 @@ import {
   EyeOff,
   Sparkles,
   ArrowRight,
-  ShieldCheck,
-  Store,
-  ChefHat,
   AlertCircle,
+  Shield,
+  ChefHat,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { UserRole } from '../types';
 
 export const LoginPage: React.FC = () => {
   const { login } = useApp();
@@ -39,19 +37,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleQuickFill = (role: UserRole) => {
-    if (role === 'OWNER') {
-      setUsername('owner');
-      setPassword('owner123');
-    } else if (role === 'SUPERVISOR') {
-      setUsername('supervisor');
-      setPassword('spv123');
-    } else {
-      setUsername('kasir');
-      setPassword('kasir123');
-    }
-    setErrorMessage(null);
-  };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#1E1715] via-[#2A1F1C] to-[#16100E] p-4 sm:p-6 antialiased relative overflow-hidden">
@@ -191,48 +176,10 @@ export const LoginPage: React.FC = () => {
             </form>
           </div>
 
-          {/* Quick Demo Fill Accounts for Testing / Convenience */}
-          <div className="mt-8 pt-6 border-t border-border-subtle">
-            <span className="text-[11px] font-bold text-secondary uppercase tracking-wider block mb-2.5">
-              Pintasan Akun Demo (Klik untuk Isi Cepat):
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickFill('OWNER')}
-                className="p-2.5 rounded-xl bg-surface-container hover:bg-brand-gold/10 hover:border-brand-gold/40 border border-border-subtle text-left transition-all group"
-              >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-brand-espresso group-hover:text-brand-gold-hover">
-                  <ShieldCheck className="w-3.5 h-3.5 text-primary" />
-                  <span>Owner</span>
-                </div>
-                <span className="text-[10px] text-secondary block mt-0.5">owner / owner123</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('SUPERVISOR')}
-                className="p-2.5 rounded-xl bg-surface-container hover:bg-brand-gold/10 hover:border-brand-gold/40 border border-border-subtle text-left transition-all group"
-              >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-brand-espresso group-hover:text-brand-gold-hover">
-                  <Store className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Supervisor</span>
-                </div>
-                <span className="text-[10px] text-secondary block mt-0.5">supervisor / spv123</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickFill('KASIR')}
-                className="p-2.5 rounded-xl bg-surface-container hover:bg-brand-gold/10 hover:border-brand-gold/40 border border-border-subtle text-left transition-all group"
-              >
-                <div className="flex items-center gap-1.5 text-xs font-bold text-brand-espresso group-hover:text-brand-gold-hover">
-                  <ChefHat className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Kasir</span>
-                </div>
-                <span className="text-[10px] text-secondary block mt-0.5">kasir / kasir123</span>
-              </button>
-            </div>
+          {/* Security Notice Footer */}
+          <div className="mt-8 pt-6 border-t border-border-subtle flex items-center justify-center gap-2 text-secondary text-xs">
+            <Shield className="w-3.5 h-3.5 text-primary" />
+            <span>Dimsum Intan Cloud POS & Enterprise Accounting • v1.0.0</span>
           </div>
         </div>
       </div>

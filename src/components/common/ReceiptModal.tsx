@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Printer, X, CheckCircle2, Share2, Smartphone } from 'lucide-react';
 import { Order } from '../../types';
+import { useApp } from '../../context/AppContext';
 
 interface ReceiptModalProps {
   order: Order | null;
@@ -9,9 +10,14 @@ interface ReceiptModalProps {
 }
 
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClose }) => {
+  const { outlets } = useApp();
+  const [paperSize, setPaperSize] = useState<'80mm' | '58mm'>('80mm');
+
   if (!isOpen || !order) return null;
 
-  const [paperSize, setPaperSize] = useState<'80mm' | '58mm'>('80mm');
+  const currentOutlet = outlets.find((o) => o.id === order.outletId);
+  const outletAddress = currentOutlet?.address || order.outletName;
+  const outletPhone = currentOutlet?.phone || '0812-3344-5500';
 
   const handlePrint = () => {
     window.print();
@@ -121,14 +127,8 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
               DIMSUM INTAN
             </h2>
             <p className="text-[11px] font-sans text-gray-600">{order.outletName}</p>
-            <p className="text-[10px] text-gray-500">
-              {order.outletId === 'du'
-                ? 'Jl. Dipatiukur No. 45, Coblong, Bandung'
-                : order.outletId === 'riau'
-                ? 'Jl. L.L.R.E. Martadinata No. 88, Bandung'
-                : 'Jl. Buah Batu No. 120, Bandung'}
-            </p>
-            <p className="text-[10px] text-gray-500">Telp: 0812-3344-5501</p>
+            <p className="text-[10px] text-gray-500">{outletAddress}</p>
+            <p className="text-[10px] text-gray-500">Telp: {outletPhone}</p>
           </div>
 
           {/* Meta order */}
@@ -226,15 +226,16 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
               Hatur Nuhun!
             </p>
             <p>Nikmati Kelezatan Dimsum Intan Asli</p>
-            <p>Kritik & Saran: WhatsApp 0812-3344-5500</p>
+            <p>Kritik & Saran: WhatsApp {outletPhone}</p>
           </div>
         </div>
 
         {/* Footer Actions */}
         <div className="p-4 bg-surface-container-low border-t border-border-subtle flex justify-end gap-2">
           <button
+            id="btn-close-receipt"
             onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-surface-card border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-container"
+            className="w-full py-2.5 rounded-xl bg-surface-card border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-container cursor-pointer"
           >
             Tutup Nota
           </button>

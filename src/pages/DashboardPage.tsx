@@ -78,11 +78,13 @@ export const DashboardPage: React.FC = () => {
     setIsPinModalOpen(true);
   };
 
-  const handlePinSuccess = (pin: string) => {
+  const handlePinSuccess = async (pin: string) => {
     if (orderToVoid) {
-      voidOrder(orderToVoid.id, voidReason, pin);
-      setIsPinModalOpen(false);
-      setOrderToVoid(null);
+      const success = await voidOrder(orderToVoid.id, voidReason, pin);
+      if (success) {
+        setIsPinModalOpen(false);
+        setOrderToVoid(null);
+      }
     }
   };
 

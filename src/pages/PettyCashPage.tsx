@@ -159,11 +159,13 @@ export const PettyCashPage: React.FC = () => {
     setIsPinModalOpen(true);
   };
 
-  const handlePinDeleteSuccess = (pin: string) => {
+  const handlePinDeleteSuccess = async (pin: string) => {
     if (itemToDelete) {
-      deletePettyCash(itemToDelete.id, pin);
-      setIsPinModalOpen(false);
-      setItemToDelete(null);
+      const success = await deletePettyCash(itemToDelete.id, pin);
+      if (success) {
+        setIsPinModalOpen(false);
+        setItemToDelete(null);
+      }
     }
   };
 

@@ -39,18 +39,9 @@ export const PinAuthorizationModal: React.FC<PinModalProps> = ({
   };
 
   const validatePin = (inputPin: string) => {
-    if (verifyPin(inputPin)) {
-      setPin('');
-      setIsError(false);
-      onSuccess(inputPin);
-    } else {
-      setIsError(true);
-      showNotification('PIN Supervisor Salah! Gunakan PIN default: 1234 atau PIN Owner: 9999', 'error');
-      setTimeout(() => {
-        setPin('');
-        setIsError(false);
-      }, 700);
-    }
+    setPin('');
+    setIsError(false);
+    onSuccess(inputPin);
   };
 
   return (
@@ -76,9 +67,9 @@ export const PinAuthorizationModal: React.FC<PinModalProps> = ({
           {description}
         </p>
 
-        {/* Warning Audit Note */}
-        <div className="w-full mt-3 p-2 rounded-xl bg-status-unpaid-bg border border-status-unpaid-border text-status-unpaid-text text-[11px] font-semibold">
-          ⚠️ Otorisasi Supervisor / Owner (Default PIN: 1234)
+        {/* Audit Note */}
+        <div className="w-full mt-3 p-2 rounded-xl bg-surface-container border border-border-subtle text-secondary text-[11px] font-semibold flex items-center justify-center gap-1.5">
+          <span>🔐 Wajib PIN Otorisasi Supervisor / Owner</span>
         </div>
 
         {/* PIN Indicators (4 dots) */}
