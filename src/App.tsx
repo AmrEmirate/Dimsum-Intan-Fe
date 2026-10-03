@@ -14,6 +14,8 @@ import { FactoryBillsPage } from './pages/FactoryBillsPage';
 import { FixedExpensesPage } from './pages/FixedExpensesPage';
 import { ProfitLossPage } from './pages/ProfitLossPage';
 
+import { BottomNav } from './components/layout/BottomNav';
+
 export const AppContent: React.FC = () => {
   const { currentView, isAuthenticated } = useApp();
 
@@ -60,10 +62,13 @@ export const AppContent: React.FC = () => {
         <Header />
 
         {/* Dynamic Page Workspace */}
-        <main className="flex-1 pt-20 px-3.5 sm:px-6 pb-24 lg:pb-12 w-full max-w-[1600px] mx-auto">
+        <main className="flex-1 pt-20 px-3 sm:px-6 pb-32 lg:pb-12 w-full max-w-[1600px] mx-auto">
           {renderCurrentView()}
         </main>
       </div>
+
+      {/* Persistent Bottom Navigation for Mobile & Tablet */}
+      <BottomNav />
 
       {/* Floating System Toast Notifications */}
       <NotificationToast />

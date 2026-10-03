@@ -121,9 +121,9 @@ export const ShiftPage: React.FC = () => {
           <span className="text-[11px] text-secondary">Perhitungan real-time terintegrasi POS</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 items-stretch">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5 sm:gap-3 items-stretch">
           {/* Card 1: Modal Awal */}
-          <div className="rounded-2xl bg-surface-card p-4 border border-border-subtle shadow-xs flex flex-col justify-between">
+          <div className="rounded-2xl bg-surface-card p-3 sm:p-4 border border-border-subtle shadow-xs flex flex-col justify-between">
             <div className="flex justify-between items-center text-secondary">
               <span className="text-[11px] font-bold uppercase">1. Modal Awal Laci</span>
               <Coins className="w-4 h-4 text-primary" />
@@ -187,7 +187,7 @@ export const ShiftPage: React.FC = () => {
           </div>
 
           {/* Card 5: Penjualan QRIS (Terpisah dari laci) */}
-          <div className="rounded-2xl bg-surface-card p-4 border border-border-subtle shadow-xs flex flex-col justify-between">
+          <div className="col-span-2 sm:col-span-1 rounded-2xl bg-surface-card p-3 sm:p-4 border border-border-subtle shadow-xs flex flex-col justify-between">
             <div className="flex justify-between items-center text-secondary">
               <span className="text-[11px] font-bold uppercase">Penjualan QRIS</span>
               <QrCode className="w-4 h-4 text-primary" />

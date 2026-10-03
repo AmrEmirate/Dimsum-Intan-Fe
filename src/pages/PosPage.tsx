@@ -48,7 +48,10 @@ export const PosPage: React.FC = () => {
   const [cashGiven, setCashGiven] = useState<string>('');
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
+  const [isMobileCartOpen, setIsMobileCartOpen] = useState<boolean>(false);
+
   // Cart calculations
+  const totalCartQty = cart.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const finalTotal = Math.max(0, subtotal - discountAmount);
 
@@ -68,6 +71,7 @@ export const PosPage: React.FC = () => {
     }
     setSelectedPaymentMethod(method);
     setCashGiven(finalTotal.toString());
+    setIsMobileCartOpen(false);
     setIsCheckoutModalOpen(true);
   };
 
@@ -87,15 +91,15 @@ export const PosPage: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-5 w-full animate-in fade-in duration-200">
-      {/* 2-Column Responsive Layout */}
-      <div className="grid grid-cols-12 gap-5 items-start">
-        {/* LEFT COLUMN: Menu Catalog (8 Cols) */}
-        <div className="col-span-12 xl:col-span-8 flex flex-col gap-4">
+    <div className="flex flex-col gap-4 w-full animate-in fade-in duration-200">
+      {/* 2-Column Responsive Layout: Side-by-Side on Tablet & Desktop (md+), Mobile Stacked */}
+      <div className="grid grid-cols-12 gap-3.5 sm:gap-4 lg:gap-5 items-start">
+        {/* LEFT COLUMN: Menu Catalog (Tablet md: 7 cols, Desktop xl: 8 cols) */}
+        <div className="col-span-12 md:col-span-7 xl:col-span-8 flex flex-col gap-3.5">
           {/* Subheader & Order Type Switcher */}
-          <div className="bg-surface-card rounded-2xl p-4 border border-border-subtle shadow-xs flex flex-wrap items-center justify-between gap-3">
+          <div className="bg-surface-card rounded-2xl p-3 sm:p-4 border border-border-subtle shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
             {/* Search Input */}
-            <div className="relative flex-1 min-w-[240px]">
+            <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-secondary" />
               <input
                 type="text"
@@ -104,41 +108,49 @@ export const PosPage: React.FC = () => {
                 placeholder="Cari menu dimsum, kuah, minuman..."
                 className="w-full pl-10 pr-4 py-2 bg-surface-container rounded-xl text-xs text-brand-espresso placeholder:text-secondary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary hover:text-brand-espresso text-xs"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             {/* Dine-In vs Takeaway Toggle */}
-            <div className="flex items-center bg-surface-container p-1 rounded-xl">
+            <div className="flex items-center bg-surface-container p-1 rounded-xl shrink-0">
               <button
                 type="button"
                 onClick={() => setOrderType('dine-in')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   orderType === 'dine-in'
                     ? 'bg-brand-espresso text-brand-gold shadow-xs'
                     : 'text-secondary hover:text-brand-espresso'
                 }`}
               >
                 <Utensils className="w-3.5 h-3.5" />
-                <span>Makan di Tempat</span>
+                <span>Dine-In</span>
               </button>
               <button
                 type="button"
                 onClick={() => setOrderType('takeaway')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   orderType === 'takeaway'
                     ? 'bg-brand-espresso text-brand-gold shadow-xs'
                     : 'text-secondary hover:text-brand-espresso'
                 }`}
               >
                 <ShoppingBag className="w-3.5 h-3.5" />
-                <span>Bungkus (Takeaway)</span>
+                <span>Takeaway</span>
               </button>
             </div>
           </div>
 
           {/* Table & Customer Meta Info (Dine-in metadata) */}
-          <div className="bg-surface-card rounded-2xl p-4 border border-border-subtle shadow-xs grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          <div className="bg-surface-card rounded-2xl p-3 sm:p-4 border border-border-subtle shadow-xs grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
             {orderType === 'dine-in' ? (
-              <div className="md:col-span-4 flex flex-col gap-1">
+              <div className="sm:col-span-4 flex flex-col gap-1">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-secondary">
                   Meja / Area
                 </label>
@@ -154,7 +166,7 @@ export const PosPage: React.FC = () => {
 
             <div
               className={`${
-                orderType === 'dine-in' ? 'md:col-span-5' : 'md:col-span-8'
+                orderType === 'dine-in' ? 'sm:col-span-5' : 'sm:col-span-8'
               } flex flex-col gap-1`}
             >
               <label className="text-[10px] font-bold uppercase tracking-wider text-secondary">
@@ -171,10 +183,10 @@ export const PosPage: React.FC = () => {
 
             <div
               className={`${
-                orderType === 'dine-in' ? 'md:col-span-3' : 'md:col-span-4'
-              } flex items-center justify-end gap-2 pt-1 md:pt-0`}
+                orderType === 'dine-in' ? 'sm:col-span-3' : 'sm:col-span-4'
+              } flex items-center justify-between sm:justify-end gap-2 pt-0.5 sm:pt-0`}
             >
-              <div className="flex flex-col text-right">
+              <div className="flex flex-col text-left sm:text-right">
                 <span className="text-[10px] text-secondary font-semibold">Kitchen Batch</span>
                 <span className="text-xs font-bold text-status-lunas-text">
                   Kukus & Goreng Standby
@@ -184,92 +196,102 @@ export const PosPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Categories Horizontal Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-            {[
-              { id: 'all', label: `Semua Menu (${menuItems.length})` },
-              {
-                id: 'mentai',
-                label: `Dimsum Mentai (${menuItems.filter((m) => m.category === 'mentai').length})`,
-              },
-              {
-                id: 'kukus',
-                label: `Dimsum Kukus (${menuItems.filter((m) => m.category === 'kukus').length})`,
-              },
-              {
-                id: 'goreng',
-                label: `Dimsum Goreng (${menuItems.filter((m) => m.category === 'goreng').length})`,
-              },
-              {
-                id: 'minuman',
-                label: `Minuman & Ekstra (${menuItems.filter((m) => m.category === 'minuman').length})`,
-              },
-            ].map((cat) => {
-              const active = selectedCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id as any)}
-                  className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                    active
-                      ? 'bg-brand-espresso text-brand-gold shadow-xs'
-                      : 'bg-surface-card text-secondary hover:text-brand-espresso border border-border-subtle'
-                  }`}
-                >
-                  {cat.label}
-                </button>
-              );
-            })}
+          {/* Sticky Categories Horizontal Pills Bar */}
+          <div className="sticky top-16 z-20 -mx-3 px-3 sm:mx-0 sm:px-0 py-1.5 bg-surface-canvas/90 backdrop-blur-md">
+            <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar select-none">
+              {[
+                { id: 'all', label: `Semua (${menuItems.length})` },
+                {
+                  id: 'mentai',
+                  label: `Mentai (${menuItems.filter((m) => m.category === 'mentai').length})`,
+                },
+                {
+                  id: 'kukus',
+                  label: `Kukus (${menuItems.filter((m) => m.category === 'kukus').length})`,
+                },
+                {
+                  id: 'goreng',
+                  label: `Goreng (${menuItems.filter((m) => m.category === 'goreng').length})`,
+                },
+                {
+                  id: 'minuman',
+                  label: `Minuman (${menuItems.filter((m) => m.category === 'minuman').length})`,
+                },
+              ].map((cat) => {
+                const active = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id as any)}
+                    className={`whitespace-nowrap px-3 sm:px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                      active
+                        ? 'bg-brand-espresso text-brand-gold shadow-xs scale-[1.02]'
+                        : 'bg-surface-card text-secondary hover:text-brand-espresso border border-border-subtle active:scale-95'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {/* Menu Catalog Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {/* Menu Catalog Grid: 2 Cols on Mobile, 2 on Tablet, 3 on Desktop */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5">
             {filteredMenus.map((menu) => {
               const isOutOfStock = !menu.isAvailable || menu.stock <= 0;
+              const cartItem = cart.find((i) => i.menuId === menu.id);
+              const inCartQty = cartItem?.quantity || 0;
+
               return (
                 <div
                   key={menu.id}
                   onClick={() => !isOutOfStock && addToCart(menu)}
-                  className={`group bg-surface-card rounded-2xl p-3 border border-border-subtle shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden select-none ${
+                  className={`group bg-surface-card rounded-2xl p-2 sm:p-3 border border-border-subtle shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden select-none ${
                     isOutOfStock
                       ? 'opacity-60 cursor-not-allowed'
                       : 'cursor-pointer active:scale-[0.98]'
                   }`}
                 >
                   {/* Image Container */}
-                  <div className="relative w-full h-32 rounded-xl overflow-hidden bg-surface-container mb-2.5">
+                  <div className="relative w-full h-24 sm:h-32 rounded-xl overflow-hidden bg-surface-container mb-2">
                     <img
                       src={menu.image}
                       alt={menu.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     {menu.isBestSeller && (
-                      <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-brand-terracotta text-white text-[10px] font-bold shadow-xs flex items-center gap-1">
-                        <Flame className="w-3 h-3" />
-                        <span>Best Seller</span>
+                      <div className="absolute top-1.5 left-1.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-brand-terracotta text-white text-[9px] sm:text-[10px] font-bold shadow-xs flex items-center gap-1">
+                        <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                        <span>Best</span>
                       </div>
                     )}
-                    <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-full bg-brand-espresso/80 backdrop-blur-xs text-white text-[10px] font-semibold">
-                      {isOutOfStock ? 'Habis' : `Sisa: ${menu.stock} Porsi`}
+                    {inCartQty > 0 && (
+                      <div className="absolute top-1.5 right-1.5 px-2 py-0.5 rounded-full bg-brand-espresso text-brand-gold text-[10px] font-black border border-brand-gold/40 shadow-xs animate-in zoom-in-50 duration-150">
+                        {inCartQty}x di Nota
+                      </div>
+                    )}
+                    <div className="absolute bottom-1.5 right-1.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-brand-espresso/80 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-semibold">
+                      {isOutOfStock ? 'Habis' : `Sisa: ${menu.stock}`}
                     </div>
                   </div>
 
                   {/* Menu info */}
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">
-                      {menu.category.toUpperCase()} SERIES
+                    <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-secondary">
+                      {menu.category.toUpperCase()}
                     </span>
-                    <h3 className="font-serif-title font-bold text-sm text-brand-espresso group-hover:text-primary transition-colors line-clamp-1">
+                    <h3 className="font-serif-title font-bold text-xs sm:text-sm text-brand-espresso group-hover:text-primary transition-colors line-clamp-1">
                       {menu.name}
                     </h3>
-                    <p className="text-[11px] text-secondary mt-0.5 line-clamp-2 leading-relaxed">
+                    <p className="hidden sm:block text-[11px] text-secondary mt-0.5 line-clamp-2 leading-relaxed">
                       {menu.description}
                     </p>
                   </div>
 
                   {/* Price & Add Action */}
-                  <div className="mt-3 pt-2 border-t border-border-subtle flex items-center justify-between">
-                    <span className="font-bold text-sm text-brand-espresso tabular-nums">
+                  <div className="mt-2 pt-1.5 sm:pt-2 border-t border-border-subtle flex items-center justify-between">
+                    <span className="font-bold text-xs sm:text-sm text-brand-espresso tabular-nums">
                       Rp {menu.price.toLocaleString('id-ID')}
                     </span>
                     <button
@@ -279,9 +301,9 @@ export const PosPage: React.FC = () => {
                         if (!isOutOfStock) addToCart(menu);
                       }}
                       disabled={isOutOfStock}
-                      className="w-8 h-8 rounded-full bg-brand-gold text-brand-espresso flex items-center justify-center font-bold shadow-xs group-hover:bg-brand-espresso group-hover:text-brand-gold transition-colors"
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-brand-gold text-brand-espresso flex items-center justify-center font-bold shadow-xs group-hover:bg-brand-espresso group-hover:text-brand-gold transition-colors active:scale-90 cursor-pointer"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                   </div>
                 </div>
@@ -290,11 +312,11 @@ export const PosPage: React.FC = () => {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: Cart & Billing Column (4 Cols) */}
-        <div className="col-span-12 xl:col-span-4 flex flex-col gap-4 sticky top-20">
-          <div id="pos-cart-section" className="bg-surface-card rounded-2xl border border-border-subtle shadow-md overflow-hidden flex flex-col">
+        {/* RIGHT COLUMN: Cart & Billing Column (Side-by-Side on Tablet md: 5 cols, Desktop xl: 4 cols) */}
+        <div className="hidden md:flex md:col-span-5 xl:col-span-4 flex-col gap-4 sticky top-20">
+          <div id="pos-cart-section" className="bg-surface-card rounded-2xl border border-border-subtle shadow-md overflow-hidden flex flex-col max-h-[calc(100vh-6rem)]">
             {/* Cart Header */}
-            <div className="p-4 border-b border-border-subtle bg-surface-container-low flex items-center justify-between">
+            <div className="p-3.5 sm:p-4 border-b border-border-subtle bg-surface-container-low flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Receipt className="w-4 h-4 text-primary" />
                 <h2 className="font-serif-title text-base font-bold text-brand-espresso">
@@ -303,12 +325,12 @@ export const PosPage: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-brand-espresso bg-surface-card px-2.5 py-1 rounded-lg border border-border-subtle">
-                  {cart.reduce((s, i) => s + i.quantity, 0)} Item
+                  {totalCartQty} Item
                 </span>
                 {cart.length > 0 && (
                   <button
                     onClick={clearCart}
-                    className="p-1 rounded-lg text-secondary hover:text-red-600 hover:bg-red-50 transition-colors"
+                    className="p-1 rounded-lg text-secondary hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                     title="Kosongkan Keranjang"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -318,7 +340,7 @@ export const PosPage: React.FC = () => {
             </div>
 
             {/* Cart Items List */}
-            <div className="p-4 max-h-[380px] overflow-y-auto divide-y divide-border-subtle/80">
+            <div className="p-3 sm:p-4 overflow-y-auto flex-1 divide-y divide-border-subtle/80 min-h-[180px]">
               {cart.length === 0 ? (
                 <div className="py-12 text-center text-secondary flex flex-col items-center gap-2">
                   <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center text-secondary">
@@ -331,7 +353,7 @@ export const PosPage: React.FC = () => {
                 </div>
               ) : (
                 cart.map((item) => (
-                  <div key={item.menuId} className="py-3 flex flex-col gap-1.5">
+                  <div key={item.menuId} className="py-2.5 flex flex-col gap-1.5">
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col pr-2">
                         <span className="text-xs font-bold text-brand-espresso leading-snug">
@@ -351,7 +373,7 @@ export const PosPage: React.FC = () => {
                       type="text"
                       value={item.notes || ''}
                       onChange={(e) => updateCartNotes(item.menuId, e.target.value)}
-                      placeholder="Catatan (cth: Saus terpisah, pedas)..."
+                      placeholder="Catatan (cth: Saus pisah, pedas)..."
                       className="text-[11px] bg-surface-container px-2.5 py-1 rounded-lg text-brand-espresso placeholder:text-secondary/70 focus:outline-none"
                     />
 
@@ -360,7 +382,7 @@ export const PosPage: React.FC = () => {
                       <div className="flex items-center gap-2 bg-surface-container p-0.5 rounded-lg">
                         <button
                           onClick={() => updateCartQty(item.menuId, -1)}
-                          className="w-6 h-6 rounded-md bg-surface-card hover:bg-surface-container-high flex items-center justify-center text-brand-espresso transition-colors"
+                          className="w-6 h-6 rounded-md bg-surface-card hover:bg-surface-container-high flex items-center justify-center text-brand-espresso transition-colors cursor-pointer"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
@@ -369,7 +391,7 @@ export const PosPage: React.FC = () => {
                         </span>
                         <button
                           onClick={() => updateCartQty(item.menuId, 1)}
-                          className="w-6 h-6 rounded-md bg-surface-card hover:bg-surface-container-high flex items-center justify-center text-brand-espresso transition-colors"
+                          className="w-6 h-6 rounded-md bg-surface-card hover:bg-surface-container-high flex items-center justify-center text-brand-espresso transition-colors cursor-pointer"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -377,7 +399,7 @@ export const PosPage: React.FC = () => {
 
                       <button
                         onClick={() => removeFromCart(item.menuId)}
-                        className="text-[11px] text-red-500 hover:text-red-700 font-semibold"
+                        className="text-[11px] text-red-500 hover:text-red-700 font-semibold cursor-pointer"
                       >
                         Hapus
                       </button>
@@ -388,7 +410,7 @@ export const PosPage: React.FC = () => {
             </div>
 
             {/* Calculations & Checkout Button */}
-            <div className="p-4 bg-surface-container-low border-t border-border-subtle flex flex-col gap-3">
+            <div className="p-3.5 sm:p-4 bg-surface-container-low border-t border-border-subtle flex flex-col gap-2.5">
               {/* Discount Selector */}
               <div className="flex items-center justify-between text-xs">
                 <span className="text-secondary">Diskon Promo:</span>
@@ -397,7 +419,7 @@ export const PosPage: React.FC = () => {
                     <button
                       key={amt}
                       onClick={() => setDiscountAmount(amt)}
-                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer transition-colors ${
                         discountAmount === amt
                           ? 'bg-brand-espresso text-brand-gold'
                           : 'bg-surface-card text-secondary hover:bg-surface-container'
@@ -434,7 +456,7 @@ export const PosPage: React.FC = () => {
                 <button
                   onClick={() => handleOpenCheckout('CASH')}
                   disabled={cart.length === 0}
-                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-brand-espresso hover:bg-brand-espresso-muted text-brand-gold text-xs font-bold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-brand-espresso hover:bg-brand-espresso-muted text-brand-gold text-xs font-bold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer"
                 >
                   <Banknote className="w-4 h-4" />
                   <span>Bayar Tunai</span>
@@ -442,7 +464,7 @@ export const PosPage: React.FC = () => {
                 <button
                   onClick={() => handleOpenCheckout('QRIS')}
                   disabled={cart.length === 0}
-                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer"
                 >
                   <QrCode className="w-4 h-4" />
                   <span>Bayar QRIS</span>
@@ -453,46 +475,198 @@ export const PosPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Floating Bottom Cart Bar for Mobile & Tablet (xl:hidden) */}
+      {/* Floating Bottom Cart Capsule for Mobile Phone (< md screen) */}
       {cart.length > 0 && (
-        <div className="fixed bottom-0 left-0 lg:left-72 right-0 z-30 p-3 bg-surface-card/95 backdrop-blur-md border-t border-border-subtle shadow-2xl xl:hidden animate-in slide-in-from-bottom duration-200">
-          <div className="flex items-center justify-between gap-3 max-w-xl mx-auto">
+        <div className="fixed bottom-20 left-3 right-3 sm:left-6 sm:right-6 max-w-lg mx-auto z-30 md:hidden animate-in slide-in-from-bottom duration-200">
+          <div className="bg-brand-espresso text-brand-gold rounded-2xl p-2.5 pl-4 shadow-2xl border border-brand-gold/30 flex items-center justify-between gap-3 backdrop-blur-md">
             <button
               type="button"
-              onClick={() => {
-                const el = document.getElementById('pos-cart-section');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="flex flex-col text-left cursor-pointer"
+              onClick={() => setIsMobileCartOpen(true)}
+              className="flex items-center gap-2.5 text-left cursor-pointer flex-1"
             >
-              <span className="text-[11px] font-bold text-secondary flex items-center gap-1">
-                <Receipt className="w-3.5 h-3.5 text-primary" />
-                {cart.reduce((s, i) => s + i.quantity, 0)} Porsi • Lihat Nota
-              </span>
-              <span className="font-serif-title font-bold text-base text-brand-espresso">
-                Rp {finalTotal.toLocaleString('id-ID')}
-              </span>
+              <div className="w-9 h-9 rounded-xl bg-brand-gold text-brand-espresso flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
+                {totalCartQty}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] text-white/70 font-semibold leading-tight">
+                  {cart.length} Jenis Menu • Buka Nota
+                </span>
+                <span className="font-serif-title font-bold text-base text-brand-gold leading-tight">
+                  Rp {finalTotal.toLocaleString('id-ID')}
+                </span>
+              </div>
             </button>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => handleOpenCheckout('CASH')}
-                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-brand-espresso text-brand-gold text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
-              >
-                <Banknote className="w-4 h-4" />
-                <span>Tunai</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleOpenCheckout('QRIS')}
-                className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-brand-gold text-brand-espresso text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
-              >
-                <QrCode className="w-4 h-4" />
-                <span>QRIS</span>
-              </button>
-            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsMobileCartOpen(true)}
+              className="px-4 py-2 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+            >
+              Lihat Nota &rarr;
+            </button>
           </div>
         </div>
+      )}
+
+      {/* Mobile Slide-Up Cart Bottom Sheet Drawer (< md screen) */}
+      {isMobileCartOpen && (
+        <>
+          <div
+            onClick={() => setIsMobileCartOpen(false)}
+            className="fixed inset-0 bg-brand-espresso/60 backdrop-blur-xs z-50 md:hidden transition-opacity cursor-pointer"
+            aria-label="Tutup Nota"
+          />
+
+          <div className="fixed inset-x-0 bottom-0 z-50 max-h-[88vh] bg-surface-card rounded-t-3xl border-t border-border-subtle shadow-2xl flex flex-col md:hidden animate-in slide-in-from-bottom duration-300">
+            {/* Pull Bar Handle */}
+            <div className="w-12 h-1.5 bg-border-strong rounded-full mx-auto mt-2.5 mb-1 cursor-pointer" onClick={() => setIsMobileCartOpen(false)} />
+
+            {/* Sheet Header */}
+            <div className="px-4 py-3 border-b border-border-subtle flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Receipt className="w-4 h-4 text-primary" />
+                <h3 className="font-serif-title text-base font-bold text-brand-espresso">
+                  Nota Pesanan ({totalCartQty} Item)
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {cart.length > 0 && (
+                  <button
+                    onClick={clearCart}
+                    className="p-1.5 text-xs text-red-600 hover:bg-red-50 rounded-lg font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Hapus Semua</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setIsMobileCartOpen(false)}
+                  className="p-1.5 rounded-full text-secondary hover:bg-surface-container cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Scrollable Order Details */}
+            <div className="flex-1 overflow-y-auto p-4 divide-y divide-border-subtle/80 space-y-3">
+              {/* Order Metadata Pills */}
+              <div className="pb-3 flex items-center justify-between gap-2 text-xs">
+                <span className="font-bold text-brand-espresso">
+                  Tipe: {orderType === 'dine-in' ? `Dine-In (${tableNumber || 'Meja Umum'})` : 'Takeaway'}
+                </span>
+                <span className="text-[11px] text-secondary">
+                  {customerName ? `Pelanggan: ${customerName}` : 'Tamu Standar'}
+                </span>
+              </div>
+
+              {cart.map((item) => (
+                <div key={item.menuId} className="pt-3 flex flex-col gap-2">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="text-xs font-bold text-brand-espresso">{item.name}</h4>
+                      <span className="text-[11px] text-secondary">
+                        Rp {item.price.toLocaleString('id-ID')} / porsi
+                      </span>
+                    </div>
+                    <span className="text-xs font-bold text-brand-espresso tabular-nums">
+                      Rp {(item.price * item.quantity).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+
+                  {/* Notes input */}
+                  <input
+                    type="text"
+                    value={item.notes || ''}
+                    onChange={(e) => updateCartNotes(item.menuId, e.target.value)}
+                    placeholder="Catatan pesanan (cth: tidak pedas, saus pisah)..."
+                    className="w-full text-xs bg-surface-container px-3 py-1.5 rounded-xl text-brand-espresso placeholder:text-secondary/70 focus:outline-none"
+                  />
+
+                  {/* Stepper & Trash */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-3 bg-surface-container px-2 py-1 rounded-xl">
+                      <button
+                        onClick={() => updateCartQty(item.menuId, -1)}
+                        className="w-7 h-7 rounded-lg bg-surface-card flex items-center justify-center font-bold text-brand-espresso shadow-xs active:scale-90"
+                      >
+                        <Minus className="w-3.5 h-3.5" />
+                      </button>
+                      <span className="w-6 text-center text-sm font-bold tabular-nums">
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => updateCartQty(item.menuId, 1)}
+                        className="w-7 h-7 rounded-lg bg-surface-card flex items-center justify-center font-bold text-brand-espresso shadow-xs active:scale-90"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => removeFromCart(item.menuId)}
+                      className="text-xs text-red-500 font-semibold px-2 py-1 hover:bg-red-50 rounded-lg"
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom Checkout Actions inside Bottom Sheet */}
+            <div className="p-4 bg-surface-container-low border-t border-border-subtle flex flex-col gap-3">
+              {/* Promo discounts */}
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-secondary font-medium">Diskon Promo:</span>
+                <div className="flex items-center gap-1.5">
+                  {[0, 5000, 10000].map((amt) => (
+                    <button
+                      key={amt}
+                      onClick={() => setDiscountAmount(amt)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                        discountAmount === amt
+                          ? 'bg-brand-espresso text-brand-gold'
+                          : 'bg-surface-card text-secondary border border-border-subtle'
+                      }`}
+                    >
+                      {amt === 0 ? 'Normal' : `-${amt / 1000}k`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subtotal and Total */}
+              <div className="flex justify-between items-baseline pt-1">
+                <span className="font-bold text-sm text-brand-espresso">Total Bayar:</span>
+                <span className="font-serif-title font-bold text-2xl text-brand-espresso tabular-nums">
+                  Rp {finalTotal.toLocaleString('id-ID')}
+                </span>
+              </div>
+
+              {/* Pay Tunai / QRIS buttons */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleOpenCheckout('CASH')}
+                  className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-brand-espresso text-brand-gold text-xs font-bold shadow-md active:scale-95 transition-all"
+                >
+                  <Banknote className="w-4 h-4" />
+                  <span>Bayar Tunai</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenCheckout('QRIS')}
+                  className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-brand-gold text-brand-espresso text-xs font-bold shadow-md active:scale-95 transition-all"
+                >
+                  <QrCode className="w-4 h-4" />
+                  <span>Bayar QRIS</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Checkout Dialog Modal */}

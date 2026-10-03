@@ -138,9 +138,9 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       {/* 4 Bento Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Card 1: Omzet */}
-        <div className="relative overflow-hidden bg-surface-card rounded-2xl p-5 border border-border-subtle shadow-xs hover:shadow-md transition-all">
+        <div className="relative overflow-hidden bg-surface-card rounded-2xl p-4 sm:p-5 border border-border-subtle shadow-xs hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
               Total Omzet Hari Ini

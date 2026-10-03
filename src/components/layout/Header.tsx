@@ -105,7 +105,7 @@ export const Header: React.FC = () => {
           {/* Shift status pill */}
           <div className="flex items-center gap-1.5 sm:gap-2 bg-surface-container-high px-2.5 sm:px-3 py-1.5 rounded-full border border-border-subtle">
             <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-            <span className="text-[11px] sm:text-xs font-bold text-brand-espresso tracking-tight whitespace-nowrap">
+            <span className="text-[11px] sm:text-xs font-bold text-brand-espresso tracking-tight whitespace-nowrap truncate max-w-[90px] sm:max-w-none">
               {activeShift?.status === 'ACTIVE' ? (
                 <>
                   <span>{activeShift.shiftName}</span>
