@@ -15,6 +15,7 @@ import { FixedExpensesPage } from './pages/FixedExpensesPage';
 import { ProfitLossPage } from './pages/ProfitLossPage';
 
 import { BottomNav } from './components/layout/BottomNav';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 export const AppContent: React.FC = () => {
   const { currentView, isAuthenticated } = useApp();
@@ -63,7 +64,9 @@ export const AppContent: React.FC = () => {
 
         {/* Dynamic Page Workspace */}
         <main className="flex-1 pt-20 px-3 sm:px-6 pb-32 lg:pb-12 w-full max-w-[1600px] mx-auto">
-          {renderCurrentView()}
+          <ErrorBoundary>
+            {renderCurrentView()}
+          </ErrorBoundary>
         </main>
       </div>
 
@@ -77,6 +80,10 @@ export const AppContent: React.FC = () => {
 };
 
 export default function App() {
-  return <AppContent />;
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  );
 }
 

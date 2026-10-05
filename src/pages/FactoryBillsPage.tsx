@@ -73,8 +73,8 @@ export const FactoryBillsPage: React.FC = () => {
 
     addFactoryInvoice({
       supplierName: 'PT Dimsum Prima Rasa (Pusat)',
-      outletId: targetOutlet.id,
-      outletName: targetOutlet.name,
+      outletId: targetOutlet?.id || 'out_du_01',
+      outletName: targetOutlet?.name || 'Cabang Dipatiukur',
       issueDate: new Date().toISOString().slice(0, 10),
       dueDate: formDueDate,
       totalAmount: total,

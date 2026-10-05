@@ -27,7 +27,6 @@ export const ShiftPage: React.FC = () => {
     showNotification,
   } = useApp();
 
-
   const [isOpenShiftModal, setIsOpenShiftModal] = useState(false);
   const [isCloseShiftModal, setIsCloseShiftModal] = useState(false);
   const [startCashInput, setStartCashInput] = useState('500000');
@@ -35,6 +34,7 @@ export const ShiftPage: React.FC = () => {
   const [closingNotes, setClosingNotes] = useState('');
 
   const outletObj = outlets.find((o) => o.id === selectedOutletId) || outlets[0];
+  const outletName = outletObj?.name || (selectedOutletId === 'all' ? 'Semua Outlet' : 'Outlet Utama');
 
   const handleOpenShiftSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,8 +56,9 @@ export const ShiftPage: React.FC = () => {
     setClosingNotes('');
   };
 
-  const expectedCash = activeShift ? activeShift.expectedCash : 0;
+  const expectedCash = activeShift ? Number(activeShift.expectedCash || 0) : 0;
   const currentDiff = actualCashInput ? (parseFloat(actualCashInput) || 0) - expectedCash : 0;
+  const safeHistory = Array.isArray(shiftHistory) ? shiftHistory : [];
 
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in duration-200">
@@ -71,7 +72,7 @@ export const ShiftPage: React.FC = () => {
                 {activeShift?.status === 'ACTIVE' ? 'Shift Kasir Aktif' : 'Shift Belum Dibuka'}
               </span>
               <span className="text-secondary/60 text-xs">/</span>
-              <span className="text-brand-gold font-bold text-xs">{outletObj.name}</span>
+              <span className="text-brand-gold font-bold text-xs">{outletName}</span>
               <span className="text-secondary/60 text-xs">/</span>
               <span className="text-white/70 text-xs flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> POS Terminal 01
@@ -95,8 +96,10 @@ export const ShiftPage: React.FC = () => {
                 <span className="text-[10px] text-white/70 uppercase font-bold tracking-wider">
                   Kasir Bertugas
                 </span>
-                <span className="text-xs font-bold text-white">{currentUser.name}</span>
-                <span className="text-[10px] text-brand-gold">ID: KSR-DU-084</span>
+                <span className="text-xs font-bold text-white">{currentUser?.name || 'Kasir'}</span>
+                <span className="text-[10px] text-brand-gold">
+                  {currentUser?.role === 'OWNER' ? 'Owner / Admin' : 'ID: KSR-DU-084'}
+                </span>
               </div>
             </div>
 
@@ -130,7 +133,7 @@ export const ShiftPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="font-serif-title font-bold text-lg text-brand-espresso tabular-nums">
-                Rp {(activeShift?.startingCash || 0).toLocaleString('id-ID')}
+                Rp {Number(activeShift?.startingCash || 0).toLocaleString('id-ID')}
               </div>
               <span className="text-[10px] text-secondary">Uang kembalian laci pagi</span>
             </div>
@@ -146,7 +149,7 @@ export const ShiftPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="font-serif-title font-bold text-lg text-emerald-700 tabular-nums">
-                Rp {(activeShift?.cashSales || 0).toLocaleString('id-ID')}
+                Rp {Number(activeShift?.cashSales || 0).toLocaleString('id-ID')}
               </div>
               <span className="text-[10px] text-secondary">Kas masuk dari transaksi tunai</span>
             </div>
@@ -162,7 +165,7 @@ export const ShiftPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="font-serif-title font-bold text-lg text-red-600 tabular-nums">
-                Rp {(activeShift?.pettyCashOut || 0).toLocaleString('id-ID')}
+                Rp {Number(activeShift?.pettyCashOut || 0).toLocaleString('id-ID')}
               </div>
               <span className="text-[10px] text-secondary">Es batu, galon air, kresek</span>
             </div>
@@ -194,7 +197,7 @@ export const ShiftPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="font-serif-title font-bold text-lg text-brand-espresso tabular-nums">
-                Rp {(activeShift?.qrisSales || 0).toLocaleString('id-ID')}
+                Rp {Number(activeShift?.qrisSales || 0).toLocaleString('id-ID')}
               </div>
               <span className="text-[10px] text-secondary">Langsung masuk rekening bank</span>
             </div>
@@ -224,14 +227,17 @@ export const ShiftPage: React.FC = () => {
               <div className="flex justify-between">
                 <span className="text-secondary">Waktu Dimulai:</span>
                 <span className="font-medium text-brand-espresso">
-                  {activeShift ? new Date(activeShift.startTime).toLocaleTimeString('id-ID') : '-'} WIB
+                  {activeShift?.startTime
+                    ? new Date(activeShift.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                    : '-'}{' '}
+                  WIB
                 </span>
               </div>
-              {activeShift?.actualEndingCash !== undefined && (
+              {activeShift?.actualEndingCash !== undefined && activeShift?.actualEndingCash !== null && (
                 <div className="flex justify-between border-t border-border-subtle pt-2">
                   <span className="text-secondary">Fisik Terakhir Diinput:</span>
                   <span className="font-bold text-brand-espresso tabular-nums">
-                    Rp {activeShift.actualEndingCash.toLocaleString('id-ID')}
+                    Rp {Number(activeShift.actualEndingCash).toLocaleString('id-ID')}
                   </span>
                 </div>
               )}
@@ -271,7 +277,7 @@ export const ShiftPage: React.FC = () => {
               </span>
             </div>
 
-            {activeShift?.difference !== undefined ? (
+            {activeShift?.difference !== undefined && activeShift?.difference !== null ? (
               <div className="mt-4">
                 <div
                   className={`p-4 rounded-2xl border flex items-start gap-3 ${
@@ -293,16 +299,16 @@ export const ShiftPage: React.FC = () => {
                         ? 'Kas Seimbang Sempurna (Rp 0 Selisih)'
                         : activeShift.difference < 0
                         ? `Selisih Kurang Fisik Kas: Rp ${Math.abs(
-                            activeShift.difference
+                            Number(activeShift.difference)
                           ).toLocaleString('id-ID')}`
-                        : `Selisih Lebih Fisik Kas: Rp ${activeShift.difference.toLocaleString(
+                        : `Selisih Lebih Fisik Kas: Rp ${Number(activeShift.difference).toLocaleString(
                             'id-ID'
                           )}`}
                     </h4>
                     <p className="text-xs opacity-90 mt-1">
                       Uang Fisik Dihitung: Rp{' '}
-                      {(activeShift.actualEndingCash || 0).toLocaleString('id-ID')} vs Sistem: Rp{' '}
-                      {activeShift.expectedCash.toLocaleString('id-ID')}
+                      {Number(activeShift.actualEndingCash || 0).toLocaleString('id-ID')} vs Sistem: Rp{' '}
+                      {Number(activeShift.expectedCash || 0).toLocaleString('id-ID')}
                     </p>
                     {activeShift.notes && (
                       <p className="text-[11px] font-semibold mt-2 pt-1 border-t border-current/20">
@@ -345,27 +351,39 @@ export const ShiftPage: React.FC = () => {
             </div>
           </div>
           <span className="text-xs font-bold px-3 py-1 rounded-full bg-surface-container text-brand-espresso">
-            {shiftHistory.length} Sesi Tercatat
+            {safeHistory.length} Sesi Tercatat
           </span>
         </div>
 
         {/* Mobile View: Shift History Cards (< md screen) */}
         <div className="md:hidden divide-y divide-border-subtle">
-          {shiftHistory.length === 0 ? (
+          {safeHistory.length === 0 ? (
             <div className="py-8 text-center text-secondary text-xs">
               Belum ada riwayat shift yang ditutup.
             </div>
           ) : (
-            shiftHistory.map((s) => {
-              const diff = s.difference ?? 0;
+            safeHistory.map((s) => {
+              const diff = Number(s.difference ?? 0);
+              const startCash = Number(s.startingCash || 0);
+              const cashSales = Number(s.cashSales || 0);
+              const endingCash = Number(s.actualEndingCash ?? 0);
+
+              let timeRange = '-';
+              try {
+                const start = s.startTime ? new Date(s.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
+                const end = s.endTime ? new Date(s.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
+                timeRange = `${start} - ${end}`;
+              } catch {
+                timeRange = '-';
+              }
+
               return (
                 <div key={s.id} className="py-3.5 flex flex-col gap-2">
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="font-bold text-xs text-brand-espresso">{s.shiftName}</div>
+                      <div className="font-bold text-xs text-brand-espresso">{s.shiftName || 'Shift'}</div>
                       <div className="text-[10px] text-secondary">
-                        {new Date(s.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} -{' '}
-                        {s.endTime ? new Date(s.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'} • {s.cashierName}
+                        {timeRange} • {s.cashierName || 'Kasir'}
                       </div>
                     </div>
                     <span
@@ -389,13 +407,13 @@ export const ShiftPage: React.FC = () => {
                     <div>
                       <span className="text-[10px] text-secondary block">Modal & Penjualan</span>
                       <span className="font-semibold text-brand-espresso">
-                        Rp {s.startingCash.toLocaleString('id-ID')} + <span className="text-emerald-700">Rp {s.cashSales.toLocaleString('id-ID')}</span>
+                        Rp {startCash.toLocaleString('id-ID')} + <span className="text-emerald-700">Rp {cashSales.toLocaleString('id-ID')}</span>
                       </span>
                     </div>
                     <div className="text-right">
                       <span className="text-[10px] text-secondary block">Kas Fisik Laci</span>
                       <span className="font-bold text-brand-espresso">
-                        Rp {(s.actualEndingCash ?? 0).toLocaleString('id-ID')}
+                        Rp {endingCash.toLocaleString('id-ID')}
                       </span>
                     </div>
                   </div>
@@ -427,43 +445,57 @@ export const ShiftPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle text-xs">
-              {shiftHistory.length === 0 ? (
+              {safeHistory.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-8 text-center text-secondary">
                     Belum ada riwayat shift yang ditutup.
                   </td>
                 </tr>
               ) : (
-                shiftHistory.map((s) => {
-                  const diff = s.difference ?? 0;
+                safeHistory.map((s) => {
+                  const diff = Number(s.difference ?? 0);
+                  const startCash = Number(s.startingCash || 0);
+                  const cashSales = Number(s.cashSales || 0);
+                  const pettyCashVal = Number(s.pettyCashOut || 0);
+                  const endingCash = Number(s.actualEndingCash ?? 0);
+                  const expectedCashVal = Number(s.expectedCash || 0);
+
+                  let timeRange = '-';
+                  try {
+                    const start = s.startTime ? new Date(s.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
+                    const end = s.endTime ? new Date(s.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-';
+                    timeRange = `${start} - ${end}`;
+                  } catch {
+                    timeRange = '-';
+                  }
+
                   return (
                     <tr key={s.id} className="hover:bg-surface-container-low/50 transition-colors">
                       <td className="py-3 px-4">
-                        <div className="font-bold text-brand-espresso">{s.shiftName}</div>
+                        <div className="font-bold text-brand-espresso">{s.shiftName || 'Shift'}</div>
                         <div className="text-[10px] text-secondary">
-                          {new Date(s.startTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} -{' '}
-                          {s.endTime ? new Date(s.endTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                          {timeRange}
                         </div>
                       </td>
                       <td className="py-3 px-4">
-                        <div className="font-semibold text-brand-espresso">{s.outletName}</div>
-                        <div className="text-[10px] text-secondary">{s.cashierName} ({s.terminalId})</div>
+                        <div className="font-semibold text-brand-espresso">{s.outletName || 'Outlet'}</div>
+                        <div className="text-[10px] text-secondary">{s.cashierName || 'Kasir'} ({s.terminalId || 'POS-01'})</div>
                       </td>
                       <td className="py-3 px-4 text-right tabular-nums text-secondary">
-                        Rp {s.startingCash.toLocaleString('id-ID')}
+                        Rp {startCash.toLocaleString('id-ID')}
                       </td>
                       <td className="py-3 px-4 text-right tabular-nums font-semibold text-emerald-700">
-                        +Rp {s.cashSales.toLocaleString('id-ID')}
+                        +Rp {cashSales.toLocaleString('id-ID')}
                       </td>
                       <td className="py-3 px-4 text-right tabular-nums text-red-600">
-                        -Rp {s.pettyCashOut.toLocaleString('id-ID')}
+                        -Rp {pettyCashVal.toLocaleString('id-ID')}
                       </td>
                       <td className="py-3 px-4 text-right tabular-nums">
                         <div className="font-bold text-brand-espresso">
-                          Fisik: Rp {(s.actualEndingCash ?? 0).toLocaleString('id-ID')}
+                          Fisik: Rp {endingCash.toLocaleString('id-ID')}
                         </div>
                         <div className="text-[10px] text-secondary">
-                          Sistem: Rp {s.expectedCash.toLocaleString('id-ID')}
+                          Sistem: Rp {expectedCashVal.toLocaleString('id-ID')}
                         </div>
                       </td>
                       <td className="py-3 px-4 text-center">
@@ -496,7 +528,6 @@ export const ShiftPage: React.FC = () => {
       </div>
 
       {/* Modal: Buka Shift */}
-
       {isOpenShiftModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4">
           <form
