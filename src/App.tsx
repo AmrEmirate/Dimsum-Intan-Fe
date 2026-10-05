@@ -13,6 +13,7 @@ import { PettyCashPage } from './pages/PettyCashPage';
 import { FactoryBillsPage } from './pages/FactoryBillsPage';
 import { FixedExpensesPage } from './pages/FixedExpensesPage';
 import { ProfitLossPage } from './pages/ProfitLossPage';
+import { BranchesPage } from './pages/BranchesPage';
 
 import { BottomNav } from './components/layout/BottomNav';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -33,6 +34,8 @@ export const AppContent: React.FC = () => {
     switch (currentView) {
       case 'dashboard-utama':
         return <DashboardPage />;
+      case 'master-cabang-outlet':
+        return <BranchesPage />;
       case 'transaksi-kasir-pos':
         return <PosPage />;
       case 'sesi-shift-kasir':

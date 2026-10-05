@@ -3,10 +3,12 @@ export type UserRole = 'OWNER' | 'SUPERVISOR' | 'KASIR';
 export interface User {
   id: string;
   name: string;
+  username?: string;
   role: UserRole;
   outletId?: string;
   outletName?: string;
   avatar?: string;
+  createdAt?: string;
 }
 
 export interface Outlet {

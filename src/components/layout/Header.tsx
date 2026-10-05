@@ -15,9 +15,11 @@ import {
   X,
   QrCode,
   Menu,
+  Store,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
+import { OutletManagementModal } from '../outlet/OutletManagementModal';
 
 export const Header: React.FC = () => {
   const {
@@ -31,6 +33,7 @@ export const Header: React.FC = () => {
     whatsappStatus,
     fetchWhatsAppStatus,
     setIsSidebarOpen,
+    setCurrentView,
   } = useApp();
 
   const [currentTime, setCurrentTime] = useState<string>('');
@@ -38,6 +41,7 @@ export const Header: React.FC = () => {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [isWaModalOpen, setIsWaModalOpen] = useState<boolean>(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
+  const [isOutletModalOpen, setIsOutletModalOpen] = useState<boolean>(false);
   const [newPinInput, setNewPinInput] = useState<string>('');
   const [isUpdatingPin, setIsUpdatingPin] = useState<boolean>(false);
 
@@ -235,7 +239,19 @@ export const Header: React.FC = () => {
 
                 {/* Additional Settings: PIN Update for Owner/SPV */}
                 {(currentUser.role === 'OWNER' || currentUser.role === 'SUPERVISOR') && (
-                  <div className="pt-1.5 mt-1 border-t border-border-subtle">
+                  <div className="pt-1.5 mt-1 border-t border-border-subtle space-y-1">
+                    {currentUser.role === 'OWNER' && (
+                      <button
+                        onClick={() => {
+                          setIsRoleDropdownOpen(false);
+                          setCurrentView('master-cabang-outlet');
+                        }}
+                        className="w-full flex items-center gap-2 p-2 rounded-xl text-left text-xs font-bold text-brand-espresso hover:bg-surface-container transition-colors cursor-pointer"
+                      >
+                        <Store className="w-4 h-4 text-primary" />
+                        <span>Kelola Master Cabang</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         setIsRoleDropdownOpen(false);
@@ -411,6 +427,11 @@ export const Header: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Modal Manajemen Cabang */}
+      <OutletManagementModal
+        isOpen={isOutletModalOpen}
+        onClose={() => setIsOutletModalOpen(false)}
+      />
     </>
   );
 };

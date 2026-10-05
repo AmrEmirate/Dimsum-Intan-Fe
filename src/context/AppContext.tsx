@@ -17,6 +17,7 @@ import { api, setAuthToken, clearAuthToken, getAuthToken } from '../services/api
 
 export type AppView =
   | 'dashboard-utama'
+  | 'master-cabang-outlet'
   | 'transaksi-kasir-pos'
   | 'sesi-shift-kasir'
   | 'master-menu-dimsum-hpp'
@@ -44,6 +45,22 @@ interface AppContextType {
   selectedOutletId: string; // 'all' | 'du' | 'riau' | 'batu'
   setSelectedOutletId: (id: string) => void;
   getActiveOutlet: () => Outlet | undefined;
+  createOutlet: (outlet: Omit<Outlet, 'id'>) => Promise<boolean>;
+  updateOutlet: (id: string, outlet: Partial<Outlet>) => Promise<boolean>;
+  deleteOutlet: (id: string) => Promise<boolean>;
+
+  // Staff / User Management
+  staffList: User[];
+  fetchStaffList: () => Promise<void>;
+  createStaffUser: (data: {
+    name: string;
+    username: string;
+    password: string;
+    role: UserRole;
+    outletId?: string;
+    pin?: string;
+  }) => Promise<boolean>;
+  deleteStaffUser: (id: string) => Promise<boolean>;
 
   // View Navigation
   currentView: AppView;
@@ -177,6 +194,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [factoryInvoices, setFactoryInvoices] = useState<FactoryInvoice[]>([]);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
   const [whatsappStatus, setWhatsappStatus] = useState<{ isReady: boolean; hasQr: boolean; qrCode: string | null } | null>(null);
+  const [staffList, setStaffList] = useState<User[]>([]);
 
   // 3. Cart State
   const [cart, setCart] = useState<OrderCartItem[]>([]);
@@ -230,6 +248,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, []);
 
+  // Fetch Staff / Users List
+  const fetchStaffList = useCallback(async () => {
+    try {
+      const res = await api.get<{ success: boolean; data: User[] }>('/users').catch(() => null);
+      if (res?.success && Array.isArray(res.data)) {
+        setStaffList(res.data);
+      }
+    } catch (err) {
+      console.warn('[Staff Fetch Error]', err);
+    }
+  }, []);
+
   // Initial Fetch & Refresh from Backend API
   const refreshData = useCallback(async () => {
     try {
@@ -280,10 +310,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // 9. Fetch WhatsApp Integration Status
       await fetchWhatsAppStatus();
+
+      // 10. Fetch Staff List (if authenticated)
+      await fetchStaffList();
     } catch (err: any) {
       console.warn('[Data Fetch Error]', err);
     }
-  }, [fetchShiftHistory, fetchWhatsAppStatus]);
+  }, [fetchShiftHistory, fetchWhatsAppStatus, fetchStaffList]);
 
   // Full Login Method
   const login = async (username: string, password?: string): Promise<boolean> => {
@@ -373,6 +406,87 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const getActiveOutlet = (): Outlet | undefined => {
     if (outlets.length === 0) return undefined;
     return outlets.find((o) => o.id === selectedOutletId) || outlets[0];
+  };
+
+  const createOutlet = async (data: Omit<Outlet, 'id'>): Promise<boolean> => {
+    try {
+      const res = await api.post<{ success: boolean; message: string; data: Outlet }>('/outlets', data);
+      if (res.success && res.data) {
+        setOutlets((prev) => [...prev, res.data]);
+        showNotification(res.message, 'success');
+        return true;
+      }
+    } catch (err: any) {
+      showNotification(`Gagal menambahkan cabang: ${err.message}`, 'error');
+    }
+    return false;
+  };
+
+  const updateOutlet = async (id: string, data: Partial<Outlet>): Promise<boolean> => {
+    try {
+      const res = await api.put<{ success: boolean; message: string; data: Outlet }>(`/outlets/${id}`, data);
+      if (res.success && res.data) {
+        setOutlets((prev) => prev.map((o) => (o.id === id ? res.data : o)));
+        showNotification(res.message, 'success');
+        return true;
+      }
+    } catch (err: any) {
+      showNotification(`Gagal memperbarui cabang: ${err.message}`, 'error');
+    }
+    return false;
+  };
+
+  const deleteOutlet = async (id: string): Promise<boolean> => {
+    try {
+      const res = await api.delete<{ success: boolean; message: string }>(`/outlets/${id}`);
+      if (res.success) {
+        setOutlets((prev) => prev.filter((o) => o.id !== id));
+        if (selectedOutletId === id) {
+          setSelectedOutletIdState('all');
+        }
+        showNotification(res.message, 'success');
+        return true;
+      }
+    } catch (err: any) {
+      showNotification(`Gagal menghapus cabang: ${err.message}`, 'error');
+    }
+    return false;
+  };
+
+  // Staff / User Management Methods
+  const createStaffUser = async (data: {
+    name: string;
+    username: string;
+    password: string;
+    role: UserRole;
+    outletId?: string;
+    pin?: string;
+  }): Promise<boolean> => {
+    try {
+      const res = await api.post<{ success: boolean; message: string; data: User }>('/users', data);
+      if (res.success && res.data) {
+        setStaffList((prev) => [...prev, res.data]);
+        showNotification(res.message, 'success');
+        return true;
+      }
+    } catch (err: any) {
+      showNotification(`Gagal mendaftarkan akun staf: ${err.message}`, 'error');
+    }
+    return false;
+  };
+
+  const deleteStaffUser = async (id: string): Promise<boolean> => {
+    try {
+      const res = await api.delete<{ success: boolean; message: string }>(`/users/${id}`);
+      if (res.success) {
+        setStaffList((prev) => prev.filter((u) => u.id !== id));
+        showNotification(res.message, 'success');
+        return true;
+      }
+    } catch (err: any) {
+      showNotification(`Gagal menghapus akun staf: ${err.message}`, 'error');
+    }
+    return false;
   };
 
   // Supervisor PIN Validation
@@ -909,6 +1023,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         selectedOutletId,
         setSelectedOutletId,
         getActiveOutlet,
+        createOutlet,
+        updateOutlet,
+        deleteOutlet,
         currentView,
         setCurrentView,
         isSidebarOpen,
@@ -959,6 +1076,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         fetchProfitLossReport,
         whatsappStatus,
         fetchWhatsAppStatus,
+        staffList,
+        fetchStaffList,
+        createStaffUser,
+        deleteStaffUser,
         refreshData,
       }}
     >

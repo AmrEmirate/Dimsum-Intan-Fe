@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   LayoutGrid,
   Clock,
@@ -13,8 +13,11 @@ import {
   Lock,
   LogOut,
   X,
+  Settings,
+  Building2,
 } from 'lucide-react';
 import { useApp, AppView } from '../../context/AppContext';
+import { OutletManagementModal } from '../outlet/OutletManagementModal';
 
 export const Sidebar: React.FC = () => {
   const {
@@ -40,6 +43,8 @@ export const Sidebar: React.FC = () => {
   const isSupervisor = currentUser.role === 'SUPERVISOR';
   const isOwner = currentUser.role === 'OWNER';
 
+  const [isOutletModalOpen, setIsOutletModalOpen] = useState(false);
+
   // Navigation Items with RBAC
   const navItems: {
     id: AppView;
@@ -55,6 +60,14 @@ export const Sidebar: React.FC = () => {
       section: 'utama',
       icon: LayoutGrid,
       allowedRoles: ['OWNER', 'SUPERVISOR'],
+    },
+    {
+      id: 'master-cabang-outlet',
+      label: 'Master Cabang (Outlet)',
+      section: 'utama',
+      icon: Building2,
+      allowedRoles: ['OWNER', 'SUPERVISOR'],
+      badge: `${outlets.length} Cabang`,
     },
     {
       id: 'sesi-shift-kasir',
@@ -195,6 +208,18 @@ export const Sidebar: React.FC = () => {
                 </select>
               )}
             </div>
+
+            {isOwner && (
+              <button
+                type="button"
+                onClick={() => handleSelectView('master-cabang-outlet')}
+                className="mt-2 w-full py-1.5 px-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-[11px] font-bold text-brand-espresso flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-border-subtle"
+                title="Kelola Master Cabang & Target Omset"
+              >
+                <Settings className="w-3.5 h-3.5 text-primary" />
+                <span>Kelola Cabang</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -331,7 +356,13 @@ export const Sidebar: React.FC = () => {
         </div>
       </div>
     </aside>
-  </>
-);
+
+      {/* Modal Manajemen Cabang / Outlet */}
+      <OutletManagementModal
+        isOpen={isOutletModalOpen}
+        onClose={() => setIsOutletModalOpen(false)}
+      />
+    </>
+  );
 };
 
