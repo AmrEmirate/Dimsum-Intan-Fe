@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   Search,
-  Utensils,
   ShoppingBag,
   Plus,
   Minus,
@@ -118,74 +117,29 @@ export const PosPage: React.FC = () => {
               )}
             </div>
 
-            {/* Dine-In vs Takeaway Toggle */}
-            <div className="flex items-center bg-surface-container p-1 rounded-xl shrink-0">
-              <button
-                type="button"
-                onClick={() => setOrderType('dine-in')}
-                className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  orderType === 'dine-in'
-                    ? 'bg-brand-espresso text-brand-gold shadow-xs'
-                    : 'text-secondary hover:text-brand-espresso'
-                }`}
-              >
-                <Utensils className="w-3.5 h-3.5" />
-                <span>Dine-In</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setOrderType('takeaway')}
-                className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  orderType === 'takeaway'
-                    ? 'bg-brand-espresso text-brand-gold shadow-xs'
-                    : 'text-secondary hover:text-brand-espresso'
-                }`}
-              >
-                <ShoppingBag className="w-3.5 h-3.5" />
-                <span>Takeaway</span>
-              </button>
+            {/* Mode Takeaway Badge */}
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-surface-container border border-border-subtle shrink-0">
+              <ShoppingBag className="w-4 h-4 text-brand-espresso" />
+              <span className="text-xs font-bold text-brand-espresso">Takeaway (Bungkus)</span>
             </div>
           </div>
 
-          {/* Table & Customer Meta Info (Dine-in metadata) */}
+          {/* Customer Meta Info */}
           <div className="bg-surface-card rounded-2xl p-3 sm:p-4 border border-border-subtle shadow-xs grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
-            {orderType === 'dine-in' ? (
-              <div className="sm:col-span-4 flex flex-col gap-1">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-secondary">
-                  Meja / Area
-                </label>
-                <input
-                  type="text"
-                  value={tableNumber}
-                  onChange={(e) => setTableNumber(e.target.value)}
-                  className="w-full bg-surface-container px-3 py-1.5 rounded-xl text-xs font-bold text-brand-espresso focus:outline-none"
-                  placeholder="Contoh: Meja 04"
-                />
-              </div>
-            ) : null}
-
-            <div
-              className={`${
-                orderType === 'dine-in' ? 'sm:col-span-5' : 'sm:col-span-8'
-              } flex flex-col gap-1`}
-            >
+            <div className="sm:col-span-8 flex flex-col gap-1">
               <label className="text-[10px] font-bold uppercase tracking-wider text-secondary">
-                Nama Pelanggan / Catatan Meja
+                Nama Pelanggan / Catatan Pesanan
               </label>
               <input
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                placeholder="Contoh: Bpk. Rangga (4 Orang)"
+                placeholder="Contoh: Bpk. Rangga / Pesanan Bungkus"
                 className="w-full bg-surface-container px-3 py-1.5 rounded-xl text-xs text-brand-espresso focus:outline-none"
               />
             </div>
 
-            <div
-              className={`${
-                orderType === 'dine-in' ? 'sm:col-span-3' : 'sm:col-span-4'
-              } flex items-center justify-between sm:justify-end gap-2 pt-0.5 sm:pt-0`}
-            >
+            <div className="sm:col-span-4 flex items-center justify-between sm:justify-end gap-2 pt-0.5 sm:pt-0">
               <div className="flex flex-col text-left sm:text-right">
                 <span className="text-[10px] text-secondary font-semibold">Kitchen Batch</span>
                 <span className="text-xs font-bold text-status-lunas-text">
@@ -554,7 +508,7 @@ export const PosPage: React.FC = () => {
               {/* Order Metadata Pills */}
               <div className="pb-3 flex items-center justify-between gap-2 text-xs">
                 <span className="font-bold text-brand-espresso">
-                  Tipe: {orderType === 'dine-in' ? `Dine-In (${tableNumber || 'Meja Umum'})` : 'Takeaway'}
+                  Pesanan: Takeaway (Bungkus)
                 </span>
                 <span className="text-[11px] text-secondary">
                   {customerName ? `Pelanggan: ${customerName}` : 'Tamu Standar'}

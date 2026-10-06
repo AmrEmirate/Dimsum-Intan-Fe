@@ -438,7 +438,7 @@ export const ProfitLossPage: React.FC = () => {
                 <td className="py-3 px-3 text-right font-bold">100.0%</td>
               </tr>
               <tr className="text-secondary">
-                <td className="py-2 px-6">Penjualan POS Dine-In & Takeaway (3 Cabang)</td>
+                <td className="py-2 px-6">Penjualan POS (Takeaway Cabang)</td>
                 <td className="py-2 px-3 text-right tabular-nums">
                   Rp {totalRevenue.toLocaleString('id-ID')}
                 </td>

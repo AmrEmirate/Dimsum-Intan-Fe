@@ -679,7 +679,7 @@ export const BranchesPage: React.FC = () => {
               Kasir Buka Shift & Mulai Transaksi
             </h3>
             <p className="text-xs text-secondary leading-relaxed">
-              Kasir dapat login menggunakan username baru di perangkat tablet/komputer kasir outlet. Kasir menginput modal awal laci shift, lalu langsung siap melayani pesanan Dine-In & Takeaway.
+              Kasir dapat login menggunakan username baru di perangkat tablet/komputer kasir outlet. Kasir menginput modal awal laci shift, lalu langsung siap melayani pesanan Takeaway.
             </p>
             <div className="p-3 bg-surface-container rounded-xl text-[11px] text-secondary">
               📊 <em>Seluruh omset, kas kecil, dan tagihan pabrik otomatis terkonsolidasi ke laporan keuangan pusat.</em>

@@ -146,7 +146,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
               <span>{order.cashierName}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Tipe / Meja:</span>
+              <span className="text-gray-500">Tipe Pesanan:</span>
               <span className="font-bold uppercase">
                 {order.orderType === 'dine-in' ? `${order.tableNumber || 'Dine-In'}` : 'Takeaway (Bungkus)'}
               </span>

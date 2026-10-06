@@ -198,7 +198,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // 3. Cart State
   const [cart, setCart] = useState<OrderCartItem[]>([]);
-  const [orderType, setOrderType] = useState<OrderType>('dine-in');
+  const [orderType, setOrderType] = useState<OrderType>('takeaway');
   const [tableNumber, setTableNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
 
@@ -572,9 +572,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const payload = {
         outletId: targetOutletId,
-        orderType,
-        tableNumber: orderType === 'dine-in' ? tableNumber : undefined,
-        customerName: customerName || (orderType === 'dine-in' ? 'Pelanggan Meja' : 'Pelanggan Takeaway'),
+        orderType: 'takeaway' as OrderType,
+        tableNumber: undefined,
+        customerName: customerName || 'Pelanggan Takeaway',
         items: cart,
         subtotal,
         discount,
