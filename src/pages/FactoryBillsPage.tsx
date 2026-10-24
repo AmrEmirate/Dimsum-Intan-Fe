@@ -73,8 +73,8 @@ export const FactoryBillsPage: React.FC = () => {
 
     addFactoryInvoice({
       supplierName: 'PT Dimsum Prima Rasa (Pusat)',
-      outletId: targetOutlet?.id || 'out_du_01',
-      outletName: targetOutlet?.name || 'Cabang Dipatiukur',
+      outletId: targetOutlet?.id || (outlets[0]?.id ?? ''),
+      outletName: targetOutlet?.name || (outlets[0]?.name ?? 'Pusat / Operasional'),
       issueDate: new Date().toISOString().slice(0, 10),
       dueDate: formDueDate,
       totalAmount: total,
@@ -133,7 +133,7 @@ export const FactoryBillsPage: React.FC = () => {
               Tagihan Suplai Pabrik Dimsum
             </h1>
             <p className="text-xs text-white/70 leading-relaxed">
-              Pengelolaan faktur masuk kiriman dimsum beku & siomay dari PT Dimsum Prima Rasa ke 3 outlet operasional (Dipatiukur, Riau, Buah Batu).
+              Pengelolaan faktur masuk kiriman dimsum beku & siomay dari PT Dimsum Prima Rasa ke seluruh cabang operasional.
             </p>
           </div>
 

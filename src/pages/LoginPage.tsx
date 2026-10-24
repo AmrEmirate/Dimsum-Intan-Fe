@@ -13,7 +13,7 @@ import {
 import { useApp } from '../context/AppContext';
 
 export const LoginPage: React.FC = () => {
-  const { login } = useApp();
+  const { login, outlets } = useApp();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +37,6 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-[#1E1715] via-[#2A1F1C] to-[#16100E] p-4 sm:p-6 antialiased relative overflow-hidden">
       {/* Background Decorative Rings */}
@@ -57,7 +56,7 @@ export const LoginPage: React.FC = () => {
                   DIMSUM INTAN
                 </h1>
                 <p className="text-[10px] tracking-wider uppercase font-semibold text-brand-gold">
-                  Bandung • 3 Outlet
+                  {outlets.length > 0 ? `Bandung • ${outlets.length} Cabang Aktif` : 'Bandung • Cloud POS'}
                 </p>
               </div>
             </div>
@@ -71,7 +70,9 @@ export const LoginPage: React.FC = () => {
                 Pengelolaan Operasional Terintegrasi Cloud
               </h2>
               <p className="text-xs text-white/70 leading-relaxed">
-                Kelola penjualan 3 cabang (Dipatiukur, Riau, Buah Batu), pantau modal laci shift, rekonsiliasi kas kecil, dan analisis laba rugi dalam satu pintu aman.
+                {outlets.length > 0
+                  ? `Kelola operasional dan penjualan ${outlets.length} cabang (${outlets.map((o) => o.name).join(', ')}), pantau modal laci shift, rekonsiliasi kas kecil, dan laba rugi dalam satu pintu aman.`
+                  : 'Kelola penjualan operasional seluruh cabang, pantau modal laci shift kasir, rekonsiliasi kas kecil darurat, dan analisis laba rugi secara terpusat.'}
               </p>
             </div>
           </div>
@@ -81,17 +82,19 @@ export const LoginPage: React.FC = () => {
             <span className="text-[10px] uppercase font-bold tracking-wider text-white/60 block mb-2">
               Jaringan Cabang Aktif:
             </span>
-            <div className="flex flex-wrap gap-1.5 text-[11px]">
-              <span className="px-2.5 py-1 rounded-lg bg-white/10 text-white font-medium">
-                DU-01 Dipatiukur
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-white/10 text-white font-medium">
-                RU-02 Riau
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-white/10 text-white font-medium">
-                BB-03 Buah Batu
-              </span>
-            </div>
+            {outlets.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5 text-[11px]">
+                {outlets.map((o) => (
+                  <span key={o.id} className="px-2.5 py-1 rounded-lg bg-white/10 text-white font-medium">
+                    {o.code ? `${o.code} ` : ''}{o.name}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] text-white/50 italic">
+                Belum ada cabang terdaftar. Masuk dengan akun Owner untuk mendaftarkan cabang baru.
+              </p>
+            )}
           </div>
         </div>
 
@@ -174,6 +177,24 @@ export const LoginPage: React.FC = () => {
                 </button>
               </div>
             </form>
+
+            {/* Quick Login Helper Pill */}
+            <div className="mt-4 p-3 rounded-2xl bg-surface-container/80 border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+              <div className="text-[11px] text-secondary leading-tight">
+                <span className="font-bold text-brand-espresso block mb-0.5">💡 Kredensial Akun Utama (Owner):</span>
+                <span>Username: <strong className="text-brand-espresso">owner</strong> • Password: <strong className="text-brand-espresso">owner123</strong></span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setUsername('owner');
+                  setPassword('owner123');
+                }}
+                className="self-start sm:self-center shrink-0 px-2.5 py-1.5 rounded-xl bg-brand-espresso hover:bg-brand-espresso-muted text-brand-gold text-[10px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+              >
+                Isi Otomatis
+              </button>
+            </div>
           </div>
 
           {/* Security Notice Footer */}

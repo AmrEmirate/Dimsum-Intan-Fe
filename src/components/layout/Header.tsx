@@ -204,8 +204,8 @@ export const Header: React.FC = () => {
                 </span>
                 <span className="text-[10px] text-secondary truncate max-w-[130px]">
                   {currentUser.role === 'OWNER'
-                    ? '3 Cabang & Pusat'
-                    : activeOutletObj?.name || 'Dipatiukur'}
+                    ? `${outlets.length} Cabang & Pusat`
+                    : activeOutletObj?.name || 'Cabang Kasir'}
                 </span>
               </div>
 

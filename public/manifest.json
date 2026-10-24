@@ -1,7 +1,7 @@
 {
   "name": "Dimsum Intan POS & Akuntansi",
   "short_name": "Dimsum Intan",
-  "description": "Sistem Web POS & Akuntansi Multi-Outlet Dimsum Intan (Dipatiukur, Riau, Buah Batu)",
+  "description": "Sistem Web POS & Akuntansi Multi-Outlet Dimsum Intan",
   "start_url": "/",
   "display": "standalone",
   "orientation": "any",

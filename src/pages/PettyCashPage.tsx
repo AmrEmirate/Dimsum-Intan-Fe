@@ -30,6 +30,7 @@ export const PettyCashPage: React.FC = () => {
     selectedOutletId,
     outlets,
     showNotification,
+    getActiveOutlet,
   } = useApp();
 
   const isKasir = currentUser.role === 'KASIR';
@@ -182,7 +183,7 @@ export const PettyCashPage: React.FC = () => {
               <span className="text-secondary-container text-xs">• Buku Kas Laci Harian</span>
               {isKasir && (
                 <span className="text-[10px] font-bold text-brand-gold bg-white/10 px-2 py-0.5 rounded-full">
-                  Outlet 01 - Dipatiukur (Terkunci)
+                  {currentUser.outletName || getActiveOutlet()?.name || 'Cabang Kasir'} (Terkunci)
                 </span>
               )}
             </div>

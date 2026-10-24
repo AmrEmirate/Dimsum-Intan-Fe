@@ -120,8 +120,8 @@ export const FixedExpensesPage: React.FC = () => {
 
     const outletName =
       formOutletId === 'all'
-        ? 'Konsolidasi 3 Outlet'
-        : outlets.find((o) => o.id === formOutletId)?.name || 'Dipatiukur';
+        ? 'Konsolidasi Seluruh Outlet'
+        : outlets.find((o) => o.id === formOutletId)?.name || 'Cabang Operasional';
 
     addFixedExpense({
       title: formTitle,
@@ -214,7 +214,7 @@ export const FixedExpensesPage: React.FC = () => {
               Rp {totalSewa.toLocaleString('id-ID')}
             </div>
             <span className="text-[10px] text-secondary mt-1">
-              Dipatiukur (7.5jt), Riau (9jt), BB (6.5jt)
+              {outlets.length > 0 ? outlets.map((o) => o.name).join(', ') : 'Alokasi per Cabang Operasional'}
             </span>
           </div>
         </div>

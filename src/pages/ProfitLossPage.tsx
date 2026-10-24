@@ -105,14 +105,11 @@ export const ProfitLossPage: React.FC = () => {
   const netMarginPct = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : '0';
 
   const triggerExport = (format: 'PDF' | 'EXCEL') => {
+    const selectedOutlet = outlets.find((o) => o.id === activeTabBranch);
     const branchName =
       activeTabBranch === 'all'
-        ? 'Konsolidasi_3_Outlet'
-        : activeTabBranch === 'du'
-        ? 'Dipatiukur'
-        : activeTabBranch === 'riau'
-        ? 'Riau'
-        : 'Buah_Batu';
+        ? `Konsolidasi_${outlets.length}_Outlet`
+        : (selectedOutlet ? selectedOutlet.name.replace(/\s+/g, '_') : 'Cabang');
     const dateStr = new Date().toISOString().slice(0, 10);
 
     if (format === 'EXCEL') {
@@ -282,53 +279,36 @@ export const ProfitLossPage: React.FC = () => {
             Pembukuan & Laba Rugi Eksekutif
           </h1>
           <p className="text-xs text-secondary">
-            Dimsum Intan Group (Konsolidasi Cabang Dipatiukur, Riau, & Buah Batu)
+            Dimsum Intan Group {outlets.length > 0 ? `(Konsolidasi ${outlets.length} Cabang Operasional)` : '(Konsolidasi Operasional)'}
           </p>
         </div>
 
         {/* Outlet Switcher & Export CTAs */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center bg-surface-card rounded-xl p-1 border border-border-subtle shadow-xs">
+          <div className="flex items-center bg-surface-card rounded-xl p-1 border border-border-subtle shadow-xs overflow-x-auto max-w-full">
             <button
               onClick={() => setActiveTabBranch('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
                 activeTabBranch === 'all'
                   ? 'bg-brand-espresso text-brand-gold shadow-xs'
                   : 'text-secondary hover:text-brand-espresso'
               }`}
             >
-              Semua Outlet (3)
+              Semua Outlet ({outlets.length})
             </button>
-            <button
-              onClick={() => setActiveTabBranch('du')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTabBranch === 'du'
-                  ? 'bg-brand-espresso text-brand-gold shadow-xs'
-                  : 'text-secondary hover:text-brand-espresso'
-              }`}
-            >
-              Dipatiukur
-            </button>
-            <button
-              onClick={() => setActiveTabBranch('riau')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTabBranch === 'riau'
-                  ? 'bg-brand-espresso text-brand-gold shadow-xs'
-                  : 'text-secondary hover:text-brand-espresso'
-              }`}
-            >
-              Riau
-            </button>
-            <button
-              onClick={() => setActiveTabBranch('batu')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                activeTabBranch === 'batu'
-                  ? 'bg-brand-espresso text-brand-gold shadow-xs'
-                  : 'text-secondary hover:text-brand-espresso'
-              }`}
-            >
-              Buah Batu
-            </button>
+            {outlets.map((o) => (
+              <button
+                key={o.id}
+                onClick={() => setActiveTabBranch(o.id)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                  activeTabBranch === o.id
+                    ? 'bg-brand-espresso text-brand-gold shadow-xs'
+                    : 'text-secondary hover:text-brand-espresso'
+                }`}
+              >
+                {o.name}
+              </button>
+            ))}
           </div>
 
           <button
@@ -500,7 +480,7 @@ export const ProfitLossPage: React.FC = () => {
                 </td>
               </tr>
               <tr className="text-secondary">
-                <td className="py-2 px-6">• Sewa Lapak Cabang (Dipatiukur, Riau, Buah Batu)</td>
+                <td className="py-2 px-6">• Sewa Lapak Cabang Operasional</td>
                 <td className="py-2 px-3 text-right tabular-nums">
                   Rp {totalSewa.toLocaleString('id-ID')}
                 </td>

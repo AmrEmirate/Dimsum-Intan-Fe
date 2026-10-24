@@ -353,10 +353,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setCurrentUser(updatedUser);
 
         if (u.role === 'KASIR') {
-          setSelectedOutletIdState(u.outletId || 'du');
+          setSelectedOutletIdState(u.outletId || (outlets[0]?.id ?? 'all'));
           setCurrentView('transaksi-kasir-pos');
         } else if (u.role === 'SUPERVISOR') {
-          setSelectedOutletIdState('du');
+          setSelectedOutletIdState(u.outletId || (outlets[0]?.id ?? 'all'));
           setCurrentView('dashboard-utama');
         } else {
           setSelectedOutletIdState('all');
@@ -386,6 +386,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const switchRole = async (_role: UserRole) => {
     showNotification('Silakan logout terlebih dahulu dan masuk dengan kredensial akun yang sesuai.', 'info');
   };
+
+  // Public Outlets Preload (for Login Page & Selectors)
+  useEffect(() => {
+    api.get<{ success: boolean; data: Outlet[] }>('/outlets')
+      .then((res) => {
+        if (res?.success && Array.isArray(res.data)) {
+          setOutlets(res.data);
+        }
+      })
+      .catch(() => null);
+  }, []);
 
   // Mount Effect: Authenticate & Load Data
   useEffect(() => {
