@@ -130,6 +130,7 @@ interface AppContextType {
   // Factory Invoices
   factoryInvoices: FactoryInvoice[];
   addFactoryInvoice: (invoice: Omit<FactoryInvoice, 'id' | 'invoiceNumber'>) => Promise<void>;
+  updateFactoryInvoice: (id: string, invoice: Partial<FactoryInvoice>) => Promise<boolean>;
   markInvoicePaid: (id: string, proofImageUrl?: string) => Promise<void>;
   deleteFactoryInvoice: (id: string) => Promise<boolean>;
 
@@ -946,6 +947,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return false;
   };
 
+  // Update Factory Invoice
+  const updateFactoryInvoice = async (id: string, data: Partial<FactoryInvoice>): Promise<boolean> => {
+    try {
+      const res = await api.put<{ success: boolean; message: string; data: FactoryInvoice }>(
+        `/factory-invoices/${id}`,
+        data
+      );
+      if (res.success && res.data) {
+        setFactoryInvoices((prev) => prev.map((inv) => (inv.id === id ? res.data : inv)));
+        showNotification(res.message, 'success');
+        return true;
+      }
+    } catch (error: any) {
+      showNotification(`Gagal memperbarui faktur pabrik: ${error.message}`, 'error');
+    }
+    return false;
+  };
+
   // Delete Factory Invoice
   const deleteFactoryInvoice = async (id: string): Promise<boolean> => {
     try {
@@ -1077,6 +1096,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         toggleMenuAvailability,
         factoryInvoices,
         addFactoryInvoice,
+        updateFactoryInvoice,
         markInvoicePaid,
         deleteFactoryInvoice,
         fixedExpenses,

@@ -50,9 +50,23 @@ export const MenuHppPage: React.FC = () => {
         ).toFixed(1)
       : '0';
 
-  const highestMarginItem = [...menuItems].sort(
-    (a, b) => (b.price - b.costPrice) / b.price - (a.price - a.costPrice) / a.price
-  )[0];
+  const highestMarginItem =
+    menuItems.length > 0
+      ? [...menuItems].sort(
+          (a, b) => (b.price - b.costPrice) / b.price - (a.price - a.costPrice) / a.price
+        )[0]
+      : null;
+
+  const categoryCounts = menuItems.reduce<Record<string, number>>((acc, item) => {
+    acc[item.category] = (acc[item.category] || 0) + 1;
+    return acc;
+  }, {});
+  const categorySummaryText =
+    Object.keys(categoryCounts).length > 0
+      ? Object.entries(categoryCounts)
+          .map(([cat, count]) => `${cat.charAt(0).toUpperCase() + cat.slice(1)} (${count})`)
+          .join(', ')
+      : 'Belum ada resep terdaftar';
 
   const handleOpenAdd = () => {
     if (!isOwner) {
@@ -139,7 +153,7 @@ export const MenuHppPage: React.FC = () => {
                 </span>
               </div>
               <p className="text-xs text-secondary mt-0.5">
-                Sinkronisasi ledger harga modal rantai pasok dapur pusat PT Dimsum Prima Rasa & margin jual 3 cabang
+                Sinkronisasi ledger harga modal rantai pasok dapur pusat PT Dimsum Prima Rasa & margin jual seluruh cabang
               </p>
             </div>
           </div>
@@ -207,7 +221,7 @@ export const MenuHppPage: React.FC = () => {
             <span className="text-xs text-secondary ml-1 font-semibold">Resep Terdaftar</span>
           </div>
           <span className="text-[10px] text-secondary mt-1">
-            Kukus (4), Mentai (2), Goreng (3), Minuman (3)
+            {categorySummaryText}
           </span>
         </div>
 
@@ -223,21 +237,17 @@ export const MenuHppPage: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="font-bold text-xs text-brand-espresso truncate">
-              {highestMarginItem?.name || 'Dimsum Mentai'}
+              {highestMarginItem ? highestMarginItem.name : '-'}
             </div>
             <div className="font-serif-title text-lg font-bold text-emerald-700 mt-0.5">
-              Margin{' '}
               {highestMarginItem
-                ? (
-                    ((highestMarginItem.price - highestMarginItem.costPrice) /
-                      highestMarginItem.price) *
-                    100
-                  ).toFixed(1)
-                : '54.0'}
-              %
+                ? `Margin ${(((highestMarginItem.price - highestMarginItem.costPrice) / highestMarginItem.price) * 100).toFixed(1)}%`
+                : '0%'}
             </div>
           </div>
-          <span className="text-[10px] text-secondary mt-1">Profit center utama outlet</span>
+          <span className="text-[10px] text-secondary mt-1">
+            {highestMarginItem ? 'Profit center utama outlet' : 'Belum ada data menu'}
+          </span>
         </div>
 
         {/* KPI 4: Ketersediaan Bahan */}

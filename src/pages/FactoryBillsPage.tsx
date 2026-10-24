@@ -14,6 +14,7 @@ import {
   X,
   Building2,
   Trash2,
+  Pencil,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { FactoryInvoice } from '../types';
@@ -22,6 +23,7 @@ export const FactoryBillsPage: React.FC = () => {
   const {
     factoryInvoices,
     addFactoryInvoice,
+    updateFactoryInvoice,
     markInvoicePaid,
     deleteFactoryInvoice,
     currentUser,
@@ -30,10 +32,10 @@ export const FactoryBillsPage: React.FC = () => {
     showNotification,
   } = useApp();
 
-
   const isOwner = currentUser.role === 'OWNER';
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<FactoryInvoice | null>(null);
   const [selectedInvoiceForDetail, setSelectedInvoiceForDetail] = useState<FactoryInvoice | null>(
     null
   );
@@ -44,6 +46,15 @@ export const FactoryBillsPage: React.FC = () => {
   const [formItemName, setFormItemName] = useState('Dimsum Siomay Beku (Pouch 100 pcs)');
   const [formQty, setFormQty] = useState('15');
   const [formUnitCost, setFormUnitCost] = useState('650000');
+
+  // Edit Form States
+  const [editOutletId, setEditOutletId] = useState('');
+  const [editDueDate, setEditDueDate] = useState('');
+  const [editTotalAmount, setEditTotalAmount] = useState('');
+  const [editItemName, setEditItemName] = useState('');
+  const [editQty, setEditQty] = useState('1');
+  const [editUnitCost, setEditUnitCost] = useState('0');
+  const [editStatus, setEditStatus] = useState<'LUNAS' | 'BELUM_LUNAS' | 'JATUH_TEMPO'>('BELUM_LUNAS');
 
   // Calculations
   const filteredInvoices = factoryInvoices.filter((inv) => {
@@ -100,6 +111,51 @@ export const FactoryBillsPage: React.FC = () => {
       return;
     }
     markInvoicePaid(invoice.id);
+  };
+
+  const handleOpenEdit = (inv: FactoryInvoice) => {
+    if (!isOwner) {
+      showNotification('Hanya OWNER yang berwenang mengedit faktur pabrik!', 'error');
+      return;
+    }
+    setEditingInvoice(inv);
+    setEditOutletId(inv.outletId);
+    setEditDueDate(inv.dueDate.slice(0, 10));
+    setEditTotalAmount(inv.totalAmount.toString());
+    const firstItem = inv.items[0];
+    setEditItemName(firstItem?.itemName || 'Dimsum Beku');
+    setEditQty(firstItem?.quantity ? firstItem.quantity.toString() : '1');
+    setEditUnitCost(firstItem?.unitCost ? firstItem.unitCost.toString() : inv.totalAmount.toString());
+    setEditStatus(inv.status);
+  };
+
+  const handleUpdateInvoice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingInvoice) return;
+
+    const targetOutlet = outlets.find((o) => o.id === editOutletId) || outlets[0];
+    const total = parseFloat(editTotalAmount) || 0;
+    const qty = parseInt(editQty) || 1;
+    const unitCost = parseFloat(editUnitCost) || 0;
+
+    await updateFactoryInvoice(editingInvoice.id, {
+      outletId: targetOutlet?.id || editOutletId,
+      outletName: targetOutlet?.name || editingInvoice.outletName,
+      dueDate: editDueDate,
+      totalAmount: total,
+      status: editStatus,
+      items: [
+        {
+          itemName: editItemName,
+          quantity: qty,
+          unit: 'Pouch',
+          unitCost,
+          total: qty * unitCost,
+        },
+      ],
+    });
+
+    setEditingInvoice(null);
   };
 
   const handleDeleteInvoice = async (invoice: FactoryInvoice) => {
@@ -323,6 +379,15 @@ export const FactoryBillsPage: React.FC = () => {
                       )}
                       {isOwner && (
                         <button
+                          onClick={() => handleOpenEdit(inv)}
+                          className="p-1.5 rounded-lg text-secondary hover:text-brand-espresso hover:bg-surface-container transition-colors cursor-pointer"
+                          title="Edit Faktur"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                      )}
+                      {isOwner && (
+                        <button
                           onClick={() => handleDeleteInvoice(inv)}
                           className="p-1.5 rounded-lg text-secondary hover:text-red-700 hover:bg-red-50 transition-colors cursor-pointer"
                           title="Hapus draf faktur"
@@ -501,6 +566,155 @@ export const FactoryBillsPage: React.FC = () => {
               Tutup
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Modal: Edit Faktur */}
+      {editingInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <form
+            onSubmit={handleUpdateInvoice}
+            className="w-full max-w-md bg-surface-card rounded-3xl border border-border-subtle shadow-2xl p-6 relative my-6"
+          >
+            <button
+              type="button"
+              onClick={() => setEditingInvoice(null)}
+              className="absolute top-4 right-4 p-2 rounded-full text-secondary hover:bg-surface-container cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2 py-0.5 rounded-full bg-brand-gold text-brand-espresso text-[10px] font-bold">
+                {editingInvoice.invoiceNumber}
+              </span>
+            </div>
+            <h3 className="font-serif-title font-bold text-xl text-brand-espresso">
+              Edit Faktur Tagihan Pabrik
+            </h3>
+            <p className="text-xs text-secondary mt-0.5">
+              Perbarui rincian barang, tanggal jatuh tempo, cabang tujuan, atau total tagihan.
+            </p>
+
+            <div className="mt-4 space-y-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">Outlet Tujuan Kiriman</label>
+                <select
+                  value={editOutletId}
+                  onChange={(e) => setEditOutletId(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
+                >
+                  {outlets.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-brand-espresso">Jatuh Tempo</label>
+                  <input
+                    type="date"
+                    value={editDueDate}
+                    onChange={(e) => setEditDueDate(e.target.value)}
+                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-brand-espresso">Status Faktur</label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value as any)}
+                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs font-bold text-brand-espresso focus:outline-none"
+                  >
+                    <option value="BELUM_LUNAS">BELUM LUNAS</option>
+                    <option value="LUNAS">LUNAS</option>
+                    <option value="JATUH_TEMPO">JATUH TEMPO</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">Nama Produk Batch</label>
+                <input
+                  type="text"
+                  value={editItemName}
+                  onChange={(e) => setEditItemName(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-brand-espresso">Jumlah (Pouch)</label>
+                  <input
+                    type="number"
+                    value={editQty}
+                    onChange={(e) => {
+                      const q = e.target.value;
+                      setEditQty(q);
+                      const cost = parseFloat(editUnitCost) || 0;
+                      const parsedQ = parseInt(q) || 0;
+                      if (parsedQ > 0 && cost > 0) {
+                        setEditTotalAmount((parsedQ * cost).toString());
+                      }
+                    }}
+                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-brand-espresso">Harga per Pouch (Rp)</label>
+                  <input
+                    type="number"
+                    value={editUnitCost}
+                    onChange={(e) => {
+                      const cost = e.target.value;
+                      setEditUnitCost(cost);
+                      const parsedCost = parseFloat(cost) || 0;
+                      const parsedQ = parseInt(editQty) || 0;
+                      if (parsedQ > 0 && parsedCost > 0) {
+                        setEditTotalAmount((parsedQ * parsedCost).toString());
+                      }
+                    }}
+                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">Total Tagihan (Rp)</label>
+                <input
+                  type="number"
+                  value={editTotalAmount}
+                  onChange={(e) => setEditTotalAmount(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-base font-bold text-brand-espresso focus:outline-none"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEditingInvoice(null)}
+                className="px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all cursor-pointer"
+              >
+                Simpan Perubahan
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

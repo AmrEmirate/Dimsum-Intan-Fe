@@ -228,11 +228,13 @@ export const PettyCashPage: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="font-serif-title text-2xl font-bold text-brand-espresso">
-              Rp 6.000.000
+              Rp {(outlets.length * 2000000).toLocaleString('id-ID')}
             </div>
             <div className="flex items-center justify-between mt-1 text-xs text-secondary">
-              <span>Alokasi 3 Outlet:</span>
-              <span className="text-status-lunas-text font-bold">Aktif & Aman</span>
+              <span>{outlets.length > 0 ? `Alokasi ${outlets.length} Cabang:` : 'Alokasi Cabang:'}</span>
+              <span className={outlets.length > 0 ? "text-status-lunas-text font-bold" : "text-secondary font-medium"}>
+                {outlets.length > 0 ? 'Aktif & Aman' : 'Belum Ada Cabang'}
+              </span>
             </div>
           </div>
         </div>
