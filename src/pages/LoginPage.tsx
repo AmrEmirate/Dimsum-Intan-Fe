@@ -177,24 +177,6 @@ export const LoginPage: React.FC = () => {
                 </button>
               </div>
             </form>
-
-            {/* Quick Login Helper Pill */}
-            <div className="mt-4 p-3 rounded-2xl bg-surface-container/80 border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              <div className="text-[11px] text-secondary leading-tight">
-                <span className="font-bold text-brand-espresso block mb-0.5">💡 Kredensial Akun Utama (Owner):</span>
-                <span>Username: <strong className="text-brand-espresso">owner</strong> • Password: <strong className="text-brand-espresso">owner123</strong></span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setUsername('owner');
-                  setPassword('owner123');
-                }}
-                className="self-start sm:self-center shrink-0 px-2.5 py-1.5 rounded-xl bg-brand-espresso hover:bg-brand-espresso-muted text-brand-gold text-[10px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
-              >
-                Isi Otomatis
-              </button>
-            </div>
           </div>
 
           {/* Security Notice Footer */}
