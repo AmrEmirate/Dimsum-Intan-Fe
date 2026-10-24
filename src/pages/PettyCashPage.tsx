@@ -14,6 +14,7 @@ import {
   Upload,
   Camera,
   Edit2,
+  Pencil,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { PettyCashCategory, PettyCashExpense } from '../types';
@@ -39,6 +40,23 @@ export const PettyCashPage: React.FC = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [previewReceiptImage, setPreviewReceiptImage] = useState<string | null>(null);
+
+  // SOP Guardrail States (Persisted in localStorage)
+  const [maxLimitPerNote, setMaxLimitPerNote] = useState<number>(() => {
+    const saved = localStorage.getItem('dimsum_petty_cash_max_limit');
+    return saved ? parseInt(saved) || 150000 : 150000;
+  });
+  const [sopNote, setSopNote] = useState<string>(() => {
+    return (
+      localStorage.getItem('dimsum_petty_cash_sop_note') ||
+      'SOP Audit: Wajib foto struk nota fisik'
+    );
+  });
+
+  // Modal edit state for Limit SOP
+  const [isEditLimitModalOpen, setIsEditLimitModalOpen] = useState(false);
+  const [tempMaxLimit, setTempMaxLimit] = useState<string>(maxLimitPerNote.toString());
+  const [tempSopNote, setTempSopNote] = useState<string>(sopNote);
 
   const [formAmount, setFormAmount] = useState('');
   const [formCategory, setFormCategory] = useState<PettyCashCategory>('ES_BATU');
@@ -87,8 +105,11 @@ export const PettyCashPage: React.FC = () => {
       showNotification('Nominal kas kecil tidak valid!', 'error');
       return;
     }
-    if (amt > 150000) {
-      showNotification('Batas SOP: Pengeluaran darurat maksimal Rp 150.000 per nota!', 'error');
+    if (amt > maxLimitPerNote) {
+      showNotification(
+        `Batas SOP: Pengeluaran darurat maksimal Rp ${maxLimitPerNote.toLocaleString('id-ID')} per nota!`,
+        'error'
+      );
       return;
     }
 
@@ -126,9 +147,9 @@ export const PettyCashPage: React.FC = () => {
       return;
     }
 
-    if (amount > 150000) {
+    if (amount > maxLimitPerNote) {
       showNotification(
-        'Batas SOP: Pengeluaran darurat laci kasir maksimal Rp 150.000 per nota!',
+        `Batas SOP: Pengeluaran darurat laci kasir maksimal Rp ${maxLimitPerNote.toLocaleString('id-ID')} per nota!`,
         'error'
       );
       return;
@@ -168,6 +189,41 @@ export const PettyCashPage: React.FC = () => {
         setItemToDelete(null);
       }
     }
+  };
+
+  const handleOpenEditLimit = () => {
+    if (!isSupervisorOrOwner) {
+      showNotification(
+        'Hanya SUPERVISOR atau OWNER yang berwenang mengubah batas SOP kas kecil!',
+        'error'
+      );
+      return;
+    }
+    setTempMaxLimit(maxLimitPerNote.toString());
+    setTempSopNote(sopNote);
+    setIsEditLimitModalOpen(true);
+  };
+
+  const handleSaveLimitSop = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isSupervisorOrOwner) {
+      showNotification(
+        'Hanya SUPERVISOR atau OWNER yang berwenang mengubah batas SOP kas kecil!',
+        'error'
+      );
+      return;
+    }
+    const parsed = parseInt(tempMaxLimit);
+    if (!parsed || parsed <= 0) {
+      showNotification('Batas nominal harus lebih besar dari 0!', 'error');
+      return;
+    }
+    setMaxLimitPerNote(parsed);
+    setSopNote(tempSopNote);
+    localStorage.setItem('dimsum_petty_cash_max_limit', parsed.toString());
+    localStorage.setItem('dimsum_petty_cash_sop_note', tempSopNote);
+    setIsEditLimitModalOpen(false);
+    showNotification('Aturan batas maks per nota kas kecil berhasil diperbarui!', 'success');
   };
 
   return (
@@ -280,22 +336,45 @@ export const PettyCashPage: React.FC = () => {
         </div>
 
         {/* Card 4: SOP Guardrail Rule */}
-        <div className="bg-surface-card rounded-2xl p-4 border border-border-subtle shadow-xs flex flex-col justify-between">
+        <div className="bg-surface-card rounded-2xl p-4 border border-border-subtle shadow-xs flex flex-col justify-between relative group">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
               Batas Maks per Nota
             </span>
-            <div className="w-8 h-8 rounded-xl bg-red-100 flex items-center justify-center text-red-700">
-              <AlertTriangle className="w-4 h-4" />
+            <div className="flex items-center gap-1.5">
+              {isSupervisorOrOwner && (
+                <button
+                  type="button"
+                  onClick={handleOpenEditLimit}
+                  title="Edit Batas Maks per Nota"
+                  className="w-7 h-7 rounded-lg bg-surface-container hover:bg-brand-gold/20 text-brand-espresso flex items-center justify-center transition-all cursor-pointer border border-border-subtle hover:border-brand-gold"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-brand-espresso" />
+                </button>
+              )}
+              <div className="w-8 h-8 rounded-xl bg-red-100 flex items-center justify-center text-red-700">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
             </div>
           </div>
           <div className="mt-3">
             <div className="font-serif-title text-2xl font-bold text-red-600">
-              Rp 150.000
+              Rp {maxLimitPerNote.toLocaleString('id-ID')}
             </div>
-            <span className="text-[10px] text-secondary mt-1">
-              SOP Audit: Wajib foto struk nota fisik
-            </span>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-[10px] text-secondary">
+                {sopNote}
+              </span>
+              {isSupervisorOrOwner && (
+                <button
+                  type="button"
+                  onClick={handleOpenEditLimit}
+                  className="text-[10px] font-semibold text-brand-gold-hover hover:underline cursor-pointer ml-2 whitespace-nowrap"
+                >
+                  Ubah
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -556,14 +635,14 @@ export const PettyCashPage: React.FC = () => {
             <div className="mt-4 space-y-3">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-brand-espresso">
-                  Nominal Pengeluaran (Rp) - Maks Rp 150.000
+                  Nominal Pengeluaran (Rp) - Maks Rp {maxLimitPerNote.toLocaleString('id-ID')}
                 </label>
                 <input
                   type="number"
                   value={formAmount}
                   onChange={(e) => setFormAmount(e.target.value)}
                   placeholder="Contoh: 35000"
-                  max={150000}
+                  max={maxLimitPerNote}
                   className="w-full p-2.5 rounded-xl bg-surface-container text-base font-bold text-brand-espresso focus:outline-none"
                   required
                 />
@@ -768,7 +847,9 @@ export const PettyCashPage: React.FC = () => {
                   className="w-full p-2.5 rounded-xl bg-surface-container text-base font-bold text-brand-espresso focus:outline-none"
                   required
                 />
-                <span className="text-[10px] text-secondary">Batas maksimal SOP: Rp 150.000 / nota</span>
+                <span className="text-[10px] text-secondary">
+                  Batas maksimal SOP: Rp {maxLimitPerNote.toLocaleString('id-ID')} / nota
+                </span>
               </div>
 
               <div className="flex flex-col gap-1">
@@ -828,6 +909,89 @@ export const PettyCashPage: React.FC = () => {
           setItemToDelete(null);
         }}
       />
+
+      {/* Modal: Edit Batas SOP Kas Kecil */}
+      {isEditLimitModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <form
+            onSubmit={handleSaveLimitSop}
+            className="w-full max-w-md bg-surface-card rounded-3xl border border-border-subtle shadow-2xl p-6 text-brand-espresso"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center text-red-700">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-serif-title text-base font-bold text-brand-espresso">
+                    Edit Batas Maks per Nota
+                  </h3>
+                  <p className="text-[11px] text-secondary">
+                    Aturan SOP pengeluaran darurat laci kasir
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditLimitModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-elevated flex items-center justify-center text-secondary hover:text-brand-espresso transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3.5">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">
+                  Batas Maksimal Pengeluaran per Nota (Rp)
+                </label>
+                <input
+                  type="number"
+                  value={tempMaxLimit}
+                  onChange={(e) => setTempMaxLimit(e.target.value)}
+                  placeholder="Contoh: 150000"
+                  min={1000}
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-sm font-bold text-brand-espresso border border-transparent focus:border-brand-gold focus:outline-none"
+                  required
+                />
+                <span className="text-[10px] text-secondary">
+                  Nominal ini membatasi pengeluaran kasir saat input kas kecil.
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">
+                  Instruksi / Catatan SOP Audit
+                </label>
+                <input
+                  type="text"
+                  value={tempSopNote}
+                  onChange={(e) => setTempSopNote(e.target.value)}
+                  placeholder="Contoh: SOP Audit: Wajib foto struk nota fisik"
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso border border-transparent focus:border-brand-gold focus:outline-none"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEditLimitModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-container transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all cursor-pointer"
+              >
+                Simpan Perubahan
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };

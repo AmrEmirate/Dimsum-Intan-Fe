@@ -708,6 +708,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     try {
       let res: { success: boolean; message: string; data: PettyCashExpense };
+      const savedMaxLimit = localStorage.getItem('dimsum_petty_cash_max_limit') || '150000';
       if (typeof File !== 'undefined' && receiptImage instanceof File) {
         const formData = new FormData();
         formData.append('outletId', targetOutletId);
@@ -715,6 +716,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         formData.append('category', category);
         formData.append('description', description);
         formData.append('receipt', receiptImage);
+        formData.append('maxLimit', savedMaxLimit);
         res = await api.postForm<{ success: boolean; message: string; data: PettyCashExpense }>(
           '/petty-cash',
           formData
@@ -728,6 +730,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             category,
             description,
             receiptImageUrl: typeof receiptImage === 'string' ? receiptImage : undefined,
+            maxLimit: savedMaxLimit,
           }
         );
       }
@@ -930,9 +933,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     description: string
   ): Promise<boolean> => {
     try {
+      const savedMaxLimit = localStorage.getItem('dimsum_petty_cash_max_limit') || '150000';
       const res = await api.put<{ success: boolean; message: string; data: PettyCashExpense }>(
         `/petty-cash/${id}`,
-        { amount, category, description }
+        { amount, category, description, maxLimit: savedMaxLimit }
       );
 
       if (res.success && res.data) {
