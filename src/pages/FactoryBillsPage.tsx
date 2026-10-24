@@ -224,7 +224,7 @@ export const FactoryBillsPage: React.FC = () => {
               Rp {totalMonthlyBills.toLocaleString('id-ID')}
             </div>
             <div className="text-[11px] text-secondary mt-1">
-              {filteredInvoices.length} Pengiriman • 3 Cabang
+              {filteredInvoices.length} Pengiriman • {outlets.length} Cabang
             </div>
           </div>
           <div className="w-full bg-surface-container rounded-full h-1.5 mt-2 overflow-hidden">
@@ -304,7 +304,109 @@ export const FactoryBillsPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Factory Bills Card List (< md screen) */}
+        <div className="md:hidden divide-y divide-border-subtle p-3">
+          {filteredInvoices.length === 0 ? (
+            <div className="py-8 text-center text-secondary text-xs">
+              Belum ada faktur kiriman pabrik tercatat.
+            </div>
+          ) : (
+            filteredInvoices.map((inv) => {
+              const isLunas = inv.status === 'LUNAS';
+              return (
+                <div key={inv.id} className="py-3.5 flex flex-col gap-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="font-bold text-xs text-brand-espresso">
+                        {inv.invoiceNumber}
+                      </span>
+                      <div className="text-[10px] text-secondary">
+                        Terbit: {new Date(inv.issueDate).toLocaleDateString('id-ID')} • {inv.outletName}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-serif-title font-bold text-sm text-brand-espresso tabular-nums">
+                        Rp {inv.totalAmount.toLocaleString('id-ID')}
+                      </div>
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                          isLunas
+                            ? 'bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border'
+                            : 'bg-status-unpaid-bg text-status-unpaid-text border border-status-unpaid-border'
+                        }`}
+                      >
+                        {isLunas ? 'LUNAS' : 'BELUM LUNAS'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Batch Summary */}
+                  <div className="bg-surface-container-low p-2 rounded-xl text-xs flex flex-col gap-1">
+                    <div className="text-secondary truncate">
+                      {inv.items.map((i) => `${i.quantity}x ${i.itemName}`).join(', ')}
+                    </div>
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="text-secondary">
+                        Jatuh Tempo: <strong>{new Date(inv.dueDate).toLocaleDateString('id-ID')}</strong>
+                      </span>
+                      <button
+                        onClick={() => setSelectedInvoiceForDetail(inv)}
+                        className="text-primary hover:underline font-bold"
+                      >
+                        Rincian ({inv.items.length} item) &rarr;
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div>
+                      {isLunas ? (
+                        <span className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" /> Terbayar
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-amber-700 font-bold">Harap Segera Dibayar</span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      {!isLunas && isOwner && (
+                        <button
+                          onClick={() => handlePay(inv)}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs active:scale-95 transition-all"
+                        >
+                          Lunasi
+                        </button>
+                      )}
+                      {isOwner && (
+                        <button
+                          onClick={() => handleOpenEdit(inv)}
+                          className="p-1.5 rounded-xl bg-surface-container text-secondary hover:text-brand-espresso"
+                          title="Edit Faktur"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {isOwner && (
+                        <button
+                          onClick={() => handleDeleteInvoice(inv)}
+                          className="p-1.5 rounded-xl bg-surface-container text-secondary hover:text-red-600"
+                          title="Hapus"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Tablet & Desktop View: Full Table (md+ screen) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low border-b border-border-subtle text-[11px] font-bold uppercase tracking-wider text-secondary">

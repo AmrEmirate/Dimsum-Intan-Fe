@@ -126,7 +126,7 @@ export const ProfitLossPage: React.FC = () => {
         [],
         ['2. BEBAN OPERASIONAL (OPEX)', '', ''],
         ['Kas Kecil Darurat (Petty Cash)', -totalPettyCash, 'Es batu, galon, plastik'],
-        ['Beban Sewa Lapak', -totalSewa, 'Sewa tempat 3 cabang'],
+        ['Beban Sewa Lapak', -totalSewa, `Sewa tempat ${outlets.length} cabang`],
         ['Payroll Gaji Karyawan', -totalGaji, 'Gaji seluruh tim operasional'],
         ['Utilitas (Listrik, Air, POS)', -totalUtilitas, 'PLN, PDAM, Internet'],
         ['TOTAL BEBAN OPERASIONAL', -totalOpex, 'Seluruh pengeluaran operasional'],
@@ -332,7 +332,7 @@ export const ProfitLossPage: React.FC = () => {
       {exportNotice && (
         <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-2xl text-emerald-800 text-xs font-semibold flex items-center justify-between">
           <span>
-            Berkas Laporan Laba Rugi Dimsum Intan ({exportNotice}) berhasil diproses untuk 3 cabang.
+            Berkas Laporan Laba Rugi Dimsum Intan ({exportNotice}) berhasil diproses untuk {outlets.length} cabang.
           </span>
           <span className="font-bold underline cursor-pointer">Download File</span>
         </div>
@@ -398,7 +398,7 @@ export const ProfitLossPage: React.FC = () => {
         </div>
 
         <div className="p-4 overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full text-left border-collapse text-xs min-w-[550px]">
             <thead>
               <tr className="border-b-2 border-border-strong text-secondary text-[11px] font-bold uppercase">
                 <th className="py-2.5 px-3">Uraian Akun Finansial</th>

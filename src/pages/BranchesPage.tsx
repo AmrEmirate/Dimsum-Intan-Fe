@@ -344,11 +344,11 @@ export const BranchesPage: React.FC = () => {
       {/* Tabs & Search Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border-subtle pb-4">
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-surface-container rounded-2xl border border-border-subtle overflow-x-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-surface-container rounded-2xl border border-border-subtle overflow-x-auto no-scrollbar max-w-full">
           <button
             type="button"
             onClick={() => setActiveTab('outlets')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+            className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
               activeTab === 'outlets'
                 ? 'bg-surface-card text-brand-espresso shadow-xs'
                 : 'text-secondary hover:text-brand-espresso'
@@ -361,7 +361,7 @@ export const BranchesPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('staff')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+            className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
               activeTab === 'staff'
                 ? 'bg-surface-card text-brand-espresso shadow-xs'
                 : 'text-secondary hover:text-brand-espresso'
@@ -374,7 +374,7 @@ export const BranchesPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('guide')}
-            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
+            className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-2 ${
               activeTab === 'guide'
                 ? 'bg-surface-card text-brand-espresso shadow-xs'
                 : 'text-secondary hover:text-brand-espresso'
@@ -567,8 +567,60 @@ export const BranchesPage: React.FC = () => {
               )}
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            {/* Mobile View: Staff Card List (< md screen) */}
+            <div className="md:hidden divide-y divide-border-subtle p-3">
+              {filteredStaff.length === 0 ? (
+                <div className="text-center py-8 text-xs text-secondary">
+                  Tidak ada staf yang cocok dengan pencarian.
+                </div>
+              ) : (
+                filteredStaff.map((staff) => (
+                  <div key={staff.id} className="py-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-brand-espresso text-brand-gold font-bold text-xs flex items-center justify-center shrink-0">
+                        {staff.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-xs text-brand-espresso">{staff.name}</span>
+                        <span className="text-[10px] font-mono text-secondary">@{staff.username || '-'}</span>
+                        <span className="text-[10px] text-secondary mt-0.5">
+                          {staff.outletName || (staff.role === 'OWNER' ? 'Seluruh Cabang' : 'Supervisor Area')}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                          staff.role === 'OWNER'
+                            ? 'bg-brand-espresso text-brand-gold'
+                            : staff.role === 'SUPERVISOR'
+                            ? 'bg-brand-terracotta text-white'
+                            : 'bg-surface-container text-brand-espresso border border-border-subtle'
+                        }`}
+                      >
+                        {staff.role}
+                      </span>
+
+                      {isOwner && staff.id !== currentUser.id && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteStaff(staff.id, staff.name)}
+                          className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
+                          title="Hapus Akun Staf"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Tablet & Desktop View: Table (md+ screen) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-[550px]">
                 <thead>
                   <tr className="bg-surface-container border-b border-border-subtle text-[11px] font-bold uppercase tracking-wider text-secondary">
                     <th className="py-3 px-5">Nama Staf</th>

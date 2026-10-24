@@ -58,7 +58,9 @@ export const DashboardPage: React.FC = () => {
     .reduce((sum, o) => sum + o.hppTotal, 0);
 
   const grossProfit = totalOmzet - totalHpp;
-  const grossMargin = totalOmzet > 0 ? ((grossProfit / totalOmzet) * 100).toFixed(1) : '54.2';
+  const grossMargin = totalOmzet > 0 ? ((grossProfit / totalOmzet) * 100).toFixed(1) : '0';
+
+  const totalTargetDailySales = outlets.reduce((sum, o) => sum + (Number(o.targetDailySales) || 0), 0);
 
   // Fixed & Factory opex for estimate
   const totalPettyCash = pettyCashList
@@ -106,7 +108,7 @@ export const DashboardPage: React.FC = () => {
               Ringkasan Eksekutif Dimsum Intan
             </h1>
             <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-surface-container text-xs text-secondary font-bold">
-              3 Outlet Terhubung
+              {outlets.length} Outlet Terhubung
             </span>
           </div>
         </div>
@@ -161,9 +163,9 @@ export const DashboardPage: React.FC = () => {
             <span className="text-[11px] text-secondary">vs rata-rata harian</span>
           </div>
           <div className="mt-3 pt-2 border-t border-border-subtle flex justify-between items-center text-xs text-secondary">
-            <span>Target 3 Cabang: Rp 22 Jt</span>
+            <span>Target {outlets.length > 0 ? `${outlets.length} Cabang` : 'Harian'}: Rp {totalTargetDailySales > 0 ? `${(totalTargetDailySales / 1000000).toFixed(1)} Jt` : '0 Jt'}</span>
             <span className="font-bold text-brand-espresso">
-              {((totalOmzet / 22000000) * 100).toFixed(1)}%
+              {totalTargetDailySales > 0 ? ((totalOmzet / totalTargetDailySales) * 100).toFixed(1) : '0'}%
             </span>
           </div>
         </div>
@@ -191,7 +193,9 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div className="mt-3 pt-2 border-t border-border-subtle flex justify-between items-center text-xs text-secondary">
             <span>HPP Rata-rata</span>
-            <span className="font-bold text-brand-espresso">45.8% (Optimal)</span>
+            <span className="font-bold text-brand-espresso">
+              {totalOmzet > 0 ? `${((totalHpp / totalOmzet) * 100).toFixed(1)}%` : '0%'}
+            </span>
           </div>
         </div>
 
@@ -259,17 +263,22 @@ export const DashboardPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <Store className="w-5 h-5 text-primary" />
             <h2 className="font-serif-title text-lg font-bold text-brand-espresso">
-              Status 3 Cabang Operasional
+              Status Cabang Operasional ({outlets.length})
             </h2>
           </div>
           <span className="text-xs text-secondary">Sinkronisasi Cloud Realtime</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {outlets.map((outlet) => {
-            const outletOrders = orders.filter((o) => o.outletId === outlet.id && o.status === 'PAID');
-            const outletOmzet = outletOrders.reduce((sum, o) => sum + o.total, 0);
-            const progress = Math.min(100, Math.round((outletOmzet / outlet.targetDailySales) * 100));
+        {outlets.length === 0 ? (
+          <div className="py-8 text-center text-xs text-secondary bg-surface-container-low rounded-xl">
+            Belum ada cabang terdaftar. Tambahkan cabang baru di menu Master Cabang.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {outlets.map((outlet) => {
+              const outletOrders = orders.filter((o) => o.outletId === outlet.id && o.status === 'PAID');
+              const outletOmzet = outletOrders.reduce((sum, o) => sum + o.total, 0);
+              const progress = Math.min(100, Math.round((outletOmzet / (outlet.targetDailySales || 1)) * 100));
 
             return (
               <div
@@ -309,6 +318,7 @@ export const DashboardPage: React.FC = () => {
             );
           })}
         </div>
+        )}
       </div>
 
       {/* Live Recent Transactions Ledger Table */}

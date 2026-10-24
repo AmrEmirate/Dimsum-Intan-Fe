@@ -203,7 +203,7 @@ export const FixedExpensesPage: React.FC = () => {
         <div className="p-4 rounded-2xl bg-surface-card border border-border-subtle shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
-              Sewa Lapak (3 Cabang)
+              Sewa Lapak ({outlets.length > 0 ? `${outlets.length} Cabang` : 'Cabang'})
             </span>
             <div className="w-8 h-8 rounded-xl bg-surface-container flex items-center justify-center text-primary">
               <Building className="w-4 h-4" />
@@ -234,7 +234,7 @@ export const FixedExpensesPage: React.FC = () => {
               Rp {totalPayroll.toLocaleString('id-ID')}
             </div>
             <span className="text-[10px] text-secondary mt-1">
-              12 Orang (Kasir & Kru Dapur 3 Outlet)
+              Kru Dapur & Kasir ({outlets.length} Outlet)
             </span>
           </div>
         </div>
@@ -276,7 +276,86 @@ export const FixedExpensesPage: React.FC = () => {
           </span>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile View: Fixed Expenses Card List (< md screen) */}
+        <div className="md:hidden divide-y divide-border-subtle p-3">
+          {filteredExpenses.length === 0 ? (
+            <div className="py-8 text-center text-secondary text-xs">
+              Belum ada pos beban operasional tetap.
+            </div>
+          ) : (
+            filteredExpenses.map((expense) => {
+              const isLunas = expense.status === 'LUNAS';
+              return (
+                <div key={expense.id} className="py-3.5 flex flex-col gap-2">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <span className="font-bold text-xs text-brand-espresso">
+                        {expense.title}
+                      </span>
+                      <div className="text-[10px] text-secondary">
+                        {expense.code} • {expense.outletName}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-serif-title font-bold text-sm text-brand-espresso tabular-nums">
+                        Rp {expense.amount.toLocaleString('id-ID')}
+                      </div>
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                          isLunas
+                            ? 'bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border'
+                            : 'bg-status-pending-bg text-status-pending-text border border-status-pending-border'
+                        }`}
+                      >
+                        {isLunas ? 'LUNAS' : 'TERJADWAL'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-secondary bg-surface-container-low p-2 rounded-xl">
+                    <span className="font-medium">
+                      Jatuh Tempo: <strong>{new Date(expense.dueDate).toLocaleDateString('id-ID')}</strong>
+                    </span>
+                    <span className="text-[10px] font-bold text-brand-espresso">
+                      {expense.autoDebet ? '⚡ Autodebet' : 'Manual Transfer'}
+                    </span>
+                  </div>
+
+                  {isOwner && (
+                    <div className="flex items-center justify-between pt-1">
+                      <button
+                        onClick={() => toggleFixedExpenseStatus(expense.id)}
+                        className="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-bold text-brand-espresso active:scale-95 transition-all"
+                      >
+                        {isLunas ? 'Tandai Terjadwal' : 'Tandai Lunas'}
+                      </button>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleOpenEdit(expense)}
+                          className="p-1.5 rounded-xl bg-surface-container text-secondary hover:text-brand-espresso"
+                          title="Edit Beban"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteExpense(expense)}
+                          className="p-1.5 rounded-xl bg-surface-container text-secondary hover:text-red-600"
+                          title="Hapus"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Tablet & Desktop View: Table (md+ screen) */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-surface-container-low border-b border-border-subtle text-[11px] font-bold uppercase tracking-wider text-secondary">

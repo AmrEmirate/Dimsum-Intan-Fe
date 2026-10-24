@@ -93,23 +93,23 @@ export const Header: React.FC = () => {
 
   return (
     <>
-      <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/90 backdrop-blur-md border-b border-border-subtle z-40 flex items-center justify-between px-3 sm:px-6 shadow-xs select-none">
+      <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/90 backdrop-blur-md border-b border-border-subtle z-40 flex items-center justify-between px-2.5 sm:px-6 shadow-xs select-none">
         {/* Left items: Mobile hamburger & Active shift status & Network status */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
           {/* Hamburger toggle button for Mobile/Tablet */}
           <button
             type="button"
             onClick={() => setIsSidebarOpen(true)}
-            className="lg:hidden p-2 rounded-xl text-brand-espresso hover:bg-surface-container active:scale-95 transition-all cursor-pointer"
+            className="lg:hidden p-2 rounded-xl text-brand-espresso hover:bg-surface-container active:scale-95 transition-all cursor-pointer shrink-0"
             title="Buka Menu Navigasi"
           >
             <Menu className="w-5 h-5" />
           </button>
 
           {/* Shift status pill */}
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-surface-container-high px-2.5 sm:px-3 py-1.5 rounded-full border border-border-subtle">
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-surface-container-high px-2 sm:px-3 py-1.5 rounded-full border border-border-subtle shrink-0">
             <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-            <span className="text-[11px] sm:text-xs font-bold text-brand-espresso tracking-tight whitespace-nowrap truncate max-w-[90px] sm:max-w-none">
+            <span className="text-[10px] sm:text-xs font-bold text-brand-espresso tracking-tight whitespace-nowrap truncate max-w-[80px] sm:max-w-none">
               {activeShift?.status === 'ACTIVE' ? (
                 <>
                   <span>{activeShift.shiftName}</span>
@@ -126,7 +126,7 @@ export const Header: React.FC = () => {
 
           {/* Network Connection Indicator - Compact icon on mobile, full pill on sm+ */}
           <div
-            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-[10px] font-bold border shrink-0 ${
               isOnline
                 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                 : 'bg-red-50 text-red-700 border-red-200 animate-pulse'
@@ -134,7 +134,7 @@ export const Header: React.FC = () => {
             title={isOnline ? 'Jaringan Online & Terhubung' : 'Koneksi Internet Terputus!'}
           >
             {isOnline ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
-            <span className="hidden xs:inline">{isOnline ? 'Online' : 'Offline'}</span>
+            <span className="hidden sm:inline">{isOnline ? 'Online' : 'Offline'}</span>
           </div>
 
           {/* WhatsApp Bot Status Button - Compact icon on mobile, full pill on sm+ */}
@@ -144,7 +144,7 @@ export const Header: React.FC = () => {
               fetchWhatsAppStatus();
               setIsWaModalOpen(true);
             }}
-            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer shrink-0 ${
               whatsappStatus?.isReady
                 ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
                 : whatsappStatus?.hasQr
@@ -166,10 +166,10 @@ export const Header: React.FC = () => {
         </div>
 
         {/* Right items: Notifications & Interactive Role Switcher */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Notification Bell */}
           <button
-            className="relative p-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-brand-espresso transition-colors cursor-pointer"
+            className="relative p-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-brand-espresso transition-colors cursor-pointer shrink-0"
             title="Notifikasi Operasional"
           >
             <Bell className="w-5 h-5" />
@@ -177,7 +177,7 @@ export const Header: React.FC = () => {
           </button>
 
           {/* Interactive Role Switcher Pill */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               id="btn-user-profile"
               type="button"

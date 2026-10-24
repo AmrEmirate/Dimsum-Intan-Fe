@@ -104,9 +104,9 @@ export const PettyCashPage: React.FC = () => {
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
 
 
-  // RBAC Filter: Kasir can only see their own outlet (Dipatiukur)
+  // RBAC Filter: Kasir can only see their own assigned outlet
   const filteredList = pettyCashList.filter((item) => {
-    if (isKasir) return item.outletId === 'du';
+    if (isKasir && currentUser.outletId) return item.outletId === currentUser.outletId;
     if (selectedOutletId === 'all') return true;
     return item.outletId === selectedOutletId;
   });
@@ -692,7 +692,9 @@ export const PettyCashPage: React.FC = () => {
             <div className="my-4 p-4 rounded-xl bg-surface-container-low space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-secondary">Plafon Sekarang:</span>
-                <span className="font-bold text-brand-espresso">Rp 6.000.000</span>
+                <span className="font-bold text-brand-espresso">
+                  Rp {(outlets.length * 2000000).toLocaleString('id-ID')}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-secondary">Rekomendasi Top-Up:</span>
