@@ -247,21 +247,32 @@ export const PettyCashPage: React.FC = () => {
               Manajemen Kas Kecil Outlet <span className="text-brand-gold italic">(Petty Cash)</span>
             </h1>
             <p className="text-xs text-white/70 mt-1 leading-relaxed">
-              Pencatatan real-time pengeluaran tak terduga laci kasir untuk es batu, galon air, kantong plastik. Batas transaksi darurat maks. Rp 150.000/nota dengan bukti struk fisik sah.
+              Pencatatan real-time pengeluaran tak terduga laci kasir untuk es batu, galon air, kantong plastik. Batas transaksi darurat maks. Rp {maxLimitPerNote.toLocaleString('id-ID')}/nota dengan bukti struk fisik sah.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 self-stretch xl:self-auto">
+            {isSupervisorOrOwner && (
+              <button
+                type="button"
+                onClick={handleOpenEditLimit}
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-colors border border-white/15 cursor-pointer shadow-xs"
+                title="Atur Batas Maksimal Pengeluaran Kas Kecil"
+              >
+                <Pencil className="w-3.5 h-3.5 text-brand-gold" />
+                <span>Atur Batas SOP</span>
+              </button>
+            )}
             <button
               onClick={() => setIsTopUpModalOpen(true)}
-              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-colors border border-white/10"
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-colors border border-white/10 cursor-pointer"
             >
               <Wallet className="w-4 h-4 text-brand-gold" />
               <span>Ajukan Top-Up Plafon</span>
             </button>
             <button
               onClick={() => setIsFormModalOpen(true)}
-              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all active:scale-95"
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
               <span>+ Catat Pengeluaran Baru</span>
@@ -336,20 +347,38 @@ export const PettyCashPage: React.FC = () => {
         </div>
 
         {/* Card 4: SOP Guardrail Rule */}
-        <div className="bg-surface-card rounded-2xl p-4 border border-border-subtle shadow-xs flex flex-col justify-between relative group">
+        <div
+          onClick={isSupervisorOrOwner ? handleOpenEditLimit : undefined}
+          className={`bg-surface-card rounded-2xl p-4 border border-border-subtle shadow-xs flex flex-col justify-between relative group ${
+            isSupervisorOrOwner
+              ? 'cursor-pointer hover:border-brand-gold/60 hover:shadow-md transition-all'
+              : ''
+          }`}
+        >
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
-              Batas Maks per Nota
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
+                Batas Maks per Nota
+              </span>
+              {isSupervisorOrOwner && (
+                <span className="text-[9px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded-md border border-amber-200">
+                  Bisa Diedit
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-1.5">
               {isSupervisorOrOwner && (
                 <button
                   type="button"
-                  onClick={handleOpenEditLimit}
-                  title="Edit Batas Maks per Nota"
-                  className="w-7 h-7 rounded-lg bg-surface-container hover:bg-brand-gold/20 text-brand-espresso flex items-center justify-center transition-all cursor-pointer border border-border-subtle hover:border-brand-gold"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenEditLimit();
+                  }}
+                  title="Klik untuk Edit Batas Maksimal"
+                  className="px-2.5 py-1 rounded-lg bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer shadow-xs"
                 >
-                  <Pencil className="w-3.5 h-3.5 text-brand-espresso" />
+                  <Pencil className="w-3 h-3 text-brand-espresso" />
+                  <span>Edit</span>
                 </button>
               )}
               <div className="w-8 h-8 rounded-xl bg-red-100 flex items-center justify-center text-red-700">
@@ -366,13 +395,9 @@ export const PettyCashPage: React.FC = () => {
                 {sopNote}
               </span>
               {isSupervisorOrOwner && (
-                <button
-                  type="button"
-                  onClick={handleOpenEditLimit}
-                  className="text-[10px] font-semibold text-brand-gold-hover hover:underline cursor-pointer ml-2 whitespace-nowrap"
-                >
-                  Ubah
-                </button>
+                <span className="text-[10px] font-bold text-amber-700 hover:text-amber-800 underline ml-2 whitespace-nowrap">
+                  Klik untuk ubah →
+                </span>
               )}
             </div>
           </div>
