@@ -47,6 +47,23 @@ export const FactoryBillsPage: React.FC = () => {
   const [formQty, setFormQty] = useState('15');
   const [formUnitCost, setFormUnitCost] = useState('650000');
 
+  // Supplier Profile States (Persisted in localStorage)
+  const [supplierBank, setSupplierBank] = useState<string>(
+    () => localStorage.getItem('dimsum_supplier_bank') || 'BCA 7788-990-112'
+  );
+  const [supplierName, setSupplierName] = useState<string>(
+    () => localStorage.getItem('dimsum_supplier_name') || 'PT Dimsum Prima Rasa'
+  );
+  const [supplierStatus, setSupplierStatus] = useState<string>(
+    () => localStorage.getItem('dimsum_supplier_status') || 'Lancar'
+  );
+
+  // Edit Supplier Profile Modal States
+  const [isEditSupplierModalOpen, setIsEditSupplierModalOpen] = useState(false);
+  const [tempSupplierBank, setTempSupplierBank] = useState(supplierBank);
+  const [tempSupplierName, setTempSupplierName] = useState(supplierName);
+  const [tempSupplierStatus, setTempSupplierStatus] = useState(supplierStatus);
+
   // Edit Form States
   const [editOutletId, setEditOutletId] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
@@ -83,14 +100,14 @@ export const FactoryBillsPage: React.FC = () => {
     const unitCost = parseFloat(formUnitCost) || 0;
 
     addFactoryInvoice({
-      supplierName: 'PT Dimsum Prima Rasa (Pusat)',
+      supplierName: `${supplierName} (Pusat)`,
       outletId: targetOutlet?.id || (outlets[0]?.id ?? ''),
       outletName: targetOutlet?.name || (outlets[0]?.name ?? 'Pusat / Operasional'),
       issueDate: new Date().toISOString().slice(0, 10),
       dueDate: formDueDate,
       totalAmount: total,
       status: 'BELUM_LUNAS',
-      bankAccount: 'BCA 7788-990-112 a.n PT Dimsum Prima Rasa',
+      bankAccount: `${supplierBank} a.n ${supplierName}`,
       items: [
         {
           itemName: formItemName,
@@ -103,6 +120,33 @@ export const FactoryBillsPage: React.FC = () => {
     });
 
     setIsAddModalOpen(false);
+  };
+
+  const handleOpenEditSupplier = () => {
+    if (!isOwner) {
+      showNotification('Hanya OWNER yang berwenang mengubah rekening suplier!', 'error');
+      return;
+    }
+    setTempSupplierBank(supplierBank);
+    setTempSupplierName(supplierName);
+    setTempSupplierStatus(supplierStatus);
+    setIsEditSupplierModalOpen(true);
+  };
+
+  const handleSaveSupplierProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isOwner) {
+      showNotification('Hanya OWNER yang berwenang mengubah rekening suplier!', 'error');
+      return;
+    }
+    setSupplierBank(tempSupplierBank);
+    setSupplierName(tempSupplierName);
+    setSupplierStatus(tempSupplierStatus);
+    localStorage.setItem('dimsum_supplier_bank', tempSupplierBank);
+    localStorage.setItem('dimsum_supplier_name', tempSupplierName);
+    localStorage.setItem('dimsum_supplier_status', tempSupplierStatus);
+    setIsEditSupplierModalOpen(false);
+    showNotification('Data rekening suplier pabrik berhasil diperbarui!', 'success');
   };
 
   const handlePay = (invoice: FactoryInvoice) => {
@@ -269,21 +313,52 @@ export const FactoryBillsPage: React.FC = () => {
         </div>
 
         {/* Card 4: Suplier Profile */}
-        <div className="p-4 rounded-2xl bg-surface-card border border-border-subtle shadow-xs flex flex-col justify-between">
+        <div className="p-4 rounded-2xl bg-surface-card border border-border-subtle shadow-xs flex flex-col justify-between relative group">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
               Rekening Suplier Pabrik
             </span>
-            <div className="w-8 h-8 rounded-xl bg-surface-container flex items-center justify-center text-brand-espresso">
-              <CreditCard className="w-4 h-4" />
+            <div className="flex items-center gap-1.5">
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={handleOpenEditSupplier}
+                  title="Edit Data Rekening Suplier"
+                  className="w-7 h-7 rounded-lg bg-surface-container hover:bg-brand-gold/20 text-brand-espresso flex items-center justify-center transition-all cursor-pointer border border-border-subtle hover:border-brand-gold"
+                >
+                  <Pencil className="w-3.5 h-3.5 text-brand-espresso" />
+                </button>
+              )}
+              <div className="w-8 h-8 rounded-xl bg-surface-container flex items-center justify-center text-brand-espresso">
+                <CreditCard className="w-4 h-4" />
+              </div>
             </div>
           </div>
           <div className="mt-3">
-            <div className="font-bold text-xs text-brand-espresso">BCA 7788-990-112</div>
-            <div className="text-[10px] text-secondary mt-0.5">a.n PT Dimsum Prima Rasa</div>
-            <span className="inline-block mt-2 text-[10px] font-bold text-status-lunas-text bg-status-lunas-bg px-2 py-0.5 rounded-full border border-status-lunas-border">
-              Status Suplai: Lancar
-            </span>
+            <div className="font-bold text-xs text-brand-espresso">{supplierBank}</div>
+            <div className="text-[10px] text-secondary mt-0.5">a.n {supplierName}</div>
+            <div className="flex items-center justify-between mt-2">
+              <span
+                className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  supplierStatus.toLowerCase().includes('lancar')
+                    ? 'text-status-lunas-text bg-status-lunas-bg border-status-lunas-border'
+                    : supplierStatus.toLowerCase().includes('menipis') || supplierStatus.toLowerCase().includes('tunda')
+                    ? 'text-status-tempo-text bg-status-tempo-bg border-status-tempo-border'
+                    : 'text-amber-700 bg-amber-50 border-amber-200'
+                }`}
+              >
+                Status Suplai: {supplierStatus}
+              </span>
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={handleOpenEditSupplier}
+                  className="text-[10px] font-semibold text-brand-gold-hover hover:underline cursor-pointer"
+                >
+                  Ubah
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -806,6 +881,101 @@ export const FactoryBillsPage: React.FC = () => {
                 type="button"
                 onClick={() => setEditingInvoice(null)}
                 className="px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all cursor-pointer"
+              >
+                Simpan Perubahan
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: Edit Rekening Suplier Pabrik */}
+      {isEditSupplierModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <form
+            onSubmit={handleSaveSupplierProfile}
+            className="w-full max-w-md bg-surface-card rounded-3xl border border-border-subtle shadow-2xl p-6 text-brand-espresso"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-brand-gold/20 flex items-center justify-center text-brand-espresso">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-serif-title text-base font-bold text-brand-espresso">
+                    Edit Rekening Suplier Pabrik
+                  </h3>
+                  <p className="text-[11px] text-secondary">
+                    Perbarui nomor rekening dan info suplier pabrik
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditSupplierModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-elevated flex items-center justify-center text-secondary hover:text-brand-espresso transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-3.5">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">
+                  Bank & Nomor Rekening
+                </label>
+                <input
+                  type="text"
+                  value={tempSupplierBank}
+                  onChange={(e) => setTempSupplierBank(e.target.value)}
+                  placeholder="Contoh: BCA 7788-990-112"
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso border border-transparent focus:border-brand-gold focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">
+                  Atas Nama (a.n) Rekening
+                </label>
+                <input
+                  type="text"
+                  value={tempSupplierName}
+                  onChange={(e) => setTempSupplierName(e.target.value)}
+                  placeholder="Contoh: PT Dimsum Prima Rasa"
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso border border-transparent focus:border-brand-gold focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">
+                  Status Suplai Pabrik
+                </label>
+                <select
+                  value={tempSupplierStatus}
+                  onChange={(e) => setTempSupplierStatus(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso border border-transparent focus:border-brand-gold focus:outline-none cursor-pointer"
+                >
+                  <option value="Lancar">Lancar</option>
+                  <option value="Restok Menipis">Restok Menipis</option>
+                  <option value="Menunggu Pengiriman">Menunggu Pengiriman</option>
+                  <option value="Tertunda Sementara">Tertunda Sementara</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEditSupplierModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-container transition-colors cursor-pointer"
               >
                 Batal
               </button>
