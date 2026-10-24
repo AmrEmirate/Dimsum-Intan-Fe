@@ -43,9 +43,9 @@ export const LoginPage: React.FC = () => {
       <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-brand-gold/10 blur-3xl pointer-events-none" />
       <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-brand-terracotta/10 blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-surface-card/95 backdrop-blur-xl z-10">
-        {/* Left Side: Brand Heritage Banner */}
-        <div className="lg:col-span-5 bg-gradient-to-br from-brand-espresso via-[#382622] to-brand-espresso p-8 flex flex-col justify-between text-white relative">
+      <div className="w-full max-w-md lg:max-w-4xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl overflow-hidden shadow-2xl border border-white/10 bg-surface-card/95 backdrop-blur-xl z-10">
+        {/* Left Side: Brand Heritage Banner (Desktop Only) */}
+        <div className="hidden lg:flex lg:col-span-5 bg-gradient-to-br from-brand-espresso via-[#382622] to-brand-espresso p-8 flex-col justify-between text-white relative">
           <div className="relative z-10">
             <div className="flex items-center gap-2.5 mb-6">
               <div className="w-11 h-11 rounded-2xl bg-brand-gold text-brand-espresso flex items-center justify-center font-serif font-black text-xl shadow-lg">
@@ -99,12 +99,32 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Right Side: Login Form */}
-        <div className="lg:col-span-7 p-8 sm:p-10 flex flex-col justify-between bg-surface-card">
+        <div className="lg:col-span-7 p-6 sm:p-8 lg:p-10 flex flex-col justify-between bg-surface-card">
           <div>
-            <div className="mb-6">
-              <h3 className="font-serif-title text-2xl font-bold text-brand-espresso">
+            {/* Mobile Brand Header */}
+            <div className="flex lg:hidden flex-col items-center text-center mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-brand-espresso p-2 flex items-center justify-center shadow-lg border border-brand-gold/30 mb-2.5">
+                <img
+                  src="/logo_intan.png"
+                  alt="Logo Dimsum Intan"
+                  className="w-full h-full object-contain filter drop-shadow"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </div>
+              <h1 className="font-serif-title font-bold text-xl text-brand-espresso tracking-tight">
+                DIMSUM INTAN
+              </h1>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-secondary mt-0.5">
+                Cloud POS & Accounting
+              </span>
+            </div>
+
+            <div className="mb-6 text-center lg:text-left">
+              <h2 className="font-serif-title text-2xl font-bold text-brand-espresso">
                 Selamat Datang Kembali
-              </h3>
+              </h2>
               <p className="text-xs text-secondary mt-1">
                 Silakan masuk dengan akun resmi perusahaan Dimsum Intan
               </p>
@@ -180,8 +200,8 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {/* Security Notice Footer */}
-          <div className="mt-8 pt-6 border-t border-border-subtle flex items-center justify-center gap-2 text-secondary text-xs">
-            <Shield className="w-3.5 h-3.5 text-primary" />
+          <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-border-subtle flex items-center justify-center gap-1.5 text-secondary text-[10px] sm:text-xs text-center">
+            <Shield className="w-3.5 h-3.5 text-primary shrink-0" />
             <span>Dimsum Intan Cloud POS & Enterprise Accounting • v1.0.0</span>
           </div>
         </div>
