@@ -37,6 +37,7 @@ export const BranchesPage: React.FC = () => {
     currentUser,
     setSelectedOutletId,
     setCurrentView,
+    billingStatus,
   } = useApp();
 
   const isOwner = currentUser.role === 'OWNER';
@@ -98,6 +99,15 @@ export const BranchesPage: React.FC = () => {
 
   // Handlers for Outlet
   const handleOpenAddOutlet = () => {
+    if (billingStatus && billingStatus.currentOutletsCount >= billingStatus.maxOutlets) {
+      const confirmOpen = window.confirm(
+        `Batas kuota cabang telah tercapai (${billingStatus.currentOutletsCount}/${billingStatus.maxOutlets} cabang).\n\nUntuk menambah cabang baru, Anda perlu menambah kuota cabang seharga Rp 100.000/bulan via Payment Gateway.\n\nBuka halaman Langganan & Kuota sekarang?`
+      );
+      if (confirmOpen) {
+        setCurrentView('langganan-billing');
+      }
+      return;
+    }
     setEditingOutlet(null);
     setOutletCode(`CB-0${outlets.length + 1}`);
     setOutletName('');

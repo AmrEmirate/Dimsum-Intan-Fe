@@ -37,6 +37,7 @@ export const PosPage: React.FC = () => {
     processCheckout,
     activeShift,
     showNotification,
+    billingStatus,
   } = useApp();
 
   const [selectedCategory, setSelectedCategory] = useState<MenuCategory | 'all'>('all');
@@ -75,6 +76,19 @@ export const PosPage: React.FC = () => {
   };
 
   const handleConfirmPayment = async () => {
+    // Validasi kuota harian cabang
+    if (billingStatus) {
+      const dailyLimit = billingStatus.effectiveDailyTxLimit || 250;
+      const todayCount = billingStatus.todayOrdersCount || 0;
+      if (todayCount >= dailyLimit) {
+        showNotification(
+          `Batas kuota cabang hari ini telah tercapai (${todayCount}/${dailyLimit} transaksi)! Silakan top-up kuota transaksi di menu Langganan & Kuota.`,
+          'error'
+        );
+        return;
+      }
+    }
+
     const cashVal = parseFloat(cashGiven) || finalTotal;
     if (selectedPaymentMethod === 'CASH' && cashVal < finalTotal) {
       showNotification('Uang yang diterima kurang dari total pembayaran!', 'error');

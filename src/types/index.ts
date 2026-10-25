@@ -175,3 +175,49 @@ export interface FixedExpense {
   dueDate: string;
   autoDebet: boolean;
 }
+
+export interface BillingOutletStat {
+  id: string;
+  code: string;
+  name: string;
+  todayOrders: number;
+  dailyLimit: number;
+  remaining: number;
+}
+
+export interface BillingStatus {
+  tenantId: string;
+  tenantName: string;
+  plan: string;
+  status: string;
+  pricePerOutlet: number;
+  currentOutletsCount: number;
+  maxOutlets: number;
+  canAddOutlet: boolean;
+  dailyTxLimitPerOutlet: number;
+  extraDailyTxLimit: number;
+  effectiveDailyTxLimit: number;
+  todayOrdersCount: number;
+  isSubscriptionActive: boolean;
+  subscriptionExpiresAt: string | null;
+  daysRemaining: number;
+  outlets: BillingOutletStat[];
+}
+
+export interface SubscriptionInvoice {
+  id: string;
+  tenantId: string;
+  invoiceNumber: string;
+  type: 'RENEWAL' | 'ADD_OUTLET' | 'ADD_TX_QUOTA' | string;
+  description: string;
+  amount: number;
+  status: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED';
+  paymentMethod?: string | null;
+  snapToken?: string | null;
+  snapRedirectUrl?: string | null;
+  paymentGatewayRef?: string | null;
+  paidAt?: string | null;
+  expiresAt: string;
+  createdAt: string;
+  metadata?: any;
+}

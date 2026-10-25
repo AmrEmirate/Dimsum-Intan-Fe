@@ -15,6 +15,7 @@ import { FixedExpensesPage } from './pages/FixedExpensesPage';
 import { ProfitLossPage } from './pages/ProfitLossPage';
 import { BranchesPage } from './pages/BranchesPage';
 import { SuperadminPortalPage } from './pages/SuperadminPortalPage';
+import { SubscriptionBillingPage } from './pages/SubscriptionBillingPage';
 
 import { BottomNav } from './components/layout/BottomNav';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -53,6 +54,8 @@ export const AppContent: React.FC = () => {
         return <FixedExpensesPage />;
       case 'laporan-laba-rugi-arus-kas':
         return <ProfitLossPage />;
+      case 'langganan-billing':
+        return <SubscriptionBillingPage />;
       default:
         return currentUser.role === 'SUPERADMIN' ? <SuperadminPortalPage /> : <DashboardPage />;
     }

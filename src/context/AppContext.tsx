@@ -13,6 +13,8 @@ import {
   PettyCashExpense,
   FactoryInvoice,
   FixedExpense,
+  BillingStatus,
+  SubscriptionInvoice,
 } from '../types';
 import {
   api,
@@ -37,6 +39,7 @@ export type AppView =
   | 'tagihan-suplai-pabrik'
   | 'beban-operasional-tetap'
   | 'laporan-laba-rugi-arus-kas'
+  | 'langganan-billing'
   | 'superadmin-portal';
 
 interface NotificationState {
@@ -166,6 +169,18 @@ interface AppContextType {
   // Security & Settings
   updatePin: (newPin: string) => Promise<boolean>;
 
+  // Subscription & Billing
+  billingStatus: BillingStatus | null;
+  fetchBillingStatus: () => Promise<void>;
+  createCheckout: (params: {
+    type: 'ADD_OUTLET' | 'ADD_TX_QUOTA' | 'RENEWAL';
+    quantity?: number;
+    extraTxQuota?: number;
+    months?: number;
+  }) => Promise<any>;
+  simulatePayInvoice: (invoiceId: string) => Promise<boolean>;
+  fetchBillingInvoices: () => Promise<SubscriptionInvoice[]>;
+
   // Refresh helper
   refreshData: () => Promise<void>;
 }
@@ -240,6 +255,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [factoryInvoices, setFactoryInvoices] = useState<FactoryInvoice[]>([]);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
   const [staffList, setStaffList] = useState<User[]>([]);
+  const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
 
   // 3. Cart State
   const [cart, setCart] = useState<OrderCartItem[]>([]);
@@ -293,6 +309,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, []);
 
+  // Fetch Billing Status
+  const fetchBillingStatus = useCallback(async () => {
+    try {
+      const res = await api.get<{ success: boolean; data: BillingStatus }>('/billing/status');
+      if (res.success && res.data) {
+        setBillingStatus(res.data);
+      }
+    } catch (err) {
+      console.warn('[Billing Status Fetch Warn]', err);
+    }
+  }, []);
+
   // Initial Fetch & Refresh from Backend API
   const refreshData = useCallback(async () => {
     try {
@@ -343,10 +371,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // 9. Fetch Staff List (if authenticated)
       await fetchStaffList();
+
+      // 10. Fetch Billing Status
+      await fetchBillingStatus();
     } catch (err: any) {
       console.warn('[Data Fetch Error]', err);
     }
-  }, [fetchShiftHistory, fetchStaffList]);
+  }, [fetchShiftHistory, fetchStaffList, fetchBillingStatus]);
 
   const switchTenantView = useCallback(async (tenantId: string | null, tenantSlug?: string | null) => {
     if (tenantId) {
@@ -1204,6 +1235,59 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return false;
   };
 
+  const createCheckout = useCallback(
+    async (params: {
+      type: 'ADD_OUTLET' | 'ADD_TX_QUOTA' | 'RENEWAL';
+      quantity?: number;
+      extraTxQuota?: number;
+      months?: number;
+    }) => {
+      try {
+        const res = await api.post<{ success: boolean; data: any; message: string }>(
+          '/billing/checkout',
+          params
+        );
+        return res;
+      } catch (err: any) {
+        showNotification(err.message || 'Gagal membuat tagihan pembayaran', 'error');
+        throw err;
+      }
+    },
+    []
+  );
+
+  const simulatePayInvoice = useCallback(
+    async (invoiceId: string) => {
+      try {
+        const res = await api.post<{ success: boolean; message: string; data: any }>(
+          `/billing/pay-mock/${invoiceId}`,
+          {}
+        );
+        if (res.success) {
+          showNotification(res.message || 'Pembayaran berhasil dikonfirmasi!', 'success');
+          await fetchBillingStatus();
+          await refreshData();
+          return true;
+        }
+        return false;
+      } catch (err: any) {
+        showNotification(err.message || 'Gagal memproses pembayaran', 'error');
+        return false;
+      }
+    },
+    [fetchBillingStatus, refreshData]
+  );
+
+  const fetchBillingInvoices = useCallback(async () => {
+    try {
+      const res = await api.get<{ success: boolean; data: SubscriptionInvoice[] }>('/billing/invoices');
+      return res.success && Array.isArray(res.data) ? res.data : [];
+    } catch (err) {
+      console.warn('[Billing Invoices Fetch Warn]', err);
+      return [];
+    }
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -1277,6 +1361,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setCurrentTenant,
         loadTenantMeta,
         switchTenantView,
+        billingStatus,
+        fetchBillingStatus,
+        createCheckout,
+        simulatePayInvoice,
+        fetchBillingInvoices,
       }}
     >
       {children}

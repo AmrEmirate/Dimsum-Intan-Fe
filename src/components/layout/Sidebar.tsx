@@ -18,6 +18,7 @@ import {
   Crown,
   Globe,
   Sparkles,
+  CreditCard,
 } from 'lucide-react';
 import { useApp, AppView } from '../../context/AppContext';
 import { OutletManagementModal } from '../outlet/OutletManagementModal';
@@ -133,6 +134,14 @@ export const Sidebar: React.FC = () => {
       section: 'akuntansi',
       icon: BarChart3,
       allowedRoles: ['SUPERADMIN', 'OWNER'],
+    },
+    {
+      id: 'langganan-billing',
+      label: 'Langganan & Kuota',
+      section: 'akuntansi',
+      icon: CreditCard,
+      allowedRoles: ['SUPERADMIN', 'OWNER'],
+      badge: '100rb/bln',
     },
   ];
 
