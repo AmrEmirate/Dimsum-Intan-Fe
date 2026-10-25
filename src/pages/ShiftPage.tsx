@@ -12,6 +12,9 @@ import {
   QrCode,
   ShieldCheck,
   PlusCircle,
+  Printer,
+  FileText,
+  X,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -29,6 +32,8 @@ export const ShiftPage: React.FC = () => {
 
   const [isOpenShiftModal, setIsOpenShiftModal] = useState(false);
   const [isCloseShiftModal, setIsCloseShiftModal] = useState(false);
+  const [selectedShiftForZReport, setSelectedShiftForZReport] = useState<any>(null);
+  const [zReportPaperSize, setZReportPaperSize] = useState<'80mm' | '58mm'>('80mm');
   const [startCashInput, setStartCashInput] = useState('500000');
   const [actualCashInput, setActualCashInput] = useState('');
   const [closingNotes, setClosingNotes] = useState('');
@@ -246,17 +251,26 @@ export const ShiftPage: React.FC = () => {
 
           <div className="mt-6 flex flex-col gap-2">
             {activeShift?.status === 'ACTIVE' ? (
-              <button
-                onClick={() => setIsCloseShiftModal(true)}
-                className="w-full py-3 rounded-xl bg-brand-terracotta hover:bg-brand-terracotta-dark text-white font-bold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
-              >
-                <Clock className="w-4 h-4" />
-                <span>Tutup Shift & Rekonsiliasi Uang Fisik</span>
-              </button>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => setIsCloseShiftModal(true)}
+                  className="w-full py-3 rounded-xl bg-brand-terracotta hover:bg-brand-terracotta-dark text-white font-bold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Clock className="w-4 h-4" />
+                  <span>Tutup Shift & Rekonsiliasi Uang Fisik</span>
+                </button>
+                <button
+                  onClick={() => setSelectedShiftForZReport(activeShift)}
+                  className="w-full py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-brand-espresso font-semibold text-xs border border-border-subtle transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5 text-primary" />
+                  <span>Pratinjau Struk Sesi Ini (Interim Report)</span>
+                </button>
+              </div>
             ) : (
               <button
                 onClick={() => setIsOpenShiftModal(true)}
-                className="w-full py-3 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso font-bold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso font-bold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>Buka Shift Baru (Input Modal Laci)</span>
@@ -423,6 +437,14 @@ export const ShiftPage: React.FC = () => {
                       "{s.notes}"
                     </p>
                   )}
+
+                  <button
+                    onClick={() => setSelectedShiftForZReport(s)}
+                    className="mt-1 w-full py-1.5 rounded-lg bg-surface-container hover:bg-brand-gold/20 text-brand-espresso text-xs font-semibold flex items-center justify-center gap-1.5 border border-border-subtle cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Cetak Struk Z-Report</span>
+                  </button>
                 </div>
               );
             })
@@ -442,12 +464,13 @@ export const ShiftPage: React.FC = () => {
                 <th className="py-3 px-4 text-right">Sistem vs Fisik</th>
                 <th className="py-3 px-4 text-center">Selisih Kas</th>
                 <th className="py-3 px-4">Catatan</th>
+                <th className="py-3 px-4 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle text-xs">
               {safeHistory.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-secondary">
+                  <td colSpan={9} className="py-8 text-center text-secondary">
                     Belum ada riwayat shift yang ditutup.
                   </td>
                 </tr>
@@ -517,6 +540,17 @@ export const ShiftPage: React.FC = () => {
                       </td>
                       <td className="py-3 px-4 max-w-xs truncate text-[11px] text-secondary">
                         {s.notes || '-'}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedShiftForZReport(s)}
+                          title="Cetak Struk Z-Report Shift"
+                          className="p-1.5 rounded-lg bg-surface-container hover:bg-brand-gold/20 text-brand-espresso border border-border-subtle transition-all cursor-pointer inline-flex items-center gap-1 text-[11px] font-bold"
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                          <span>Z-Report</span>
+                        </button>
                       </td>
                     </tr>
                   );
@@ -658,12 +692,181 @@ export const ShiftPage: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl bg-brand-terracotta hover:bg-brand-terracotta-dark text-white text-xs font-bold shadow-md transition-all"
+                className="px-5 py-2.5 rounded-xl bg-brand-terracotta hover:bg-brand-terracotta-dark text-white text-xs font-bold shadow-md transition-all cursor-pointer"
               >
                 Konfirmasi Tutup Shift
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Modal: Cetak Struk Z-Report Tutup Shift */}
+      {selectedShiftForZReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-md bg-surface-card rounded-3xl border border-border-subtle shadow-2xl overflow-hidden my-6">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle bg-surface-container-low">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-primary" />
+                <span className="font-bold text-sm text-brand-espresso">Struk Z-Report Tutup Shift</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-espresso text-brand-gold rounded-xl text-xs font-bold shadow-xs hover:bg-brand-espresso-muted cursor-pointer"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Cetak ({zReportPaperSize})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedShiftForZReport(null)}
+                  className="p-1.5 text-secondary hover:bg-surface-container rounded-lg cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Paper Size Selector */}
+            <div className="flex items-center justify-between px-6 py-2 bg-surface-container-low border-b border-border-subtle text-[11px]">
+              <span className="text-secondary font-medium">Ukuran Kertas:</span>
+              <div className="flex items-center bg-surface-container p-0.5 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setZReportPaperSize('80mm')}
+                  className={`px-2.5 py-1 rounded-md font-bold transition-all ${
+                    zReportPaperSize === '80mm'
+                      ? 'bg-brand-espresso text-brand-gold shadow-xs'
+                      : 'text-secondary hover:text-brand-espresso'
+                  }`}
+                >
+                  80mm Standar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setZReportPaperSize('58mm')}
+                  className={`px-2.5 py-1 rounded-md font-bold transition-all ${
+                    zReportPaperSize === '58mm'
+                      ? 'bg-brand-espresso text-brand-gold shadow-xs'
+                      : 'text-secondary hover:text-brand-espresso'
+                  }`}
+                >
+                  58mm Mini
+                </button>
+              </div>
+            </div>
+
+            {/* Thermal Print Receipt Content */}
+            <div
+              id="shift-zreport-receipt"
+              className={`p-6 bg-white text-gray-900 font-mono text-xs ${
+                zReportPaperSize === '58mm' ? 'receipt-58mm max-w-[280px] mx-auto text-[11px]' : 'receipt-80mm'
+              }`}
+            >
+              <div className="text-center pb-3 border-b-2 border-black">
+                <h2 className="font-bold text-base tracking-wider text-black">
+                  DIMSUM INTAN
+                </h2>
+                <p className="text-xs font-bold mt-0.5">REKAP TUTUP SHIFT KASIR</p>
+                <p className="text-[10px] text-gray-600">(Z-REPORT AUDIT REKONSILIASI)</p>
+                <p className="text-[10px] text-gray-500 mt-1">{selectedShiftForZReport.outletName || outletName}</p>
+              </div>
+
+              <div className="py-2.5 border-b border-dashed border-gray-400 space-y-1 text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Nama Sesi:</span>
+                  <span className="font-bold">{selectedShiftForZReport.shiftName || 'Shift'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Kasir:</span>
+                  <span>{selectedShiftForZReport.cashierName || currentUser.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Waktu Buka:</span>
+                  <span>{selectedShiftForZReport.startTime ? new Date(selectedShiftForZReport.startTime).toLocaleString('id-ID') : '-'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Waktu Tutup:</span>
+                  <span>{selectedShiftForZReport.endTime ? new Date(selectedShiftForZReport.endTime).toLocaleString('id-ID') : 'Sedang Aktif'}</span>
+                </div>
+              </div>
+
+              {/* Rincian Mutasi Kas */}
+              <div className="py-3 border-b border-dashed border-gray-400 space-y-1.5 text-[11px]">
+                <div className="flex justify-between">
+                  <span>Modal Awal Kas:</span>
+                  <span>Rp {Number(selectedShiftForZReport.startingCash || 0).toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between text-emerald-800 font-semibold">
+                  <span>(+) Penjualan Tunai:</span>
+                  <span>Rp {Number(selectedShiftForZReport.cashSales || 0).toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between text-blue-800">
+                  <span>(i) Penjualan QRIS:</span>
+                  <span>Rp {Number(selectedShiftForZReport.qrisSales || 0).toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between text-red-700">
+                  <span>(-) Kas Kecil Keluar:</span>
+                  <span>-Rp {Number(selectedShiftForZReport.pettyCashOut || 0).toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between pt-1 border-t border-gray-300 font-bold">
+                  <span>Kas Diharapkan di Laci:</span>
+                  <span>Rp {Number(selectedShiftForZReport.expectedCash || 0).toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between font-bold text-black">
+                  <span>Kas Fisik Dihitung:</span>
+                  <span>Rp {Number(selectedShiftForZReport.actualEndingCash || 0).toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+
+              {/* Status Selisih */}
+              <div className="py-2.5 border-b border-dashed border-gray-400 text-center">
+                <span className="text-[10px] text-gray-500 uppercase block">Status Rekonsiliasi:</span>
+                <span className="font-bold text-sm block mt-0.5">
+                  {Number(selectedShiftForZReport.difference || 0) === 0
+                    ? '*** SEIMBANG (RP 0) ***'
+                    : Number(selectedShiftForZReport.difference || 0) < 0
+                    ? `*** MINUS: -Rp ${Math.abs(Number(selectedShiftForZReport.difference)).toLocaleString('id-ID')} ***`
+                    : `*** LEBIH: +Rp ${Number(selectedShiftForZReport.difference).toLocaleString('id-ID')} ***`}
+                </span>
+                {selectedShiftForZReport.notes && (
+                  <p className="text-[10px] text-gray-600 mt-1 italic">
+                    Catatan: {selectedShiftForZReport.notes}
+                  </p>
+                )}
+              </div>
+
+              {/* Tanda Tangan */}
+              <div className="pt-4 grid grid-cols-2 gap-4 text-center text-[10px] text-gray-600">
+                <div>
+                  <p>Kasir Bertugas</p>
+                  <div className="h-10"></div>
+                  <p className="font-bold text-black border-t border-gray-400 pt-1">
+                    ( {selectedShiftForZReport.cashierName || currentUser.name} )
+                  </p>
+                </div>
+                <div>
+                  <p>Supervisor / Owner</p>
+                  <div className="h-10"></div>
+                  <p className="font-bold text-black border-t border-gray-400 pt-1">
+                    ( ........................ )
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 bg-surface-container-low border-t border-border-subtle flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedShiftForZReport(null)}
+                className="w-full py-2.5 rounded-xl bg-surface-card border border-border-strong text-xs font-bold text-brand-espresso cursor-pointer hover:bg-surface-container"
+              >
+                Tutup Pratinjau
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

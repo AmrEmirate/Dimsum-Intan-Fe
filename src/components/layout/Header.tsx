@@ -10,7 +10,6 @@ import {
   LogOut,
   Wifi,
   WifiOff,
-  MessageCircle,
   Key,
   X,
   QrCode,
@@ -30,8 +29,6 @@ export const Header: React.FC = () => {
     outlets,
     logout,
     updatePin,
-    whatsappStatus,
-    fetchWhatsAppStatus,
     setIsSidebarOpen,
     setCurrentView,
   } = useApp();
@@ -39,7 +36,6 @@ export const Header: React.FC = () => {
   const [currentTime, setCurrentTime] = useState<string>('');
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState<boolean>(false);
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
-  const [isWaModalOpen, setIsWaModalOpen] = useState<boolean>(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
   const [isOutletModalOpen, setIsOutletModalOpen] = useState<boolean>(false);
   const [newPinInput, setNewPinInput] = useState<string>('');
@@ -136,33 +132,6 @@ export const Header: React.FC = () => {
             {isOnline ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
             <span className="hidden sm:inline">{isOnline ? 'Online' : 'Offline'}</span>
           </div>
-
-          {/* WhatsApp Bot Status Button - Compact icon on mobile, full pill on sm+ */}
-          <button
-            type="button"
-            onClick={() => {
-              fetchWhatsAppStatus();
-              setIsWaModalOpen(true);
-            }}
-            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all cursor-pointer shrink-0 ${
-              whatsappStatus?.isReady
-                ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                : whatsappStatus?.hasQr
-                ? 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100 animate-pulse'
-                : 'bg-surface-container text-secondary border-border-subtle hover:bg-surface-container-high'
-            }`}
-            title="Klik untuk melihat status Bot WhatsApp"
-          >
-            <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="hidden md:inline">
-              {whatsappStatus?.isReady
-                ? 'WA Bot: Aktif'
-                : whatsappStatus?.hasQr
-                ? 'WA Bot: Scan QR'
-                : 'WA Bot: Standby'}
-            </span>
-            <span className="md:hidden w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-          </button>
         </div>
 
         {/* Right items: Notifications & Interactive Role Switcher */}
@@ -342,91 +311,6 @@ export const Header: React.FC = () => {
         </div>
       )}
 
-      {/* Modal: Status WhatsApp Bot */}
-      {isWaModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-surface-card rounded-3xl border border-border-subtle shadow-2xl p-6 relative">
-            <button
-              type="button"
-              onClick={() => setIsWaModalOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full text-secondary hover:bg-surface-container"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-2 text-emerald-600 mb-1">
-              <MessageCircle className="w-5 h-5" />
-              <h3 className="font-serif-title font-bold text-lg text-brand-espresso">
-                Status Bot WhatsApp Dimsum Intan
-              </h3>
-            </div>
-            <p className="text-xs text-secondary mb-4">
-              Layanan otomatisasi pengiriman nota kasir dan notifikasi tagihan via WhatsApp.
-            </p>
-
-            <div className="p-4 rounded-2xl bg-surface-container-low border border-border-subtle flex flex-col gap-3">
-              <div className="flex justify-between items-center text-xs">
-                <span className="text-secondary font-semibold">Status Koneksi:</span>
-                <span
-                  className={`font-bold px-2 py-0.5 rounded-full text-[10px] ${
-                    whatsappStatus?.isReady
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : whatsappStatus?.hasQr
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-surface-container text-secondary'
-                  }`}
-                >
-                  {whatsappStatus?.isReady
-                    ? 'TERHUBUNG (ONLINE)'
-                    : whatsappStatus?.hasQr
-                    ? 'MENUNGGU SCAN QR'
-                    : 'STANDBY / BELUM TERHUBUNG'}
-                </span>
-              </div>
-
-              {whatsappStatus?.hasQr && whatsappStatus.qrCode ? (
-                <div className="flex flex-col items-center py-2 gap-2 bg-white p-4 rounded-xl border border-border-subtle">
-                  <span className="text-xs font-bold text-brand-espresso">
-                    Pindai dengan WhatsApp di Ponsel Anda:
-                  </span>
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                      whatsappStatus.qrCode
-                    )}`}
-                    alt="Scan WA QR"
-                    className="w-44 h-44 object-contain"
-                  />
-                  <span className="text-[10px] text-secondary">
-                    Buka WhatsApp &gt; Perangkat Tertaut &gt; Tautkan Perangkat
-                  </span>
-                </div>
-              ) : (
-                <div className="p-3 bg-surface-card rounded-xl text-xs text-secondary leading-relaxed">
-                  {whatsappStatus?.isReady ? (
-                    <p className="text-emerald-700 font-medium">
-                      Bot siap mengirimkan nota transaksi POS secara otomatis ke nomor pelanggan saat checkout berhasil.
-                    </p>
-                  ) : (
-                    <p>
-                      WhatsApp bot saat ini dalam mode standby. Transaksi kasir tetap berjalan lancar dan nota tetap tersimpan rapi ke database.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-5 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setIsWaModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl bg-brand-espresso text-brand-gold text-xs font-bold shadow-xs hover:bg-brand-espresso-muted transition-all"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       {/* Modal Manajemen Cabang */}
       <OutletManagementModal
         isOpen={isOutletModalOpen}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Printer, X, CheckCircle2, Share2, Smartphone } from 'lucide-react';
+import { Printer, X, CheckCircle2, Share2, Smartphone, UtensilsCrossed, Receipt } from 'lucide-react';
 import { Order } from '../../types';
 import { useApp } from '../../context/AppContext';
 
@@ -12,6 +12,7 @@ interface ReceiptModalProps {
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClose }) => {
   const { outlets } = useApp();
   const [paperSize, setPaperSize] = useState<'80mm' | '58mm'>('80mm');
+  const [receiptType, setReceiptType] = useState<'customer' | 'kitchen'>('customer');
 
   if (!isOpen || !order) return null;
 
@@ -52,18 +53,22 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span className="font-bold text-sm text-brand-espresso">Nota Pembayaran Sah</span>
+              <span className="font-bold text-sm text-brand-espresso">
+                {receiptType === 'customer' ? 'Nota Pembayaran Sah' : 'Tiket Dapur / Steamer'}
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleShareWhatsApp}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
-                title="Kirim Struk Digital via WhatsApp"
-              >
-                <Share2 className="w-3.5 h-3.5" />
-                <span>Kirim WA</span>
-              </button>
+            <div className="flex items-center gap-1.5">
+              {receiptType === 'customer' && (
+                <button
+                  type="button"
+                  onClick={handleShareWhatsApp}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+                  title="Kirim Struk Digital via WhatsApp"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Kirim WA</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handlePrint}
@@ -82,8 +87,36 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
             </div>
           </div>
 
+          {/* Tab Selector: Struk Kasir vs Tiket Dapur */}
+          <div className="grid grid-cols-2 gap-1.5 bg-surface-container p-1 rounded-xl mt-1">
+            <button
+              type="button"
+              onClick={() => setReceiptType('customer')}
+              className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                receiptType === 'customer'
+                  ? 'bg-surface-card text-brand-espresso shadow-xs'
+                  : 'text-secondary hover:text-brand-espresso'
+              }`}
+            >
+              <Receipt className="w-3.5 h-3.5" />
+              <span>Struk Pelanggan</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setReceiptType('kitchen')}
+              className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                receiptType === 'kitchen'
+                  ? 'bg-brand-espresso text-brand-gold shadow-xs'
+                  : 'text-secondary hover:text-brand-espresso'
+              }`}
+            >
+              <UtensilsCrossed className="w-3.5 h-3.5" />
+              <span>Tiket Steamer / Dapur</span>
+            </button>
+          </div>
+
           {/* Paper Size Selector */}
-          <div className="flex items-center justify-between pt-2 border-t border-border-subtle/80 text-[11px]">
+          <div className="flex items-center justify-between pt-1 border-t border-border-subtle/80 text-[11px]">
             <span className="text-secondary font-medium flex items-center gap-1">
               <Smartphone className="w-3.5 h-3.5 text-primary" /> Format Kertas Kasir:
             </span>
@@ -121,113 +154,172 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
           }`}
           id="thermal-receipt"
         >
-          {/* Header Store */}
-          <div className="text-center pb-3 border-b border-dashed border-gray-300">
-            <h2 className="font-serif-title font-bold text-lg tracking-wider text-black">
-              DIMSUM INTAN
-            </h2>
-            <p className="text-[11px] font-sans text-gray-600">{order.outletName}</p>
-            <p className="text-[10px] text-gray-500">{outletAddress}</p>
-            <p className="text-[10px] text-gray-500">Telp: {outletPhone}</p>
-          </div>
-
-          {/* Meta order */}
-          <div className="py-2.5 border-b border-dashed border-gray-300 space-y-1 text-[11px]">
-            <div className="flex justify-between">
-              <span className="text-gray-500">No. Nota:</span>
-              <span className="font-bold">{order.invoiceNumber}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Waktu:</span>
-              <span>{new Date(order.createdAt).toLocaleString('id-ID')}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Kasir:</span>
-              <span>{order.cashierName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Tipe Pesanan:</span>
-              <span className="font-bold uppercase">
-                {order.orderType === 'dine-in' ? `${order.tableNumber || 'Dine-In'}` : 'Takeaway (Bungkus)'}
-              </span>
-            </div>
-            {order.customerName && (
-              <div className="flex justify-between">
-                <span className="text-gray-500">Pelanggan:</span>
-                <span>{order.customerName}</span>
+          {receiptType === 'customer' ? (
+            /* =================== STRUK PELANGGAN =================== */
+            <>
+              {/* Header Store */}
+              <div className="text-center pb-3 border-b border-dashed border-gray-300">
+                <h2 className="font-serif-title font-bold text-lg tracking-wider text-black">
+                  DIMSUM INTAN
+                </h2>
+                <p className="text-[11px] font-sans text-gray-600">{order.outletName}</p>
+                <p className="text-[10px] text-gray-500">{outletAddress}</p>
+                <p className="text-[10px] text-gray-500">Telp: {outletPhone}</p>
               </div>
-            )}
-            {order.status === 'VOIDED' && (
-              <div className="mt-1 py-1 px-2 bg-red-100 border border-red-300 text-red-700 text-center font-bold text-[11px] rounded">
-                *** NOTA DIBATALKAN (VOID) ***
-              </div>
-            )}
-          </div>
 
-          {/* Items List */}
-          <div className="py-3 border-b border-dashed border-gray-300 space-y-2">
-            {order.items.map((item, idx) => (
-              <div key={idx} className="flex flex-col">
-                <div className="flex justify-between font-medium">
-                  <span className="truncate max-w-[200px]">{item.name}</span>
-                  <span>Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
+              {/* Meta order */}
+              <div className="py-2.5 border-b border-dashed border-gray-300 space-y-1 text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">No. Nota:</span>
+                  <span className="font-bold">{order.invoiceNumber}</span>
                 </div>
-                <div className="flex justify-between text-[10px] text-gray-500 pl-2">
-                  <span>
-                    {item.quantity} x Rp {item.price.toLocaleString('id-ID')}
-                    {item.notes ? ` (${item.notes})` : ''}
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Waktu:</span>
+                  <span>{new Date(order.createdAt).toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Kasir:</span>
+                  <span>{order.cashierName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Tipe Pesanan:</span>
+                  <span className="font-bold uppercase">
+                    {order.orderType === 'dine-in' ? `${order.tableNumber || 'Dine-In'}` : 'Takeaway (Bungkus)'}
                   </span>
                 </div>
+                {order.customerName && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Pelanggan:</span>
+                    <span>{order.customerName}</span>
+                  </div>
+                )}
+                {order.status === 'VOIDED' && (
+                  <div className="mt-1 py-1 px-2 bg-red-100 border border-red-300 text-red-700 text-center font-bold text-[11px] rounded">
+                    *** NOTA DIBATALKAN (VOID) ***
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
 
-          {/* Totals */}
-          <div className="py-2.5 border-b border-dashed border-gray-300 space-y-1 text-[11px]">
-            <div className="flex justify-between">
-              <span>Subtotal:</span>
-              <span>Rp {order.subtotal.toLocaleString('id-ID')}</span>
-            </div>
-            {order.discount > 0 && (
-              <div className="flex justify-between text-red-600">
-                <span>Diskon:</span>
-                <span>-Rp {order.discount.toLocaleString('id-ID')}</span>
+              {/* Items List */}
+              <div className="py-3 border-b border-dashed border-gray-300 space-y-2">
+                {order.items.map((item, idx) => (
+                  <div key={idx} className="flex flex-col">
+                    <div className="flex justify-between font-medium">
+                      <span className="truncate max-w-[200px]">{item.name}</span>
+                      <span>Rp {(item.price * item.quantity).toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] text-gray-500 pl-2">
+                      <span>
+                        {item.quantity} x Rp {item.price.toLocaleString('id-ID')}
+                        {item.notes ? ` (${item.notes})` : ''}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
-            <div className="flex justify-between font-bold text-sm pt-1 border-t border-gray-200">
-              <span>TOTAL BAYAR:</span>
-              <span>Rp {order.total.toLocaleString('id-ID')}</span>
-            </div>
-          </div>
 
-          {/* Payment Method Details */}
-          <div className="py-2.5 border-b border-dashed border-gray-300 space-y-1 text-[11px]">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Metode Bayar:</span>
-              <span className="font-bold uppercase">{order.paymentMethod}</span>
-            </div>
-            {order.paymentMethod === 'CASH' && (
-              <>
+              {/* Totals */}
+              <div className="py-2.5 border-b border-dashed border-gray-300 space-y-1 text-[11px]">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Uang Tunai:</span>
-                  <span>Rp {(order.cashReceived || order.total).toLocaleString('id-ID')}</span>
+                  <span>Subtotal:</span>
+                  <span>Rp {order.subtotal.toLocaleString('id-ID')}</span>
                 </div>
-                <div className="flex justify-between font-bold">
-                  <span className="text-gray-500">Kembalian:</span>
-                  <span>Rp {(order.changeAmount || 0).toLocaleString('id-ID')}</span>
+                {order.discount > 0 && (
+                  <div className="flex justify-between text-red-600">
+                    <span>Diskon:</span>
+                    <span>-Rp {order.discount.toLocaleString('id-ID')}</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold text-sm pt-1 border-t border-gray-200">
+                  <span>TOTAL BAYAR:</span>
+                  <span>Rp {order.total.toLocaleString('id-ID')}</span>
                 </div>
-              </>
-            )}
-          </div>
+              </div>
 
-          {/* Footer Note */}
-          <div className="pt-4 text-center space-y-1 text-[10px] text-gray-500">
-            <p className="font-serif-title font-bold text-xs text-gray-800">
-              Hatur Nuhun!
-            </p>
-            <p>Nikmati Kelezatan Dimsum Intan Asli</p>
-            <p>Kritik & Saran: WhatsApp {outletPhone}</p>
-          </div>
+              {/* Payment Method Details */}
+              <div className="py-2.5 border-b border-dashed border-gray-300 space-y-1 text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Metode Bayar:</span>
+                  <span className="font-bold uppercase">{order.paymentMethod}</span>
+                </div>
+                {order.paymentMethod === 'CASH' && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Uang Tunai:</span>
+                      <span>Rp {(order.cashReceived || order.total).toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                      <span className="text-gray-500">Kembalian:</span>
+                      <span>Rp {(order.changeAmount || 0).toLocaleString('id-ID')}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Footer Note */}
+              <div className="pt-4 text-center space-y-1 text-[10px] text-gray-500">
+                <p className="font-serif-title font-bold text-xs text-gray-800">
+                  Hatur Nuhun!
+                </p>
+                <p>Nikmati Kelezatan Dimsum Intan Asli</p>
+                <p>Kritik & Saran Hubungi Kasir</p>
+              </div>
+            </>
+          ) : (
+            /* =================== TIKET DAPUR / STEAMER =================== */
+            <>
+              <div className="text-center pb-2 border-b-2 border-black">
+                <h2 className="font-bold text-base tracking-widest text-black">
+                  *** TIKET DAPUR / STEAMER ***
+                </h2>
+                <p className="text-[10px] text-gray-600">{order.outletName}</p>
+              </div>
+
+              <div className="py-2.5 border-b border-dashed border-gray-400">
+                <div className="text-center my-1">
+                  <span className="inline-block px-3 py-1 bg-black text-white font-bold text-base rounded uppercase">
+                    {order.orderType === 'dine-in' ? `MEJA: ${order.tableNumber || '-'}` : 'BUNGKUS / TAKEAWAY'}
+                  </span>
+                </div>
+                <div className="flex justify-between text-[11px] mt-2">
+                  <span>No: {order.invoiceNumber}</span>
+                  <span>{new Date(order.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                {order.customerName && (
+                  <div className="text-[11px]">
+                    <span className="text-gray-600">Pelanggan: </span>
+                    <span className="font-bold">{order.customerName}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Kitchen Item Checklist */}
+              <div className="py-3 border-b-2 border-black space-y-3">
+                {order.items.map((item, idx) => (
+                  <div key={idx} className="border-b border-dotted border-gray-300 pb-2">
+                    <div className="flex items-baseline justify-between">
+                      <span className="font-bold text-sm text-black">
+                        [ {item.quantity}x ] {item.name}
+                      </span>
+                      <span className="text-[10px] border border-black px-1.5 py-0.5 rounded">
+                        SIAP
+                      </span>
+                    </div>
+                    {item.notes && (
+                      <div className="mt-1 text-[11px] font-bold text-red-700 bg-red-50 p-1 rounded border border-red-200">
+                        * Catatan: {item.notes}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-3 text-center text-[10px] text-gray-500">
+                <p className="font-bold">Total Porsi: {order.items.reduce((s, i) => s + i.quantity, 0)} Porsi</p>
+                <p>Cek kelengkapan kukusan & saus sebelum disajikan</p>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Footer Actions */}
@@ -244,3 +336,4 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
     </div>
   );
 };
+

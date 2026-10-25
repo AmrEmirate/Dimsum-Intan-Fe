@@ -147,10 +147,6 @@ interface AppContextType {
   // Security & Settings
   updatePin: (newPin: string) => Promise<boolean>;
 
-  // WhatsApp Integration Status
-  whatsappStatus: { isReady: boolean; hasQr: boolean; qrCode: string | null } | null;
-  fetchWhatsAppStatus: () => Promise<void>;
-
   // Refresh helper
   refreshData: () => Promise<void>;
 }
@@ -194,7 +190,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [pettyCashList, setPettyCashList] = useState<PettyCashExpense[]>([]);
   const [factoryInvoices, setFactoryInvoices] = useState<FactoryInvoice[]>([]);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
-  const [whatsappStatus, setWhatsappStatus] = useState<{ isReady: boolean; hasQr: boolean; qrCode: string | null } | null>(null);
   const [staffList, setStaffList] = useState<User[]>([]);
 
   // 3. Cart State
@@ -224,18 +219,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     localStorage.setItem('dimsum_outlet_id', selectedOutletId);
   }, [selectedOutletId]);
-
-  // Fetch WhatsApp Status
-  const fetchWhatsAppStatus = useCallback(async () => {
-    try {
-      const res = await api.get<{ success: boolean; data: any }>('/whatsapp/status').catch(() => null);
-      if (res?.success) {
-        setWhatsappStatus(res.data);
-      }
-    } catch (err) {
-      console.warn('[WA Status Error]', err);
-    }
-  }, []);
 
   // Fetch Shift History
   const fetchShiftHistory = useCallback(async () => {
@@ -309,15 +292,39 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setFixedExpenses(expRes.data);
       }
 
-      // 9. Fetch WhatsApp Integration Status
-      await fetchWhatsAppStatus();
-
-      // 10. Fetch Staff List (if authenticated)
+      // 9. Fetch Staff List (if authenticated)
       await fetchStaffList();
     } catch (err: any) {
       console.warn('[Data Fetch Error]', err);
     }
-  }, [fetchShiftHistory, fetchWhatsAppStatus, fetchStaffList]);
+  }, [fetchShiftHistory, fetchStaffList]);
+
+  // Auto-sync offline orders when network connection resumes
+  useEffect(() => {
+    const handleOnlineSync = async () => {
+      const raw = localStorage.getItem('dimsum_offline_orders');
+      if (!raw) return;
+      try {
+        const queued: any[] = JSON.parse(raw);
+        if (Array.isArray(queued) && queued.length > 0) {
+          showNotification(`Menyinkronkan ${queued.length} transaksi offline ke server...`, 'info');
+          let successCount = 0;
+          for (const payload of queued) {
+            const res = await api.post<{ success: boolean }>('/pos/orders', payload).catch(() => null);
+            if (res?.success) successCount++;
+          }
+          localStorage.removeItem('dimsum_offline_orders');
+          showNotification(`Sinkronisasi selesai! ${successCount} transaksi offline berhasil masuk server.`, 'success');
+          await refreshData();
+        }
+      } catch (err) {
+        console.warn('[Sync Error]', err);
+      }
+    };
+
+    window.addEventListener('online', handleOnlineSync);
+    return () => window.removeEventListener('online', handleOnlineSync);
+  }, [refreshData]);
 
   // Full Login Method
   const login = async (username: string, password?: string): Promise<boolean> => {
@@ -596,6 +603,63 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         cashReceived: paymentMethod === 'CASH' ? cashReceived : finalTotal,
         changeAmount,
       };
+
+      // Check Offline Resilience: Jika navigator offline, simpan ke antrean lokal
+      if (!navigator.onLine) {
+        const offlineId = `offline-${Date.now()}`;
+        const offlineInvoiceNumber = `INV-OFF/${new Date().toISOString().slice(0, 10).replace(/-/g, '')}/${Math.floor(100 + Math.random() * 900)}`;
+        const offlineOrder: Order = {
+          id: offlineId,
+          invoiceNumber: offlineInvoiceNumber,
+          outletId: targetOutletId,
+          outletName: currentOutlet?.name || 'Cabang POS',
+          orderType: 'takeaway',
+          customerName: customerName || 'Pelanggan Takeaway',
+          subtotal,
+          discount,
+          total: finalTotal,
+          hppTotal,
+          paymentMethod,
+          cashReceived: paymentMethod === 'CASH' ? cashReceived : finalTotal,
+          changeAmount,
+          cashierName: currentUser.name,
+          status: 'PAID',
+          createdAt: new Date().toISOString(),
+          items: cart.map((c) => ({
+            menuId: c.menuId,
+            name: c.name,
+            price: c.price,
+            costPrice: c.costPrice,
+            quantity: c.quantity,
+            notes: c.notes,
+          })),
+        };
+
+        const existingOffline = JSON.parse(localStorage.getItem('dimsum_offline_orders') || '[]');
+        existingOffline.push(payload);
+        localStorage.setItem('dimsum_offline_orders', JSON.stringify(existingOffline));
+
+        setOrders((prev) => [offlineOrder, ...prev]);
+
+        // Deduct local stock
+        setMenuItems((prev) =>
+          prev.map((menu) => {
+            const cartItem = cart.find((c) => c.menuId === menu.id);
+            if (cartItem) {
+              const newStock = Math.max(0, menu.stock - cartItem.quantity);
+              return { ...menu, stock: newStock, isAvailable: newStock > 0 };
+            }
+            return menu;
+          })
+        );
+
+        clearCart();
+        showNotification(
+          `[MODE OFFLINE] Transaksi ${offlineInvoiceNumber} disimpan di laci lokal & siap dicetak. Akan otomatis disinkronkan saat online!`,
+          'warning'
+        );
+        return offlineOrder;
+      }
 
       const res = await api.post<{ success: boolean; message: string; data: Order }>('/pos/orders', payload);
 
@@ -1109,8 +1173,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         toggleFixedExpenseStatus,
         deleteFixedExpense,
         fetchProfitLossReport,
-        whatsappStatus,
-        fetchWhatsAppStatus,
         staffList,
         fetchStaffList,
         createStaffUser,

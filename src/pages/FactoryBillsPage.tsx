@@ -15,9 +15,11 @@ import {
   Building2,
   Trash2,
   Pencil,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { FactoryInvoice } from '../types';
+import { exportToCsv } from '../utils/exportUtils';
 
 export const FactoryBillsPage: React.FC = () => {
   const {
@@ -149,6 +151,39 @@ export const FactoryBillsPage: React.FC = () => {
     showNotification('Data rekening suplier pabrik berhasil diperbarui!', 'success');
   };
 
+  const handleExportFactoryInvoices = () => {
+    const headers = [
+      'No. Faktur',
+      'Suplier Pabrik',
+      'Cabang Tujuan',
+      'Tanggal Terbit',
+      'Jatuh Tempo',
+      'Total Tagihan (Rp)',
+      'Status Pembayaran',
+      'Rekening Transfer',
+      'Rincian Barang',
+    ];
+
+    const rows = filteredInvoices.map((inv) => [
+      inv.invoiceNumber,
+      inv.supplierName,
+      inv.outletName,
+      inv.issueDate ? new Date(inv.issueDate).toLocaleDateString('id-ID') : '-',
+      inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('id-ID') : '-',
+      inv.totalAmount,
+      inv.status,
+      inv.bankAccount,
+      inv.items.map((it) => `${it.itemName} (${it.quantity} ${it.unit})`).join('; '),
+    ]);
+
+    exportToCsv(
+      `Rekap_Faktur_Pabrik_Dimsum_Intan_${new Date().toISOString().slice(0, 10)}`,
+      headers,
+      rows
+    );
+    showNotification('Rekap tagihan pabrik berhasil diunduh ke Excel!', 'success');
+  };
+
   const handlePay = (invoice: FactoryInvoice) => {
     if (!isOwner) {
       showNotification('Hanya OWNER yang berhak melakukan pelunasan tagihan pabrik!', 'error');
@@ -238,10 +273,18 @@ export const FactoryBillsPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={handleExportFactoryInvoices}
+              className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold border border-white/15 transition-all cursor-pointer shadow-xs"
+              title="Unduh Rekap Tagihan Pabrik ke Excel / CSV"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+              <span>Ekspor Excel</span>
+            </button>
             {isOwner && (
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="flex items-center gap-1.5 px-4 py-2.5 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso rounded-xl text-xs font-bold shadow-md transition-all active:scale-95"
+                className="flex items-center gap-1.5 px-4 py-2.5 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso rounded-xl text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>+ Input Faktur Baru</span>

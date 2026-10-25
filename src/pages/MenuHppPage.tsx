@@ -12,9 +12,13 @@ import {
   XCircle,
   Shield,
   X,
+  FileSpreadsheet,
+  PackagePlus,
+  Trash,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { MenuItem, MenuCategory } from '../types';
+import { exportToCsv } from '../utils/exportUtils';
 
 export const MenuHppPage: React.FC = () => {
   const {
@@ -31,6 +35,16 @@ export const MenuHppPage: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+
+  // Waste & Spoilage Modal
+  const [isWasteModalOpen, setIsWasteModalOpen] = useState(false);
+  const [wasteMenuId, setWasteMenuId] = useState('');
+  const [wasteQty, setWasteQty] = useState('1');
+  const [wasteReason, setWasteReason] = useState('Kukusan gosong / terlalu lama');
+
+  // Quick Restock State
+  const [quickStockItem, setQuickStockItem] = useState<MenuItem | null>(null);
+  const [quickStockQty, setQuickStockQty] = useState('10');
 
   const [formName, setFormName] = useState('');
   const [formCategory, setFormCategory] = useState<MenuCategory>('mentai');
@@ -134,6 +148,103 @@ export const MenuHppPage: React.FC = () => {
     setIsModalOpen(false);
   };
 
+  const handleExportMenuHpp = () => {
+    const headers = [
+      'Kode Menu',
+      'Nama Menu',
+      'Kategori',
+      'Harga Jual (Rp)',
+      'HPP Modal Pabrik (Rp)',
+      'Laba Kotor per Porsi (Rp)',
+      'Margin (%)',
+      'Stok Saat Ini (Porsi)',
+      'Status Ketersediaan',
+    ];
+
+    const rows = menuItems.map((item) => {
+      const profit = item.price - item.costPrice;
+      const margin = ((profit / item.price) * 100).toFixed(1);
+      return [
+        item.code,
+        item.name,
+        item.category,
+        item.price,
+        item.costPrice,
+        profit,
+        `${margin}%`,
+        item.stock,
+        item.isAvailable && item.stock > 0 ? 'Tersedia' : 'Habis / Nonaktif',
+      ];
+    });
+
+    exportToCsv(
+      `Master_Menu_HPP_Dimsum_Intan_${new Date().toISOString().slice(0, 10)}`,
+      headers,
+      rows
+    );
+    showNotification('Katalog Menu & HPP berhasil diunduh ke Excel!', 'success');
+  };
+
+  const handleRecordWaste = (e: React.FormEvent) => {
+    e.preventDefault();
+    const item = menuItems.find((m) => m.id === wasteMenuId);
+    if (!item) {
+      showNotification('Silakan pilih produk dimsum terlebih dahulu!', 'warning');
+      return;
+    }
+    const qty = parseInt(wasteQty) || 0;
+    if (qty <= 0) {
+      showNotification('Jumlah porsi waste harus lebih dari 0!', 'warning');
+      return;
+    }
+
+    const newStock = Math.max(0, item.stock - qty);
+    updateMenuItem(item.id, {
+      ...item,
+      stock: newStock,
+      isAvailable: newStock > 0,
+    });
+
+    // Save waste record to localStorage for audit
+    const existing = JSON.parse(localStorage.getItem('dimsum_waste_logs') || '[]');
+    existing.unshift({
+      id: `waste-${Date.now()}`,
+      menuName: item.name,
+      quantity: qty,
+      reason: wasteReason,
+      lossAmount: qty * item.costPrice,
+      recordedBy: currentUser.name,
+      createdAt: new Date().toISOString(),
+    });
+    localStorage.setItem('dimsum_waste_logs', JSON.stringify(existing.slice(0, 50)));
+
+    setIsWasteModalOpen(false);
+    showNotification(
+      `Waste ${qty} porsi ${item.name} berhasil dicatat & stok dikurangi!`,
+      'info'
+    );
+  };
+
+  const handleQuickAddStock = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickStockItem) return;
+    const added = parseInt(quickStockQty) || 0;
+    if (added <= 0) return;
+
+    const newStock = quickStockItem.stock + added;
+    updateMenuItem(quickStockItem.id, {
+      ...quickStockItem,
+      stock: newStock,
+      isAvailable: true,
+    });
+
+    setQuickStockItem(null);
+    showNotification(
+      `Stok ${quickStockItem.name} berhasil ditambah +${added} porsi!`,
+      'success'
+    );
+  };
+
   return (
     <div className="flex flex-col gap-6 w-full animate-in fade-in duration-200">
       {/* Top Security & Role Context Banner */}
@@ -158,7 +269,26 @@ export const MenuHppPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            <button
+              onClick={handleExportMenuHpp}
+              className="flex items-center gap-1.5 bg-surface-container hover:bg-surface-container-high text-brand-espresso text-xs font-semibold px-3.5 py-2 rounded-xl border border-border-subtle shadow-xs transition-all active:scale-95 cursor-pointer"
+              title="Unduh Katalog Menu & HPP ke Excel / CSV"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
+              <span>Ekspor Excel</span>
+            </button>
+            <button
+              onClick={() => {
+                setWasteMenuId(menuItems[0]?.id || '');
+                setIsWasteModalOpen(true);
+              }}
+              className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold px-3.5 py-2 rounded-xl border border-red-200 shadow-xs transition-all active:scale-95 cursor-pointer"
+              title="Catat Produk Basi / Kukusan Rusak"
+            >
+              <Trash className="w-4 h-4 text-red-600" />
+              <span>Catat Waste / Basi</span>
+            </button>
             {!isOwner && (
               <div className="flex items-center gap-1.5 bg-status-pending-bg text-status-pending-text px-3 py-1.5 rounded-xl text-xs font-semibold">
                 <Lock className="w-3.5 h-3.5" />
@@ -424,17 +554,30 @@ export const MenuHppPage: React.FC = () => {
 
                     {/* Stock & Availability */}
                     <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => toggleMenuAvailability(item.id)}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${
-                          !isOutOfStock
-                            ? 'bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border'
-                            : 'bg-status-unpaid-bg text-status-unpaid-text border border-status-unpaid-border'
-                        }`}
-                        title="Klik untuk mengubah status ketersediaan"
-                      >
-                        {!isOutOfStock ? `Tersedia (${item.stock})` : 'Habis'}
-                      </button>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          onClick={() => toggleMenuAvailability(item.id)}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer ${
+                            !isOutOfStock
+                              ? 'bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border'
+                              : 'bg-status-unpaid-bg text-status-unpaid-text border border-status-unpaid-border'
+                          }`}
+                          title="Klik untuk toggle status ketersediaan"
+                        >
+                          {!isOutOfStock ? `Tersedia (${item.stock})` : 'Habis'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickStockItem(item);
+                            setQuickStockQty('10');
+                          }}
+                          title="Tambah stok cepat (Opname / Restok)"
+                          className="p-1 rounded-lg bg-surface-container hover:bg-brand-gold/20 text-brand-espresso border border-border-subtle cursor-pointer transition-colors"
+                        >
+                          <PackagePlus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
 
                     {/* Actions (Owner) */}
@@ -612,6 +755,152 @@ export const MenuHppPage: React.FC = () => {
                 className="px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all"
               >
                 Simpan Menu & HPP
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+      {/* Modal: Catat Waste / Basi / Rusak */}
+      {isWasteModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4">
+          <form
+            onSubmit={handleRecordWaste}
+            className="w-full max-w-md bg-surface-card rounded-3xl border border-border-subtle shadow-2xl p-6 relative"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+              <div className="flex items-center gap-2 text-red-600">
+                <Trash className="w-5 h-5" />
+                <h3 className="font-serif-title font-bold text-lg text-brand-espresso">
+                  Catat Produk Basi / Waste
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsWasteModalOpen(false)}
+                className="p-1.5 text-secondary hover:bg-surface-container rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-secondary mt-2">
+              Pencatatan produk kukusan yang basi, gosong, atau rusak agar stok sistem sinkron dengan fisik.
+            </p>
+
+            <div className="mt-4 space-y-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">Pilih Produk Dimsum</label>
+                <select
+                  value={wasteMenuId}
+                  onChange={(e) => setWasteMenuId(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
+                  required
+                >
+                  {menuItems.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} (Stok: {m.stock} porsi)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">Jumlah Porsi Rusak/Basi</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={wasteQty}
+                  onChange={(e) => setWasteQty(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs font-bold text-brand-espresso focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">Alasan Kerusakan / Waste</label>
+                <select
+                  value={wasteReason}
+                  onChange={(e) => setWasteReason(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
+                >
+                  <option value="Kukusan gosong / terlalu lama">Kukusan gosong / terlalu lama</option>
+                  <option value="Basi / bau asam (Melebihi jam pajang)">Basi / bau asam (Melebihi jam pajang)</option>
+                  <option value="Kulit dimsum sobek / rusak saat handling">Kulit dimsum sobek / rusak saat handling</option>
+                  <option value="Jatuh ke lantai saat penyajian">Jatuh ke lantai saat penyajian</option>
+                  <option value="Kualitas dari pabrik tidak standar">Kualitas dari pabrik tidak standar</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsWasteModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso cursor-pointer hover:bg-surface-container"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-md transition-all cursor-pointer"
+              >
+                Simpan & Potong Stok
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: Tambah Stok Cepat */}
+      {quickStockItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4">
+          <form
+            onSubmit={handleQuickAddStock}
+            className="w-full max-w-sm bg-surface-card rounded-3xl border border-border-subtle shadow-2xl p-6 relative"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+              <div className="flex items-center gap-2 text-primary">
+                <PackagePlus className="w-5 h-5" />
+                <h3 className="font-serif-title font-bold text-base text-brand-espresso">
+                  Tambah Stok Cepat
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQuickStockItem(null)}
+                className="p-1.5 text-secondary hover:bg-surface-container rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-xs text-secondary mt-2">
+              Menambahkan stok porsi untuk <strong>{quickStockItem.name}</strong> (Stok saat ini: {quickStockItem.stock} porsi).
+            </p>
+
+            <div className="mt-4 flex flex-col gap-1">
+              <label className="text-xs font-bold text-brand-espresso">Jumlah Tambahan (Porsi)</label>
+              <input
+                type="number"
+                min={1}
+                value={quickStockQty}
+                onChange={(e) => setQuickStockQty(e.target.value)}
+                className="w-full p-2.5 rounded-xl bg-surface-container text-base font-bold text-brand-espresso focus:outline-none"
+                required
+              />
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setQuickStockItem(null)}
+                className="px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso cursor-pointer hover:bg-surface-container"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all cursor-pointer"
+              >
+                Tambah Stok
               </button>
             </div>
           </form>

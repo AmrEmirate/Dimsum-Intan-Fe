@@ -663,15 +663,15 @@ export const PosPage: React.FC = () => {
                 </div>
 
                 {/* Quick Cash Buttons */}
-                <div className="grid grid-cols-4 gap-1.5">
-                  {[finalTotal, 50000, 100000, 200000].map((amt) => (
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[finalTotal, 20000, 50000, 100000, 200000].map((amt) => (
                     <button
                       key={amt}
                       type="button"
                       onClick={() => setCashGiven(amt.toString())}
-                      className="py-1.5 rounded-lg bg-surface-container hover:bg-surface-container-high text-[11px] font-bold text-brand-espresso"
+                      className="py-1.5 rounded-lg bg-surface-container hover:bg-brand-gold/20 text-[11px] font-bold text-brand-espresso transition-colors cursor-pointer border border-border-subtle text-center truncate"
                     >
-                      {amt === finalTotal ? 'Pas' : `Rp ${amt / 1000}k`}
+                      {amt === finalTotal ? 'Uang Pas' : `Rp ${amt / 1000}k`}
                     </button>
                   ))}
                 </div>
