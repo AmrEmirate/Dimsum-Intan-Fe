@@ -1,6 +1,11 @@
 # Stage 1: Build file statis
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Build-time argument for backend API URL
+ARG VITE_API_URL=https://api-dimsumintan.vimtk.cloud/api/v1
+ENV VITE_API_URL=$VITE_API_URL
+
 COPY package*.json ./
 RUN npm install
 COPY . .
