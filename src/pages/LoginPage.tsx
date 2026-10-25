@@ -13,12 +13,16 @@ import {
 import { useApp } from '../context/AppContext';
 
 export const LoginPage: React.FC = () => {
-  const { login, outlets } = useApp();
+  const { login, outlets, currentTenant } = useApp();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const brandName = currentTenant?.name || 'DIMSUM INTAN';
+  const brandSlug = currentTenant?.slug ? `${currentTenant.slug}.posmu.cloud` : 'Cloud POS & Accounting';
+  const brandColor = currentTenant?.themeColor || '#ea580c';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,15 +52,22 @@ export const LoginPage: React.FC = () => {
         <div className="hidden lg:flex lg:col-span-5 bg-gradient-to-br from-brand-espresso via-[#382622] to-brand-espresso p-8 flex-col justify-between text-white relative">
           <div className="relative z-10">
             <div className="flex items-center gap-2.5 mb-6">
-              <div className="w-11 h-11 rounded-2xl bg-brand-gold text-brand-espresso flex items-center justify-center font-serif font-black text-xl shadow-lg">
-                <ChefHat className="w-6 h-6" />
+              <div
+                className="w-11 h-11 rounded-2xl flex items-center justify-center font-serif font-black text-xl shadow-lg text-white"
+                style={{ backgroundColor: brandColor }}
+              >
+                {currentTenant?.logoUrl ? (
+                  <img src={currentTenant.logoUrl} alt={brandName} className="w-full h-full object-contain p-1" />
+                ) : (
+                  brandName.charAt(0).toUpperCase()
+                )}
               </div>
-              <div>
-                <h1 className="font-serif-title font-bold text-lg leading-tight text-white">
-                  DIMSUM INTAN
+              <div className="min-w-0">
+                <h1 className="font-serif-title font-bold text-lg leading-tight text-white truncate">
+                  {brandName}
                 </h1>
-                <p className="text-[10px] tracking-wider uppercase font-semibold text-brand-gold">
-                  {outlets.length > 0 ? `Bandung • ${outlets.length} Cabang Aktif` : 'Bandung • Cloud POS'}
+                <p className="text-[10px] tracking-wider uppercase font-semibold text-brand-gold truncate">
+                  {brandSlug}
                 </p>
               </div>
             </div>
@@ -103,21 +114,21 @@ export const LoginPage: React.FC = () => {
           <div>
             {/* Mobile Brand Header */}
             <div className="flex lg:hidden flex-col items-center text-center mb-6">
-              <div className="w-14 h-14 rounded-2xl bg-brand-espresso p-2 flex items-center justify-center shadow-lg border border-brand-gold/30 mb-2.5">
-                <img
-                  src="/logo_intan.png"
-                  alt="Logo Dimsum Intan"
-                  className="w-full h-full object-contain filter drop-shadow"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
+              <div
+                className="w-14 h-14 rounded-2xl p-2 flex items-center justify-center shadow-lg border border-brand-gold/30 mb-2.5 font-serif font-black text-2xl text-white"
+                style={{ backgroundColor: brandColor }}
+              >
+                {currentTenant?.logoUrl ? (
+                  <img src={currentTenant.logoUrl} alt={brandName} className="w-full h-full object-contain filter drop-shadow" />
+                ) : (
+                  brandName.charAt(0).toUpperCase()
+                )}
               </div>
               <h1 className="font-serif-title font-bold text-xl text-brand-espresso tracking-tight">
-                DIMSUM INTAN
+                {brandName}
               </h1>
               <span className="text-[10px] font-bold uppercase tracking-wider text-secondary mt-0.5">
-                Cloud POS & Accounting
+                {brandSlug}
               </span>
             </div>
 
@@ -126,7 +137,7 @@ export const LoginPage: React.FC = () => {
                 Selamat Datang Kembali
               </h2>
               <p className="text-xs text-secondary mt-1">
-                Silakan masuk dengan akun resmi perusahaan Dimsum Intan
+                Silakan masuk dengan akun resmi {brandName}
               </p>
             </div>
 
@@ -202,7 +213,7 @@ export const LoginPage: React.FC = () => {
           {/* Security Notice Footer */}
           <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-border-subtle flex items-center justify-center gap-1.5 text-secondary text-[10px] sm:text-xs text-center">
             <Shield className="w-3.5 h-3.5 text-primary shrink-0" />
-            <span>Dimsum Intan Cloud POS & Enterprise Accounting • v1.0.0</span>
+            <span>{brandName} Cloud POS & Enterprise Accounting • Multi-Tenant Engine</span>
           </div>
         </div>
       </div>

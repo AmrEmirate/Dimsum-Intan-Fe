@@ -14,12 +14,13 @@ import { FactoryBillsPage } from './pages/FactoryBillsPage';
 import { FixedExpensesPage } from './pages/FixedExpensesPage';
 import { ProfitLossPage } from './pages/ProfitLossPage';
 import { BranchesPage } from './pages/BranchesPage';
+import { SuperadminPortalPage } from './pages/SuperadminPortalPage';
 
 import { BottomNav } from './components/layout/BottomNav';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 export const AppContent: React.FC = () => {
-  const { currentView, isAuthenticated } = useApp();
+  const { currentView, isAuthenticated, currentUser } = useApp();
 
   if (!isAuthenticated) {
     return (
@@ -32,6 +33,8 @@ export const AppContent: React.FC = () => {
 
   const renderCurrentView = () => {
     switch (currentView) {
+      case 'superadmin-portal':
+        return <SuperadminPortalPage />;
       case 'dashboard-utama':
         return <DashboardPage />;
       case 'master-cabang-outlet':
@@ -51,7 +54,7 @@ export const AppContent: React.FC = () => {
       case 'laporan-laba-rugi-arus-kas':
         return <ProfitLossPage />;
       default:
-        return <DashboardPage />;
+        return currentUser.role === 'SUPERADMIN' ? <SuperadminPortalPage /> : <DashboardPage />;
     }
   };
 

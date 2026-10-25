@@ -1,4 +1,25 @@
-export type UserRole = 'OWNER' | 'SUPERVISOR' | 'KASIR';
+export type UserRole = 'SUPERADMIN' | 'OWNER' | 'SUPERVISOR' | 'KASIR';
+
+export interface TenantInfo {
+  id: string;
+  name: string;
+  slug: string;
+  customDomain?: string | null;
+  logoUrl?: string | null;
+  themeColor?: string;
+  themeConfig?: any;
+  plan: string;
+  status: string;
+  subscriptionExpiresAt?: string | null;
+  counts?: {
+    outlets: number;
+    users: number;
+    menus: number;
+    orders: number;
+  };
+  totalGmv?: number;
+  createdAt?: string;
+}
 
 export interface User {
   id: string;
@@ -7,6 +28,8 @@ export interface User {
   role: UserRole;
   outletId?: string;
   outletName?: string;
+  tenantId?: string;
+  tenant?: TenantInfo | null;
   avatar?: string;
   createdAt?: string;
 }

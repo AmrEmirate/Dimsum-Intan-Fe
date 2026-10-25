@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import {
   UserRole,
   User,
+  TenantInfo,
   Outlet,
   MenuItem,
   Order,
@@ -13,7 +14,18 @@ import {
   FactoryInvoice,
   FixedExpense,
 } from '../types';
-import { api, setAuthToken, clearAuthToken, getAuthToken } from '../services/apiClient';
+import {
+  api,
+  setAuthToken,
+  clearAuthToken,
+  getAuthToken,
+  getTenantSlug,
+  setTenantSlug,
+  clearTenantSlug,
+  getActiveTenantId,
+  setActiveTenantId,
+  clearActiveTenantId,
+} from '../services/apiClient';
 
 export type AppView =
   | 'dashboard-utama'
@@ -24,7 +36,8 @@ export type AppView =
   | 'kas-kecil-outlet'
   | 'tagihan-suplai-pabrik'
   | 'beban-operasional-tetap'
-  | 'laporan-laba-rugi-arus-kas';
+  | 'laporan-laba-rugi-arus-kas'
+  | 'superadmin-portal';
 
 interface NotificationState {
   id: string;
@@ -33,6 +46,12 @@ interface NotificationState {
 }
 
 interface AppContextType {
+  // Multi-Tenant & Branding State
+  currentTenant: TenantInfo | null;
+  setCurrentTenant: (tenant: TenantInfo | null) => void;
+  loadTenantMeta: (slugOrDomain?: string) => Promise<TenantInfo | null>;
+  switchTenantView: (tenantId: string | null, tenantSlug?: string | null) => Promise<void>;
+
   // User & Auth State
   currentUser: User;
   isAuthenticated: boolean;
@@ -182,6 +201,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [notification, setNotification] = useState<NotificationState | null>(null);
 
+  // Multi-Tenant State
+  const [currentTenant, setCurrentTenant] = useState<TenantInfo | null>(null);
+
+  const applyTenantTheme = useCallback((tenant: TenantInfo | null) => {
+    if (typeof document === 'undefined') return;
+    const brandColor = tenant?.themeColor || '#ea580c';
+    document.documentElement.style.setProperty('--brand-primary', brandColor);
+    if (tenant?.name) {
+      document.title = `${tenant.name} - Cloud POS & Accounting`;
+    }
+  }, []);
+
+  const loadTenantMeta = useCallback(async (slugOrDomain?: string): Promise<TenantInfo | null> => {
+    try {
+      const slug = slugOrDomain || getTenantSlug() || undefined;
+      const res = await api.get<{ success: boolean; tenant: TenantInfo }>(
+        `/public/tenant-meta${slug ? `?slug=${encodeURIComponent(slug)}` : ''}`
+      ).catch(() => null);
+
+      if (res?.success && res.tenant) {
+        setCurrentTenant(res.tenant);
+        applyTenantTheme(res.tenant);
+        return res.tenant;
+      }
+    } catch (e) {
+      console.warn('[Tenant Meta Fetch Error]', e);
+    }
+    return null;
+  }, [applyTenantTheme]);
+
   // 2. Domain Data from Backend
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -299,6 +348,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [fetchShiftHistory, fetchStaffList]);
 
+  const switchTenantView = useCallback(async (tenantId: string | null, tenantSlug?: string | null) => {
+    if (tenantId) {
+      setActiveTenantId(tenantId);
+      if (tenantSlug) setTenantSlug(tenantSlug);
+    } else {
+      clearActiveTenantId();
+      clearTenantSlug();
+    }
+    await loadTenantMeta(tenantSlug || undefined);
+    await refreshData();
+    showNotification(
+      tenantId ? `Beralih ke konteks tenant: ${tenantSlug || tenantId}` : 'Kembali ke platform Superadmin global',
+      'info'
+    );
+  }, [loadTenantMeta, refreshData]);
+
   // Auto-sync offline orders when network connection resumes
   useEffect(() => {
     const handleOnlineSync = async () => {
@@ -346,6 +411,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setIsAuthenticated(true);
         const u = res.user;
         const avatarMap: Record<UserRole, string> = {
+          SUPERADMIN: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
           OWNER: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
           SUPERVISOR: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
           KASIR: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
@@ -353,14 +419,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const updatedUser: User = {
           id: u.id,
           name: u.name,
+          username: u.username,
           role: u.role,
           outletId: u.outletId,
           outletName: u.outletName,
+          tenantId: u.tenantId,
+          tenant: u.tenant,
           avatar: avatarMap[u.role] || avatarMap.OWNER,
         };
         setCurrentUser(updatedUser);
 
-        if (u.role === 'KASIR') {
+        if (u.tenant) {
+          setCurrentTenant(u.tenant);
+          applyTenantTheme(u.tenant);
+          setTenantSlug(u.tenant.slug);
+        }
+
+        if (u.role === 'SUPERADMIN') {
+          setSelectedOutletIdState('all');
+          setCurrentView('superadmin-portal');
+        } else if (u.role === 'KASIR') {
           setSelectedOutletIdState(u.outletId || (outlets[0]?.id ?? 'all'));
           setCurrentView('transaksi-kasir-pos');
         } else if (u.role === 'SUPERVISOR') {
@@ -384,6 +462,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Logout Method
   const logout = () => {
     clearAuthToken();
+    clearActiveTenantId();
     setIsAuthenticated(false);
     localStorage.removeItem('dimsum_current_user');
     localStorage.removeItem('dimsum_outlet_id');
@@ -406,12 +485,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       .catch(() => null);
   }, []);
 
-  // Mount Effect: Authenticate & Load Data
+  // Mount Effect: Authenticate, Load Tenant Meta & Load Data
   useEffect(() => {
+    loadTenantMeta();
     if (isAuthenticated) {
+      api.get<{ success: boolean; user: User }>('/auth/me')
+        .then((res) => {
+          if (res?.success && res.user) {
+            const u = res.user;
+            setCurrentUser((prev) => ({
+              ...prev,
+              ...u,
+            }));
+            if (u.tenant) {
+              setCurrentTenant(u.tenant);
+              applyTenantTheme(u.tenant);
+            }
+          }
+        })
+        .catch(() => null);
       refreshData();
     }
-  }, [isAuthenticated, refreshData]);
+  }, [isAuthenticated, loadTenantMeta, refreshData, applyTenantTheme]);
 
 
   const setSelectedOutletId = (id: string) => {
@@ -1178,6 +1273,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         createStaffUser,
         deleteStaffUser,
         refreshData,
+        currentTenant,
+        setCurrentTenant,
+        loadTenantMeta,
+        switchTenantView,
       }}
     >
       {children}
