@@ -173,10 +173,11 @@ interface AppContextType {
   billingStatus: BillingStatus | null;
   fetchBillingStatus: () => Promise<void>;
   createCheckout: (params: {
-    type: 'ADD_OUTLET' | 'ADD_TX_QUOTA' | 'RENEWAL';
+    type: 'ADD_OUTLET' | 'ADD_TX_QUOTA' | 'RENEWAL' | 'CHANGE_PLAN' | 'UPGRADE_PLAN';
     quantity?: number;
     extraTxQuota?: number;
     months?: number;
+    targetPlan?: string;
   }) => Promise<any>;
   simulatePayInvoice: (invoiceId: string) => Promise<boolean>;
   fetchBillingInvoices: () => Promise<SubscriptionInvoice[]>;
@@ -1237,10 +1238,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const createCheckout = useCallback(
     async (params: {
-      type: 'ADD_OUTLET' | 'ADD_TX_QUOTA' | 'RENEWAL';
+      type: 'ADD_OUTLET' | 'ADD_TX_QUOTA' | 'RENEWAL' | 'CHANGE_PLAN' | 'UPGRADE_PLAN';
       quantity?: number;
       extraTxQuota?: number;
       months?: number;
+      targetPlan?: string;
     }) => {
       try {
         const res = await api.post<{ success: boolean; data: any; message: string }>(

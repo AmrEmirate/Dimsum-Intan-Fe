@@ -38,6 +38,7 @@ export const PosPage: React.FC = () => {
     activeShift,
     showNotification,
     billingStatus,
+    getActiveOutlet,
   } = useApp();
 
   const [selectedCategory, setSelectedCategory] = useState<MenuCategory | 'all'>('all');
@@ -76,16 +77,22 @@ export const PosPage: React.FC = () => {
   };
 
   const handleConfirmPayment = async () => {
-    // Validasi kuota harian cabang
+    // Validasi kuota transaksi bulanan cabang (dihitung per bulan)
     if (billingStatus) {
-      const dailyLimit = billingStatus.effectiveDailyTxLimit || 250;
-      const todayCount = billingStatus.todayOrdersCount || 0;
-      if (todayCount >= dailyLimit) {
-        showNotification(
-          `Batas kuota cabang hari ini telah tercapai (${todayCount}/${dailyLimit} transaksi)! Silakan top-up kuota transaksi di menu Langganan & Kuota.`,
-          'error'
-        );
-        return;
+      const isUnlimited = billingStatus.isUnlimited || billingStatus.dailyTxLimitPerOutlet === 0;
+      if (!isUnlimited) {
+        const dailyLimit = (billingStatus.dailyTxLimitPerOutlet || 200) + (billingStatus.extraDailyTxLimit || 0);
+        const monthlyLimit = dailyLimit * 30;
+        const currentOutlet = getActiveOutlet();
+        const currentOutletStat = billingStatus.outlets?.find((o) => o.id === currentOutlet?.id);
+        const monthCount = (currentOutletStat ? currentOutletStat.monthOrders : billingStatus.monthOrdersCount) ?? 0;
+        if (monthCount >= monthlyLimit) {
+          showNotification(
+            `Batas kuota transaksi bulanan cabang telah tercapai (${monthCount}/${monthlyLimit} transaksi bulan ini - dihitung dari ${dailyLimit} tx/hari)! Silakan top-up kuota transaksi atau upgrade paket di menu Langganan.`,
+            'error'
+          );
+          return;
+        }
       }
     }
 

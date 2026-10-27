@@ -3,25 +3,92 @@ import {
   CreditCard,
   Building2,
   Zap,
-  Calendar,
-  CheckCircle2,
-  Clock,
-  Plus,
+  ShieldCheck,
   RefreshCw,
   QrCode,
-  ShieldCheck,
-  AlertCircle,
-  TrendingUp,
   Receipt,
-  ArrowRight,
-  ExternalLink,
   X,
-  HelpCircle,
+  CheckCircle2,
   Copy,
   Check,
+  Sparkles,
+  Infinity as InfinityIcon,
+  Layers,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { SubscriptionInvoice } from '../types';
+
+export const OFFICIAL_SAAS_PLANS = [
+  {
+    code: 'PAKET_100K',
+    name: 'Paket 1: Hemat',
+    price: 100000,
+    dailyTxLimit: 200,
+    monthlyTxLimit: 6000,
+    description: '200 transaksi per hari dihitung per bulan (6.000 tx/bln)',
+    features: [
+      '200 Transaksi / Hari (Akumulasi 6.000 Tx/Bulan)',
+      'Kasir POS & Struk Realtime',
+      'Manajemen Menu & Stok Bahan Pokok (HPP)',
+      'Rekonsiliasi Shift & Tutup Kasir',
+    ],
+    color: 'from-cyan-500 to-blue-500',
+    borderGlow: 'border-cyan-500/30 hover:border-cyan-500/60',
+    badge: 'HEMAT',
+  },
+  {
+    code: 'PAKET_150K',
+    name: 'Paket 2: Bisnis',
+    price: 150000,
+    dailyTxLimit: 300,
+    monthlyTxLimit: 9000,
+    description: '300 transaksi per hari dihitung per bulan (9.000 tx/bln)',
+    features: [
+      '300 Transaksi / Hari (Akumulasi 9.000 Tx/Bulan)',
+      'Multi-Outlet & Manajemen Karyawan',
+      'Laporan Laba Rugi & Arus Kas Otomatis',
+      'Faktur Supplier Pabrik & Beban Operasional',
+    ],
+    color: 'from-blue-500 to-indigo-500',
+    borderGlow: 'border-blue-500/40 hover:border-blue-500/70',
+    badge: 'POPULER',
+    popular: true,
+  },
+  {
+    code: 'PAKET_200K',
+    name: 'Paket 3: Pro',
+    price: 200000,
+    dailyTxLimit: 500,
+    monthlyTxLimit: 15000,
+    description: '500 transaksi per hari dihitung per bulan (15.000 tx/bln)',
+    features: [
+      '500 Transaksi / Hari (Akumulasi 15.000 Tx/Bulan)',
+      'Dukungan Transaksi Kasir Volume Tinggi',
+      'Dashboard Analitik Performa Outlet',
+      'Integrasi Payment Gateway QRIS & VA',
+    ],
+    color: 'from-amber-500 to-orange-500',
+    borderGlow: 'border-amber-500/40 hover:border-amber-500/70',
+    badge: 'PRO FLEET',
+  },
+  {
+    code: 'PAKET_250K',
+    name: 'Paket 4: Unlimited',
+    price: 250000,
+    dailyTxLimit: 0,
+    monthlyTxLimit: 0,
+    description: 'Unlimited transaksi selama sebulan (Tanpa Batas Kuota)',
+    features: [
+      'Transaksi UNLIMITED Tanpa Batas Kuota',
+      'Bebas Transaksi Kasir Tanpa Takut Terkunci',
+      'Prioritas Sinkronisasi Cloud Engine',
+      'Semua Fitur POS, Akuntansi & Superadmin',
+    ],
+    color: 'from-purple-500 to-pink-500',
+    borderGlow: 'border-purple-500/40 hover:border-purple-500/70',
+    badge: 'UNLIMITED VIP',
+  },
+];
 
 export const SubscriptionBillingPage: React.FC = () => {
   const { billingStatus, fetchBillingStatus, createCheckout, simulatePayInvoice, fetchBillingInvoices } = useApp();
@@ -32,7 +99,8 @@ export const SubscriptionBillingPage: React.FC = () => {
 
   // Checkout Modal State
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
-  const [checkoutType, setCheckoutType] = useState<'ADD_OUTLET' | 'ADD_TX_QUOTA' | 'RENEWAL'>('ADD_OUTLET');
+  const [checkoutType, setCheckoutType] = useState<'CHANGE_PLAN' | 'RENEWAL' | 'ADD_OUTLET' | 'ADD_TX_QUOTA'>('CHANGE_PLAN');
+  const [targetPlanCode, setTargetPlanCode] = useState<string>('PAKET_100K');
   const [outletQuantity, setOutletQuantity] = useState(1);
   const [txQuotaOption, setTxQuotaOption] = useState<100 | 250 | 500>(250);
   const [renewalMonths, setRenewalMonths] = useState(1);
@@ -68,8 +136,13 @@ export const SubscriptionBillingPage: React.FC = () => {
   };
 
   // Open Checkout Modal for specific action
-  const openCheckout = (type: 'ADD_OUTLET' | 'ADD_TX_QUOTA' | 'RENEWAL') => {
+  const openCheckout = (type: 'CHANGE_PLAN' | 'RENEWAL' | 'ADD_OUTLET' | 'ADD_TX_QUOTA', defaultPlan?: string) => {
     setCheckoutType(type);
+    if (defaultPlan) {
+      setTargetPlanCode(defaultPlan);
+    } else if (billingStatus?.plan) {
+      setTargetPlanCode(billingStatus.plan);
+    }
     setActivePaymentInvoice(null);
     setIsCheckoutModalOpen(true);
   };
@@ -83,6 +156,7 @@ export const SubscriptionBillingPage: React.FC = () => {
         quantity: outletQuantity,
         extraTxQuota: txQuotaOption,
         months: renewalMonths,
+        targetPlan: targetPlanCode,
       });
 
       if (res.success && res.data) {
@@ -127,16 +201,31 @@ export const SubscriptionBillingPage: React.FC = () => {
     }
   };
 
-  const pricePerOutlet = billingStatus?.pricePerOutlet || 100000;
+  const isUnlimited = billingStatus?.isUnlimited || billingStatus?.dailyTxLimitPerOutlet === 0;
+  const currentPlan = OFFICIAL_SAAS_PLANS.find(
+    (p) => p.code === billingStatus?.plan || p.code === billingStatus?.planDetails?.code
+  ) || OFFICIAL_SAAS_PLANS[0];
+
+  const pricePerOutlet = billingStatus?.pricePerOutlet || currentPlan.price;
   const currentOutlets = billingStatus?.currentOutletsCount || 1;
   const maxOutlets = billingStatus?.maxOutlets || 1;
-  const dailyTxLimit = billingStatus?.effectiveDailyTxLimit || 250;
+  const dailyTxLimit = isUnlimited ? 0 : (billingStatus?.effectiveDailyTxLimit ?? billingStatus?.dailyTxLimitPerOutlet ?? 200);
+  const monthlyTxLimit = isUnlimited ? 0 : (billingStatus?.effectiveMonthlyTxLimit ?? (dailyTxLimit * 30));
   const todayTxCount = billingStatus?.todayOrdersCount || 0;
-  const txPercentage = Math.min(100, Math.round((todayTxCount / dailyTxLimit) * 100));
+  const monthTxCount = billingStatus?.monthOrdersCount || 0;
+
+  const monthPercentage = isUnlimited
+    ? 100
+    : monthlyTxLimit > 0
+    ? Math.min(100, Math.round((monthTxCount / monthlyTxLimit) * 100))
+    : 0;
 
   // Compute calculated amounts for preview
   let previewAmount = pricePerOutlet;
-  if (checkoutType === 'ADD_OUTLET') {
+  if (checkoutType === 'CHANGE_PLAN') {
+    const selectedPlanObj = OFFICIAL_SAAS_PLANS.find((p) => p.code === targetPlanCode) || OFFICIAL_SAAS_PLANS[0];
+    previewAmount = selectedPlanObj.price * maxOutlets;
+  } else if (checkoutType === 'ADD_OUTLET') {
     previewAmount = pricePerOutlet * outletQuantity;
   } else if (checkoutType === 'ADD_TX_QUOTA') {
     previewAmount = txQuotaOption <= 100 ? 15000 : txQuotaOption <= 250 ? 25000 : 45000;
@@ -157,10 +246,17 @@ export const SubscriptionBillingPage: React.FC = () => {
               <CreditCard className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">Langganan &amp; Kuota Platform</h1>
-              <p className="text-slate-400 text-sm mt-0.5">
-                Model langganan resmi <span className="text-orange-400 font-bold">Rp 100.000 / Cabang / Bulan</span> • Syarat kuota dasar{' '}
-                <span className="text-cyan-400 font-bold">250 Transaksi / Hari per Cabang</span>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-white tracking-tight">Langganan &amp; Kuota Platform</h1>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                  {currentPlan.name}
+                </span>
+              </div>
+              <p className="text-slate-400 text-sm mt-1">
+                4 Pilihan Paket Resmi: <span className="text-cyan-400 font-bold">100K (200 Tx/hr)</span> •{' '}
+                <span className="text-blue-400 font-bold">150K (300 Tx/hr)</span> •{' '}
+                <span className="text-amber-400 font-bold">200K (500 Tx/hr)</span> •{' '}
+                <span className="text-purple-400 font-bold">250K (Unlimited)</span> — Kuota dihitung per bulan
               </p>
             </div>
           </div>
@@ -194,7 +290,7 @@ export const SubscriptionBillingPage: React.FC = () => {
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-mono font-bold tracking-wider text-slate-400 uppercase">
-              1. Masa Aktif Langganan
+              1. Masa Aktif &amp; Paket
             </span>
             <span
               className={`px-3 py-1 rounded-full text-xs font-bold font-mono ${
@@ -226,8 +322,10 @@ export const SubscriptionBillingPage: React.FC = () => {
           </div>
 
           <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
-            <span className="text-xs text-slate-400">Tarif per Cabang</span>
-            <span className="text-sm font-bold text-orange-400 font-mono">Rp 100.000 / bln</span>
+            <span className="text-xs text-slate-400">Tarif Aktif</span>
+            <span className="text-sm font-bold text-orange-400 font-mono">
+              Rp {pricePerOutlet.toLocaleString('id-ID')} / bln
+            </span>
           </div>
         </div>
 
@@ -246,7 +344,7 @@ export const SubscriptionBillingPage: React.FC = () => {
           <div className="space-y-2 mb-6">
             <div className="text-2xl font-black text-white font-mono flex items-baseline gap-2">
               <span>{maxOutlets}</span>
-              <span className="text-sm font-normal text-slate-400">Kuota Outlet Berbayar</span>
+              <span className="text-sm font-normal text-slate-400">Slot Cabang Aktif</span>
             </div>
             <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
               <div
@@ -256,8 +354,8 @@ export const SubscriptionBillingPage: React.FC = () => {
             </div>
             <p className="text-xs text-slate-400">
               {currentOutlets >= maxOutlets
-                ? 'Kuota cabang penuh. Tambah kuota untuk membuka cabang baru.'
-                : `Masih tersedia ${maxOutlets - currentOutlets} slot cabang baru.`}
+                ? 'Kuota cabang penuh. Tambah slot cabang untuk membuka cabang outlet baru.'
+                : `Tersedia slot untuk ${maxOutlets - currentOutlets} cabang outlet baru.`}
             </p>
           </div>
 
@@ -266,68 +364,208 @@ export const SubscriptionBillingPage: React.FC = () => {
               onClick={() => openCheckout('ADD_OUTLET')}
               className="w-full py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
             >
-              <Plus className="w-3.5 h-3.5" />
-              Tambah Kuota Cabang (Rp 100.000/bln)
+              <Building2 className="w-3.5 h-3.5" />
+              Tambah Slot Cabang (+Rp {pricePerOutlet.toLocaleString('id-ID')}/bln)
             </button>
           </div>
         </div>
 
-        {/* Card 3: Kuota Transaksi Harian */}
+        {/* Card 3: Kuota Transaksi Bulanan */}
         <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 relative overflow-hidden backdrop-blur-md shadow-lg group hover:border-slate-700 transition-all">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-mono font-bold tracking-wider text-slate-400 uppercase">
-              3. Kuota Transaksi Hari Ini
+              3. Kuota Transaksi (Hitung Bulanan)
             </span>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-mono bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-              {todayTxCount} / {dailyTxLimit} Tx
+              {todayTxCount} Tx Hari Ini
             </span>
           </div>
 
           <div className="space-y-2 mb-6">
             <div className="text-2xl font-black text-white font-mono flex items-baseline gap-2">
-              <span>{dailyTxLimit}</span>
-              <span className="text-sm font-normal text-slate-400">Tx / Hari per Cabang</span>
+              {isUnlimited ? (
+                <div className="flex items-center gap-2 text-purple-400">
+                  <InfinityIcon className="w-7 h-7" />
+                  <span>UNLIMITED</span>
+                </div>
+              ) : (
+                <>
+                  <span>{monthTxCount} / {monthlyTxLimit}</span>
+                  <span className="text-xs font-normal text-slate-400 font-sans">Tx Bulan Ini</span>
+                </>
+              )}
             </div>
+
             <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all duration-500 ${
-                  txPercentage >= 90
+                  isUnlimited
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 w-full'
+                    : monthPercentage >= 90
                     ? 'bg-gradient-to-r from-amber-500 to-rose-500'
                     : 'bg-gradient-to-r from-emerald-500 to-teal-400'
                 }`}
-                style={{ width: `${txPercentage}%` }}
+                style={{ width: isUnlimited ? '100%' : `${monthPercentage}%` }}
               />
             </div>
+
             <p className="text-xs text-slate-400">
-              {todayTxCount >= dailyTxLimit
-                ? 'Batas harian tercapai. Tambah kuota untuk melanjutkan kasir.'
-                : `Tersisa ${dailyTxLimit - todayTxCount} transaksi kasir untuk hari ini.`}
+              {isUnlimited ? (
+                <span className="text-purple-300 font-semibold">
+                  Transaksi tanpa batas kuota selama sebulan. Bebas transaksi kasir kapan saja.
+                </span>
+              ) : monthTxCount >= monthlyTxLimit ? (
+                <span className="text-rose-400 font-bold">
+                  Batas kuota bulanan ({monthlyTxLimit} Tx) telah tercapai! Silakan top-up atau upgrade paket.
+                </span>
+              ) : (
+                `Dihitung dari ${dailyTxLimit} tx/hari. Tersisa ${monthlyTxLimit - monthTxCount} transaksi bulan ini.`
+              )}
             </p>
           </div>
 
           <div className="pt-4 border-t border-slate-800 flex items-center justify-between">
             <button
-              onClick={() => openCheckout('ADD_TX_QUOTA')}
+              onClick={() => openCheckout('CHANGE_PLAN')}
               className="w-full py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
             >
               <Zap className="w-3.5 h-3.5" />
-              Beli Tambahan Kuota Transaksi
+              Pilih / Upgrade Paket
             </button>
           </div>
         </div>
       </div>
 
+      {/* 4 PILIHAN PAKET RESMI SAAS */}
+      <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-orange-400" />
+              <h2 className="text-lg font-bold text-white">4 Pilihan Paket Lisensi Resmi Cloud POS</h2>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Seluruh kuota transaksi harian dihitung akumulatif per bulan (30 hari). Fleksibel untuk hari ramai &amp; sepi.
+            </p>
+          </div>
+          <span className="text-xs font-mono font-semibold px-3 py-1 bg-slate-800 text-slate-300 rounded-lg self-start sm:self-auto border border-slate-700">
+            Biaya flat per cabang / bulan
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {OFFICIAL_SAAS_PLANS.map((pkg) => {
+            const isCurrent =
+              pkg.code === billingStatus?.plan ||
+              pkg.code === billingStatus?.planDetails?.code ||
+              (pkg.code === 'PAKET_100K' && (billingStatus?.plan === 'STARTER' || billingStatus?.plan === 'REGULAR')) ||
+              (pkg.code === 'PAKET_150K' && billingStatus?.plan === 'GROWTH') ||
+              (pkg.code === 'PAKET_200K' && billingStatus?.plan === 'PRO') ||
+              (pkg.code === 'PAKET_250K' && (billingStatus?.plan === 'ENTERPRISE' || billingStatus?.plan === 'UNLIMITED'));
+
+            return (
+              <div
+                key={pkg.code}
+                className={`rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 border relative overflow-hidden ${
+                  isCurrent
+                    ? 'bg-slate-800/80 border-orange-500 shadow-xl shadow-orange-500/10 ring-2 ring-orange-500/20'
+                    : `bg-slate-950/60 ${pkg.borderGlow}`
+                }`}
+              >
+                {/* Header Tag */}
+                <div className="flex items-center justify-between mb-3">
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase text-white bg-gradient-to-r ${pkg.color}`}
+                  >
+                    {pkg.badge}
+                  </span>
+                  {isCurrent && (
+                    <span className="text-[10px] font-bold font-mono text-emerald-400 flex items-center gap-1 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                      <CheckCircle2 className="w-3 h-3" />
+                      AKTIF
+                    </span>
+                  )}
+                </div>
+
+                {/* Title & Price */}
+                <div className="space-y-1 mb-4">
+                  <h3 className="text-base font-bold text-white tracking-tight">{pkg.name}</h3>
+                  <div className="text-2xl font-black text-white font-mono">
+                    Rp {pkg.price.toLocaleString('id-ID')}
+                    <span className="text-xs font-normal text-slate-400"> /bln</span>
+                  </div>
+                  <div className="text-xs font-mono font-bold text-orange-400">
+                    {pkg.dailyTxLimit === 0 ? 'Unlimited Transaksi' : `${pkg.dailyTxLimit} Tx/Hari`}
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-medium">
+                    {pkg.dailyTxLimit === 0
+                      ? 'Bebas transaksi tanpa batas selama sebulan'
+                      : `Dihitung perbulan = ${pkg.monthlyTxLimit.toLocaleString('id-ID')} tx/bln`}
+                  </div>
+                </div>
+
+                {/* Features List */}
+                <div className="space-y-2 py-4 border-t border-slate-800/80 text-xs text-slate-300 flex-1">
+                  {pkg.features.map((feat, idx) => (
+                    <div key={idx} className="flex items-start gap-2">
+                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                      <span className="leading-tight text-[11px]">{feat}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Action Button */}
+                <div className="pt-4 border-t border-slate-800/80 mt-auto">
+                  {isCurrent ? (
+                    <button
+                      disabled
+                      className="w-full py-2.5 rounded-xl bg-slate-800 text-emerald-400 text-xs font-bold font-mono border border-emerald-500/30 flex items-center justify-center gap-1.5 cursor-default"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Paket Sedang Digunakan
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => openCheckout('CHANGE_PLAN', pkg.code)}
+                      className={`w-full py-2.5 rounded-xl text-white text-xs font-bold font-sans transition-all flex items-center justify-center gap-1.5 shadow-md bg-gradient-to-r ${pkg.color} hover:brightness-110 cursor-pointer`}
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                      Pilih / Upgrade Paket Ini
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* BREAKDOWN TRANSAKSI PER CABANG */}
       <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 backdrop-blur-md">
-        <h2 className="text-base font-bold text-white mb-1">Status Pemakaian Transaksi per Cabang</h2>
-        <p className="text-xs text-slate-400 mb-6">
-          Setiap cabang mendapatkan kuota dasar 250 transaksi per hari (reset otomatis setiap pukul 00:00 WIB)
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+          <div>
+            <h2 className="text-base font-bold text-white mb-0.5">Status Pemakaian Transaksi per Cabang Outlet</h2>
+            <p className="text-xs text-slate-400">
+              Transaksi kasir dihitung akumulatif per bulan (30 hari). Reset otomatis setiap pergantian bulan kalender.
+            </p>
+          </div>
+          <div className="text-xs font-mono font-bold text-slate-400 px-3 py-1 bg-slate-800/80 rounded-lg self-start sm:self-auto border border-slate-700">
+            Total Transaksi Bulan Ini: <span className="text-white">{monthTxCount} Tx</span>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {billingStatus?.outlets?.map((o) => {
-            const pct = Math.min(100, Math.round((o.todayOrders / o.dailyLimit) * 100));
+            const isOutletUnlimited = o.isUnlimited || isUnlimited || o.dailyLimit === 0;
+            const outletMonthlyLimit = isOutletUnlimited ? 0 : (o.monthlyLimit || (o.dailyLimit * 30));
+            const outletMonthOrders = o.monthOrders || 0;
+            const pct = isOutletUnlimited
+              ? 100
+              : outletMonthlyLimit > 0
+              ? Math.min(100, Math.round((outletMonthOrders / outletMonthlyLimit) * 100))
+              : 0;
+
             return (
               <div key={o.id} className="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-3">
                 <div className="flex items-center justify-between">
@@ -341,21 +579,35 @@ export const SubscriptionBillingPage: React.FC = () => {
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs font-mono">
                     <span className="text-slate-400">Hari ini:</span>
+                    <span className="font-bold text-white">{o.todayOrders} Tx</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-slate-400">Bulan ini:</span>
                     <span className="font-bold text-white">
-                      {o.todayOrders} / {o.dailyLimit} Tx
+                      {isOutletUnlimited ? `${outletMonthOrders} Tx (Unlimited)` : `${outletMonthOrders} / ${outletMonthlyLimit} Tx`}
                     </span>
                   </div>
+
                   <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${
-                        pct >= 90 ? 'bg-rose-500' : pct >= 70 ? 'bg-amber-400' : 'bg-emerald-400'
+                        isOutletUnlimited
+                          ? 'bg-gradient-to-r from-purple-500 to-pink-500'
+                          : pct >= 90
+                          ? 'bg-rose-500'
+                          : pct >= 70
+                          ? 'bg-amber-400'
+                          : 'bg-emerald-400'
                       }`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
+
                   <div className="flex items-center justify-between text-[11px] text-slate-500 font-mono">
-                    <span>Sisa kuota</span>
-                    <span className="text-emerald-400 font-semibold">{o.remaining} transaksi</span>
+                    <span>Sisa kuota bulan ini:</span>
+                    <span className={isOutletUnlimited ? 'text-purple-400 font-bold' : 'text-emerald-400 font-semibold'}>
+                      {isOutletUnlimited ? 'UNLIMITED' : `${o.remainingMonth || Math.max(0, outletMonthlyLimit - outletMonthOrders)} Tx`}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -370,7 +622,7 @@ export const SubscriptionBillingPage: React.FC = () => {
           <div>
             <h2 className="text-base font-bold text-white">Riwayat Tagihan &amp; Payment Gateway</h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              Daftar transaksi langganan, tambah outlet, dan top up kuota via Payment Gateway
+              Daftar transaksi langganan, ganti paket, tambah outlet, dan top up kuota via Payment Gateway
             </p>
           </div>
           <button
@@ -415,7 +667,9 @@ export const SubscriptionBillingPage: React.FC = () => {
                     </td>
                     <td className="py-4 px-6 font-sans">
                       <span className="px-2.5 py-1 rounded-md text-[11px] font-bold font-mono bg-slate-800 text-slate-300 border border-slate-700">
-                        {inv.type === 'ADD_OUTLET'
+                        {inv.type === 'CHANGE_PLAN' || inv.type === 'UPGRADE_PLAN'
+                          ? 'UPGRADE / GANTI PAKET'
+                          : inv.type === 'ADD_OUTLET'
                           ? 'TAMBAH CABANG'
                           : inv.type === 'ADD_TX_QUOTA'
                           ? 'TOP-UP TRANSAKSI'
@@ -512,7 +766,27 @@ export const SubscriptionBillingPage: React.FC = () => {
             {!activePaymentInvoice ? (
               <div className="space-y-6">
                 {/* Mode Selector */}
-                <div className="grid grid-cols-3 gap-2 p-1.5 bg-slate-950 rounded-xl border border-slate-800 text-xs font-semibold">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-slate-950 rounded-xl border border-slate-800 text-xs font-semibold">
+                  <button
+                    onClick={() => setCheckoutType('CHANGE_PLAN')}
+                    className={`py-2 rounded-lg transition-all ${
+                      checkoutType === 'CHANGE_PLAN'
+                        ? 'bg-orange-500 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Ganti Paket
+                  </button>
+                  <button
+                    onClick={() => setCheckoutType('RENEWAL')}
+                    className={`py-2 rounded-lg transition-all ${
+                      checkoutType === 'RENEWAL'
+                        ? 'bg-orange-500 text-white shadow-md'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Perpanjang
+                  </button>
                   <button
                     onClick={() => setCheckoutType('ADD_OUTLET')}
                     className={`py-2 rounded-lg transition-all ${
@@ -531,21 +805,51 @@ export const SubscriptionBillingPage: React.FC = () => {
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    Tambah Transaksi
-                  </button>
-                  <button
-                    onClick={() => setCheckoutType('RENEWAL')}
-                    className={`py-2 rounded-lg transition-all ${
-                      checkoutType === 'RENEWAL'
-                        ? 'bg-orange-500 text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Perpanjang
+                    Top Up Kuota
                   </button>
                 </div>
 
-                {/* Specific Options */}
+                {/* Specific Options: CHANGE_PLAN */}
+                {checkoutType === 'CHANGE_PLAN' && (
+                  <div className="space-y-3 p-4 rounded-xl bg-slate-950/60 border border-slate-800">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      Pilih Paket SaaS yang Ingin Diaktifkan:
+                    </label>
+                    <div className="space-y-2">
+                      {OFFICIAL_SAAS_PLANS.map((pkg) => (
+                        <div
+                          key={pkg.code}
+                          onClick={() => setTargetPlanCode(pkg.code)}
+                          className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                            targetPlanCode === pkg.code
+                              ? 'bg-orange-500/10 border-orange-500 shadow-md ring-1 ring-orange-500/30'
+                              : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                          }`}
+                        >
+                          <div>
+                            <div className="text-xs font-bold text-white flex items-center gap-2">
+                              <span>{pkg.name}</span>
+                              <span className="text-[10px] font-mono font-bold text-orange-400">
+                                {pkg.dailyTxLimit === 0 ? 'Unlimited' : `${pkg.dailyTxLimit} Tx/Hari`}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-400 mt-0.5">
+                              {pkg.description}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-xs font-bold font-mono text-white">
+                              Rp {pkg.price.toLocaleString('id-ID')}
+                            </div>
+                            <div className="text-[10px] text-slate-400">/ cabang / bln</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Specific Options: ADD_OUTLET */}
                 {checkoutType === 'ADD_OUTLET' && (
                   <div className="space-y-3 p-4 rounded-xl bg-slate-950/60 border border-slate-800">
                     <label className="block text-xs font-semibold text-slate-300">
@@ -568,22 +872,23 @@ export const SubscriptionBillingPage: React.FC = () => {
                       ))}
                     </div>
                     <p className="text-[11px] text-slate-400">
-                      Tarif flat: <span className="text-white font-bold">Rp 100.000 / cabang / bulan</span>. Setiap
-                      cabang langsung mendapatkan kuota 250 transaksi / hari.
+                      Tarif: <span className="text-white font-bold">Rp {pricePerOutlet.toLocaleString('id-ID')} / cabang / bulan</span>.
+                      Setiap cabang langsung mewarisi batas kuota paket aktif Anda ({isUnlimited ? 'Unlimited' : `${dailyTxLimit} Tx/Hari dihitung perbulan`}).
                     </p>
                   </div>
                 )}
 
+                {/* Specific Options: ADD_TX_QUOTA */}
                 {checkoutType === 'ADD_TX_QUOTA' && (
                   <div className="space-y-3 p-4 rounded-xl bg-slate-950/60 border border-slate-800">
                     <label className="block text-xs font-semibold text-slate-300">
-                      Pilihan Paket Kuota Transaksi Tambahan Harian:
+                      Pilihan Paket Kuota Transaksi Tambahan:
                     </label>
                     <div className="grid grid-cols-3 gap-2.5">
                       {[
-                        { count: 100 as const, price: 15000, label: '+100 Tx/hari' },
-                        { count: 250 as const, price: 25000, label: '+250 Tx/hari' },
-                        { count: 500 as const, price: 45000, label: '+500 Tx/hari' },
+                        { count: 100 as const, price: 15000, label: '+100 Tx/hari (+3.000/bln)' },
+                        { count: 250 as const, price: 25000, label: '+250 Tx/hari (+7.500/bln)' },
+                        { count: 500 as const, price: 45000, label: '+500 Tx/hari (+15.000/bln)' },
                       ].map((pkg) => (
                         <button
                           key={pkg.count}
@@ -603,11 +908,12 @@ export const SubscriptionBillingPage: React.FC = () => {
                       ))}
                     </div>
                     <p className="text-[11px] text-slate-400">
-                      Kuota tambahan ini akan ditambahkan ke batas transaksi harian kasir per cabang.
+                      Kuota tambahan ini akan ditambahkan ke batas kuota transaksi bulanan seluruh cabang.
                     </p>
                   </div>
                 )}
 
+                {/* Specific Options: RENEWAL */}
                 {checkoutType === 'RENEWAL' && (
                   <div className="space-y-3 p-4 rounded-xl bg-slate-950/60 border border-slate-800">
                     <label className="block text-xs font-semibold text-slate-300">
@@ -659,7 +965,7 @@ export const SubscriptionBillingPage: React.FC = () => {
                 <button
                   onClick={handleProceedPayment}
                   disabled={isCreatingCheckout}
-                  className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 transition-all"
+                  className="w-full py-3.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg shadow-orange-500/25 transition-all cursor-pointer"
                 >
                   {isCreatingCheckout ? (
                     <>

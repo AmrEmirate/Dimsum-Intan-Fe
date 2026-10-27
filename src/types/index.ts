@@ -176,32 +176,53 @@ export interface FixedExpense {
   autoDebet: boolean;
 }
 
+export interface PlanConfig {
+  code: string;
+  name: string;
+  price: number;
+  dailyTxLimit: number;
+  monthlyTxLimit: number;
+  description: string;
+}
+
 export interface BillingOutletStat {
   id: string;
   code: string;
   name: string;
   todayOrders: number;
+  monthOrders?: number;
   dailyLimit: number;
-  remaining: number;
+  monthlyLimit?: number;
+  isUnlimited?: boolean;
+  remaining: number | string;
+  remainingMonth?: number | string;
 }
 
 export interface BillingStatus {
   tenantId: string;
   tenantName: string;
   plan: string;
+  planDetails?: PlanConfig;
   status: string;
+  licenseKey?: string | null;
   pricePerOutlet: number;
   currentOutletsCount: number;
   maxOutlets: number;
   canAddOutlet: boolean;
   dailyTxLimitPerOutlet: number;
+  monthlyTxLimitPerOutlet?: number;
   extraDailyTxLimit: number;
   effectiveDailyTxLimit: number;
+  effectiveMonthlyTxLimit?: number;
   todayOrdersCount: number;
+  monthOrdersCount?: number;
+  remainingMonthOrders?: number | string;
+  isUnlimited?: boolean;
   isSubscriptionActive: boolean;
   subscriptionExpiresAt: string | null;
   daysRemaining: number;
   outlets: BillingOutletStat[];
+  availablePlans?: PlanConfig[];
 }
 
 export interface SubscriptionInvoice {

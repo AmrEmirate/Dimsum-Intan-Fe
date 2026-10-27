@@ -65,7 +65,7 @@ export const SuperadminPortalPage: React.FC = () => {
   const [formName, setFormName] = useState('');
   const [formSlug, setFormSlug] = useState('');
   const [formCustomDomain, setFormCustomDomain] = useState('');
-  const [formPlan, setFormPlan] = useState<'STARTER' | 'PRO' | 'ENTERPRISE'>('PRO');
+  const [formPlan, setFormPlan] = useState<string>('PAKET_100K');
   const [formThemeColor, setFormThemeColor] = useState('#ea580c');
   const [formOwnerName, setFormOwnerName] = useState('');
   const [formOwnerUsername, setFormOwnerUsername] = useState('');
@@ -228,7 +228,13 @@ export const SuperadminPortalPage: React.FC = () => {
       t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.slug.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (t.customDomain && t.customDomain.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesPlan = selectedPlanFilter === 'ALL' || t.plan === selectedPlanFilter;
+    const matchesPlan =
+      selectedPlanFilter === 'ALL' ||
+      t.plan === selectedPlanFilter ||
+      (selectedPlanFilter === 'PAKET_100K' && (t.plan === 'STARTER' || t.plan === 'REGULAR')) ||
+      (selectedPlanFilter === 'PAKET_150K' && t.plan === 'GROWTH') ||
+      (selectedPlanFilter === 'PAKET_200K' && t.plan === 'PRO') ||
+      (selectedPlanFilter === 'PAKET_250K' && (t.plan === 'ENTERPRISE' || t.plan === 'UNLIMITED'));
     return matchesSearch && matchesPlan;
   });
 
@@ -358,9 +364,10 @@ export const SuperadminPortalPage: React.FC = () => {
               className="px-3 py-2.5 rounded-xl bg-surface-container text-xs font-bold text-brand-espresso focus:outline-none border border-border-subtle cursor-pointer"
             >
               <option value="ALL">Semua Paket</option>
-              <option value="STARTER">Starter</option>
-              <option value="PRO">Pro</option>
-              <option value="ENTERPRISE">Enterprise</option>
+              <option value="PAKET_100K">Paket 1: 100K (200 Tx/hr)</option>
+              <option value="PAKET_150K">Paket 2: 150K (300 Tx/hr)</option>
+              <option value="PAKET_200K">Paket 3: 200K (500 Tx/hr)</option>
+              <option value="PAKET_250K">Paket 4: 250K (Unlimited)</option>
             </select>
           </div>
 
@@ -437,11 +444,13 @@ export const SuperadminPortalPage: React.FC = () => {
                         <div className="flex flex-col gap-1 items-start">
                           <span
                             className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
-                              t.plan === 'ENTERPRISE'
+                              t.plan === 'PAKET_250K' || t.plan === 'ENTERPRISE' || t.plan === 'UNLIMITED'
                                 ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                                : t.plan === 'PRO'
+                                : t.plan === 'PAKET_200K' || t.plan === 'PRO'
                                 ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                                : 'bg-stone-100 text-stone-800 border border-stone-300'
+                                : t.plan === 'PAKET_150K' || t.plan === 'GROWTH'
+                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                : 'bg-cyan-100 text-cyan-800 border border-cyan-300'
                             }`}
                           >
                             {t.plan}
@@ -618,12 +627,13 @@ export const SuperadminPortalPage: React.FC = () => {
                   <label className="text-xs font-bold text-brand-espresso">Paket Langganan SaaS</label>
                   <select
                     value={formPlan}
-                    onChange={(e) => setFormPlan(e.target.value as any)}
+                    onChange={(e) => setFormPlan(e.target.value)}
                     className="w-full p-2.5 rounded-xl bg-surface-container text-xs font-bold text-brand-espresso border border-border-subtle focus:outline-none cursor-pointer"
                   >
-                    <option value="STARTER">Starter (1 Cabang - Subdomain)</option>
-                    <option value="PRO">Growth / Pro (Multi Cabang & HPP)</option>
-                    <option value="ENTERPRISE">Enterprise (Custom Dedicated)</option>
+                    <option value="PAKET_100K">Paket 1: Rp 100.000 / bln (200 Tx/Hari - 6.000 tx/bln)</option>
+                    <option value="PAKET_150K">Paket 2: Rp 150.000 / bln (300 Tx/Hari - 9.000 tx/bln)</option>
+                    <option value="PAKET_200K">Paket 3: Rp 200.000 / bln (500 Tx/Hari - 15.000 tx/bln)</option>
+                    <option value="PAKET_250K">Paket 4: Rp 250.000 / bln (Unlimited Transaksi Selama Sebulan)</option>
                   </select>
                 </div>
 
@@ -908,9 +918,10 @@ export const SuperadminPortalPage: React.FC = () => {
                     onChange={(e) => setEditingTenant({ ...editingTenant, plan: e.target.value })}
                     className="w-full p-2.5 rounded-xl bg-surface-container text-xs font-bold text-brand-espresso border border-border-subtle focus:outline-none cursor-pointer"
                   >
-                    <option value="STARTER">Starter</option>
-                    <option value="PRO">Growth / Pro</option>
-                    <option value="ENTERPRISE">Enterprise</option>
+                    <option value="PAKET_100K">Paket 1: Rp 100.000 / bln (200 Tx/Hari - 6.000 tx/bln)</option>
+                    <option value="PAKET_150K">Paket 2: Rp 150.000 / bln (300 Tx/Hari - 9.000 tx/bln)</option>
+                    <option value="PAKET_200K">Paket 3: Rp 200.000 / bln (500 Tx/Hari - 15.000 tx/bln)</option>
+                    <option value="PAKET_250K">Paket 4: Rp 250.000 / bln (Unlimited Transaksi Selama Sebulan)</option>
                   </select>
                 </div>
 
