@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { WalletTransaction, WithdrawalRequest } from '../types';
+import { api } from '../services/apiClient';
 
 export const WalletWithdrawalPage: React.FC = () => {
   const {
@@ -35,6 +36,7 @@ export const WalletWithdrawalPage: React.FC = () => {
     updateBankAccount,
     simulateDuitkuPay,
     showNotification,
+    currentUser,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'mutasi' | 'penarikan'>('mutasi');
@@ -144,6 +146,25 @@ export const WalletWithdrawalPage: React.FC = () => {
     const mockOrderNum = `INV/PST/${new Date().toISOString().slice(0, 10).replace(/-/g, '')}/${Math.floor(100 + Math.random() * 900)}`;
     await simulateDuitkuPay(mockOrderNum);
     setIsSimulating(false);
+  };
+
+  // Superadmin Action to Process or Reject Withdrawal
+  const handleSuperadminProcess = async (id: string, status: 'PROCESSED' | 'REJECTED') => {
+    try {
+      const res = await api.post<{ success: boolean; message: string }>(
+        `/superadmin/withdrawals/${id}/process`,
+        { status }
+      );
+      if (res.success) {
+        showNotification(
+          `Pengajuan penarikan dana berhasil ${status === 'PROCESSED' ? 'disetujui & ditransfer' : 'ditolak dan direfund ke dompet'}.`,
+          'success'
+        );
+        await fetchWalletSummary();
+      }
+    } catch (err: any) {
+      showNotification(err.message || 'Gagal memproses penarikan saldo', 'error');
+    }
   };
 
   // Filtered Transactions
@@ -627,9 +648,26 @@ export const WalletWithdrawalPage: React.FC = () => {
                               </span>
                             )}
                             {w.status === 'PENDING' && (
-                              <span className="text-secondary text-xs">
-                                Sedang diverifikasi bagian keuangan
-                              </span>
+                              currentUser?.role === 'SUPERADMIN' ? (
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    onClick={() => handleSuperadminProcess(w.id, 'PROCESSED')}
+                                    className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold shadow-xs cursor-pointer transition-all"
+                                  >
+                                    Setujui Transfer
+                                  </button>
+                                  <button
+                                    onClick={() => handleSuperadminProcess(w.id, 'REJECTED')}
+                                    className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold shadow-xs cursor-pointer transition-all"
+                                  >
+                                    Tolak &amp; Refund
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-secondary text-xs">
+                                  Sedang diverifikasi bagian keuangan
+                                </span>
+                              )
                             )}
                           </td>
                         </tr>
