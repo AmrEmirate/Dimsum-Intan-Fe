@@ -26,9 +26,9 @@ export const OFFICIAL_SAAS_PLANS = [
     price: 100000,
     dailyTxLimit: 200,
     monthlyTxLimit: 6000,
-    description: '200 transaksi per hari dihitung per bulan (6.000 tx/bln)',
+    description: 'Kuota 6.000 transaksi per bulan',
     features: [
-      '200 Transaksi / Hari (Akumulasi 6.000 Tx/Bulan)',
+      '6.000 Transaksi / Bulan',
       'Kasir POS & Struk Realtime',
       'Manajemen Menu & Stok Bahan Pokok (HPP)',
       'Rekonsiliasi Shift & Tutup Kasir',
@@ -43,9 +43,9 @@ export const OFFICIAL_SAAS_PLANS = [
     price: 150000,
     dailyTxLimit: 300,
     monthlyTxLimit: 9000,
-    description: '300 transaksi per hari dihitung per bulan (9.000 tx/bln)',
+    description: 'Kuota 9.000 transaksi per bulan',
     features: [
-      '300 Transaksi / Hari (Akumulasi 9.000 Tx/Bulan)',
+      '9.000 Transaksi / Bulan',
       'Multi-Outlet & Manajemen Karyawan',
       'Laporan Laba Rugi & Arus Kas Otomatis',
       'Faktur Supplier Pabrik & Beban Operasional',
@@ -61,9 +61,9 @@ export const OFFICIAL_SAAS_PLANS = [
     price: 200000,
     dailyTxLimit: 500,
     monthlyTxLimit: 15000,
-    description: '500 transaksi per hari dihitung per bulan (15.000 tx/bln)',
+    description: 'Kuota 15.000 transaksi per bulan',
     features: [
-      '500 Transaksi / Hari (Akumulasi 15.000 Tx/Bulan)',
+      '15.000 Transaksi / Bulan',
       'Dukungan Transaksi Kasir Volume Tinggi',
       'Dashboard Analitik Performa Outlet',
       'Integrasi Payment Gateway QRIS & VA',
@@ -78,7 +78,7 @@ export const OFFICIAL_SAAS_PLANS = [
     price: 250000,
     dailyTxLimit: 0,
     monthlyTxLimit: 0,
-    description: 'Unlimited transaksi selama sebulan (Tanpa Batas Kuota)',
+    description: 'Unlimited transaksi per bulan (Tanpa Batas Kuota)',
     features: [
       'Transaksi UNLIMITED Tanpa Batas Kuota',
       'Bebas Transaksi Kasir Tanpa Takut Terkunci',
@@ -444,10 +444,10 @@ export const SubscriptionBillingPage: React.FC = () => {
                 </span>
               ) : monthTxCount >= monthlyTxLimit ? (
                 <span className="text-rose-400 font-bold">
-                  Batas kuota bulanan ({monthlyTxLimit} Tx) telah tercapai! Silakan top-up atau upgrade paket.
+                  Batas kuota bulanan ({monthlyTxLimit.toLocaleString('id-ID')} Tx) telah tercapai! Silakan top-up atau upgrade paket.
                 </span>
               ) : (
-                `Dihitung dari ${dailyTxLimit} tx/hari. Tersisa ${monthlyTxLimit - monthTxCount} transaksi bulan ini.`
+                `Tersisa ${(monthlyTxLimit - monthTxCount).toLocaleString('id-ID')} transaksi bulan ini dari total kuota ${monthlyTxLimit.toLocaleString('id-ID')} tx.`
               )}
             </p>
           </div>
@@ -473,7 +473,7 @@ export const SubscriptionBillingPage: React.FC = () => {
               <h2 className="text-lg font-bold text-white">4 Pilihan Paket Lisensi Resmi Cloud POS</h2>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Seluruh kuota transaksi harian dihitung akumulatif per bulan (30 hari). Fleksibel untuk hari ramai &amp; sepi.
+              Seluruh kuota dihitung murni per bulan (30 hari). Bebas bertransaksi kapan saja tanpa batas harian.
             </p>
           </div>
           <span className="text-xs font-mono font-semibold px-3 py-1 bg-slate-800 text-slate-300 rounded-lg self-start sm:self-auto border border-slate-700">
@@ -523,12 +523,12 @@ export const SubscriptionBillingPage: React.FC = () => {
                     <span className="text-xs font-normal text-slate-400"> /bln</span>
                   </div>
                   <div className="text-xs font-mono font-bold text-orange-400">
-                    {pkg.dailyTxLimit === 0 ? 'Unlimited Transaksi' : `${pkg.dailyTxLimit} Tx/Hari`}
+                    {pkg.monthlyTxLimit === 0 ? 'Unlimited Transaksi' : `${pkg.monthlyTxLimit.toLocaleString('id-ID')} Tx / Bulan`}
                   </div>
                   <div className="text-[11px] text-slate-400 font-medium">
-                    {pkg.dailyTxLimit === 0
+                    {pkg.monthlyTxLimit === 0
                       ? 'Bebas transaksi tanpa batas selama sebulan'
-                      : `Dihitung perbulan = ${pkg.monthlyTxLimit.toLocaleString('id-ID')} tx/bln`}
+                      : `Kuota penuh ${pkg.monthlyTxLimit.toLocaleString('id-ID')} transaksi per bulan`}
                   </div>
                 </div>
 
@@ -857,7 +857,7 @@ export const SubscriptionBillingPage: React.FC = () => {
                             <div className="text-xs font-bold text-white flex items-center gap-2">
                               <span>{pkg.name}</span>
                               <span className="text-[10px] font-mono font-bold text-orange-400">
-                                {pkg.dailyTxLimit === 0 ? 'Unlimited' : `${pkg.dailyTxLimit} Tx/Hari`}
+                                {pkg.monthlyTxLimit === 0 ? 'Unlimited' : `${pkg.monthlyTxLimit.toLocaleString('id-ID')} Tx / Bln`}
                               </span>
                             </div>
                             <div className="text-[11px] text-slate-400 mt-0.5">
@@ -900,7 +900,7 @@ export const SubscriptionBillingPage: React.FC = () => {
                     </div>
                     <p className="text-[11px] text-slate-400">
                       Tarif: <span className="text-white font-bold">Rp {pricePerOutlet.toLocaleString('id-ID')} / cabang / bulan</span>.
-                      Setiap cabang langsung mewarisi batas kuota paket aktif Anda ({isUnlimited ? 'Unlimited' : `${dailyTxLimit} Tx/Hari dihitung perbulan`}).
+                      Setiap cabang langsung mewarisi batas kuota paket aktif Anda ({isUnlimited ? 'Unlimited' : `${monthlyTxLimit.toLocaleString('id-ID')} Tx / Bulan`}).
                     </p>
                   </div>
                 )}
@@ -913,9 +913,9 @@ export const SubscriptionBillingPage: React.FC = () => {
                     </label>
                     <div className="grid grid-cols-3 gap-2.5">
                       {[
-                        { count: 100 as const, price: 15000, label: '+100 Tx/hari (+3.000/bln)' },
-                        { count: 250 as const, price: 25000, label: '+250 Tx/hari (+7.500/bln)' },
-                        { count: 500 as const, price: 45000, label: '+500 Tx/hari (+15.000/bln)' },
+                        { count: 100 as const, price: 15000, label: '+3.000 Tx / Bulan' },
+                        { count: 250 as const, price: 25000, label: '+7.500 Tx / Bulan' },
+                        { count: 500 as const, price: 45000, label: '+15.000 Tx / Bulan' },
                       ].map((pkg) => (
                         <button
                           key={pkg.count}
