@@ -16,6 +16,7 @@ import { ProfitLossPage } from './pages/ProfitLossPage';
 import { BranchesPage } from './pages/BranchesPage';
 import { SuperadminPortalPage } from './pages/SuperadminPortalPage';
 import { SubscriptionBillingPage } from './pages/SubscriptionBillingPage';
+import { WalletWithdrawalPage } from './pages/WalletWithdrawalPage';
 
 import { BottomNav } from './components/layout/BottomNav';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -56,6 +57,8 @@ export const AppContent: React.FC = () => {
         return <ProfitLossPage />;
       case 'langganan-billing':
         return <SubscriptionBillingPage />;
+      case 'dompet-penarikan-saldo':
+        return <WalletWithdrawalPage />;
       default:
         return currentUser.role === 'SUPERADMIN' ? <SuperadminPortalPage /> : <DashboardPage />;
     }

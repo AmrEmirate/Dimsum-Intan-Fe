@@ -14,6 +14,10 @@ import {
   Clock,
   Sparkles,
   Flame,
+  CreditCard,
+  RefreshCw,
+  Wallet,
+  ExternalLink,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { MenuCategory, MenuItem, PaymentMethod, Order } from '../types';
@@ -39,6 +43,10 @@ export const PosPage: React.FC = () => {
     showNotification,
     billingStatus,
     getActiveOutlet,
+    createDuitkuPosQr,
+    checkDuitkuStatus,
+    simulateDuitkuPay,
+    fetchWalletSummary,
   } = useApp();
 
   const [selectedCategory, setSelectedCategory] = useState<MenuCategory | 'all'>('all');
@@ -50,6 +58,16 @@ export const PosPage: React.FC = () => {
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
   const [isMobileCartOpen, setIsMobileCartOpen] = useState<boolean>(false);
+
+  // Duitku POS QR states
+  const [duitkuQrData, setDuitkuQrData] = useState<{
+    qrString?: string;
+    orderId?: string;
+    paymentUrl?: string;
+    isLoading?: boolean;
+  } | null>(null);
+  const [isCheckingDuitku, setIsCheckingDuitku] = useState<boolean>(false);
+  const [isSimulatingDuitku, setIsSimulatingDuitku] = useState<boolean>(false);
 
   // Cart calculations
   const totalCartQty = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -65,7 +83,33 @@ export const PosPage: React.FC = () => {
     return matchesCat && matchesSearch;
   });
 
-  const handleOpenCheckout = (method: PaymentMethod) => {
+  const generateDuitkuQr = async () => {
+    setDuitkuQrData({ isLoading: true });
+    try {
+      const tempOrderId = `INV/POS-${Date.now().toString().slice(-6)}`;
+      const res = await createDuitkuPosQr({
+        orderId: tempOrderId,
+        amount: finalTotal,
+        customerName: customerName || 'Pelanggan POS',
+      });
+      if (res.success && res.qrString) {
+        setDuitkuQrData({
+          qrString: res.qrString,
+          orderId: res.orderId || tempOrderId,
+          paymentUrl: res.paymentUrl,
+          isLoading: false,
+        });
+      } else {
+        setDuitkuQrData(null);
+        showNotification('Gagal membuat QRIS Duitku dinamis.', 'error');
+      }
+    } catch (err) {
+      setDuitkuQrData(null);
+      showNotification('Koneksi ke gateway Duitku bermasalah.', 'error');
+    }
+  };
+
+  const handleOpenCheckout = async (method: PaymentMethod) => {
     if (cart.length === 0) {
       showNotification('Keranjang pesanan masih kosong!', 'warning');
       return;
@@ -74,6 +118,57 @@ export const PosPage: React.FC = () => {
     setCashGiven(finalTotal.toString());
     setIsMobileCartOpen(false);
     setIsCheckoutModalOpen(true);
+
+    if (method === 'DUITKU_QRIS') {
+      await generateDuitkuQr();
+    } else {
+      setDuitkuQrData(null);
+    }
+  };
+
+  const handleSwitchPaymentMethod = async (method: PaymentMethod) => {
+    setSelectedPaymentMethod(method);
+    if (method === 'DUITKU_QRIS' && !duitkuQrData?.qrString) {
+      await generateDuitkuQr();
+    }
+  };
+
+  const handleCheckDuitkuPayment = async () => {
+    if (!duitkuQrData?.orderId) return;
+    setIsCheckingDuitku(true);
+    try {
+      const res = await checkDuitkuStatus(duitkuQrData.orderId);
+      if (res.success && res.status === 'SUCCESS') {
+        showNotification('Pembayaran QRIS Duitku terverifikasi berhasil!', 'success');
+        await handleConfirmPayment();
+        await fetchWalletSummary();
+      } else {
+        showNotification(`Status Duitku: ${res.status || 'Menunggu Pembayaran Pelanggan'}.`, 'info');
+      }
+    } catch (e) {
+      showNotification('Gagal memeriksa status gateway Duitku.', 'error');
+    } finally {
+      setIsCheckingDuitku(false);
+    }
+  };
+
+  const handleSimulateDuitkuCustomerPayment = async () => {
+    if (!duitkuQrData?.orderId) return;
+    setIsSimulatingDuitku(true);
+    try {
+      const isSuccess = await simulateDuitkuPay(duitkuQrData.orderId);
+      if (isSuccess) {
+        showNotification('Simulasi pembayaran pelanggan berhasil diverifikasi!', 'success');
+        await handleConfirmPayment();
+        await fetchWalletSummary();
+      } else {
+        showNotification('Gagal simulasi pembayaran gateway Duitku', 'error');
+      }
+    } catch (err) {
+      showNotification('Gagal menjalankan simulasi pembayaran.', 'error');
+    } finally {
+      setIsSimulatingDuitku(false);
+    }
   };
 
   const handleConfirmPayment = async () => {
@@ -427,23 +522,35 @@ export const PosPage: React.FC = () => {
               </div>
 
               {/* Payment Action Buttons */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="flex flex-col gap-2 pt-1">
                 <button
-                  onClick={() => handleOpenCheckout('CASH')}
+                  onClick={() => handleOpenCheckout('DUITKU_QRIS')}
                   disabled={cart.length === 0}
-                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-brand-espresso hover:bg-brand-espresso-muted text-brand-gold text-xs font-bold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer"
-                >
-                  <Banknote className="w-4 h-4" />
-                  <span>Bayar Tunai</span>
-                </button>
-                <button
-                  onClick={() => handleOpenCheckout('QRIS')}
-                  disabled={cart.length === 0}
-                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 text-xs font-black shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer"
                 >
                   <QrCode className="w-4 h-4" />
-                  <span>Bayar QRIS</span>
+                  <span>QRIS Dinamis Duitku</span>
+                  <span className="text-[10px] bg-slate-950/20 text-slate-950 px-1.5 py-0.5 rounded-full font-bold">Masuk Saldo</span>
                 </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleOpenCheckout('CASH')}
+                    disabled={cart.length === 0}
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-brand-espresso hover:bg-brand-espresso-muted text-brand-gold text-xs font-bold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer"
+                  >
+                    <Banknote className="w-4 h-4" />
+                    <span>Bayar Tunai</span>
+                  </button>
+                  <button
+                    onClick={() => handleOpenCheckout('QRIS')}
+                    disabled={cart.length === 0}
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-surface-card hover:bg-surface-container text-secondary text-xs font-bold border border-border-subtle transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    <span>QRIS Statis</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -621,23 +728,34 @@ export const PosPage: React.FC = () => {
               </div>
 
               {/* Pay Tunai / QRIS buttons */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="flex flex-col gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => handleOpenCheckout('CASH')}
-                  className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-brand-espresso text-brand-gold text-xs font-bold shadow-md active:scale-95 transition-all"
-                >
-                  <Banknote className="w-4 h-4" />
-                  <span>Bayar Tunai</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleOpenCheckout('QRIS')}
-                  className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-brand-gold text-brand-espresso text-xs font-bold shadow-md active:scale-95 transition-all"
+                  onClick={() => handleOpenCheckout('DUITKU_QRIS')}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 text-xs font-black shadow-md active:scale-95 transition-all cursor-pointer"
                 >
                   <QrCode className="w-4 h-4" />
-                  <span>Bayar QRIS</span>
+                  <span>QRIS Duitku Dinamis</span>
+                  <span className="text-[10px] bg-slate-950/20 text-slate-950 px-1.5 py-0.5 rounded-full font-bold">Masuk Saldo</span>
                 </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleOpenCheckout('CASH')}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-brand-espresso text-brand-gold text-xs font-bold shadow-md active:scale-95 transition-all"
+                  >
+                    <Banknote className="w-4 h-4" />
+                    <span>Bayar Tunai</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenCheckout('QRIS')}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-surface-card border border-border-subtle text-secondary text-xs font-bold shadow-sm active:scale-95 transition-all"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    <span>QRIS Statis</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -647,7 +765,7 @@ export const PosPage: React.FC = () => {
       {/* Checkout Dialog Modal */}
       {isCheckoutModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-surface-card rounded-3xl border border-border-subtle shadow-2xl p-6 relative">
+          <div className="w-full max-w-md bg-surface-card rounded-3xl border border-border-subtle shadow-2xl p-6 relative max-h-[95vh] overflow-y-auto">
             <button
               onClick={() => setIsCheckoutModalOpen(false)}
               className="absolute top-4 right-4 p-2 rounded-full text-secondary hover:bg-surface-container"
@@ -656,13 +774,50 @@ export const PosPage: React.FC = () => {
             </button>
 
             <h3 className="font-serif-title font-bold text-xl text-brand-espresso">
-              Konfirmasi Pembayaran ({selectedPaymentMethod})
+              Konfirmasi Pembayaran
             </h3>
             <p className="text-xs text-secondary mt-1">
-              Total tagihan yang harus dibayar:
+              Pilih metode transaksi pelanggan:
             </p>
 
-            <div className="my-4 p-4 rounded-2xl bg-surface-container-low text-center">
+            {/* Payment Method Switcher Tabs */}
+            <div className="grid grid-cols-3 gap-1.5 my-3 p-1 rounded-2xl bg-surface-container-low border border-border-subtle">
+              <button
+                type="button"
+                onClick={() => handleSwitchPaymentMethod('DUITKU_QRIS')}
+                className={`py-2 px-1 rounded-xl text-[11px] font-bold transition-all text-center ${
+                  selectedPaymentMethod === 'DUITKU_QRIS'
+                    ? 'bg-amber-500 text-slate-950 shadow-sm'
+                    : 'text-secondary hover:text-brand-espresso'
+                }`}
+              >
+                QRIS Duitku
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSwitchPaymentMethod('CASH')}
+                className={`py-2 px-1 rounded-xl text-[11px] font-bold transition-all text-center ${
+                  selectedPaymentMethod === 'CASH'
+                    ? 'bg-brand-espresso text-brand-gold shadow-sm'
+                    : 'text-secondary hover:text-brand-espresso'
+                }`}
+              >
+                Tunai (Cash)
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSwitchPaymentMethod('QRIS')}
+                className={`py-2 px-1 rounded-xl text-[11px] font-bold transition-all text-center ${
+                  selectedPaymentMethod === 'QRIS'
+                    ? 'bg-brand-gold text-brand-espresso shadow-sm'
+                    : 'text-secondary hover:text-brand-espresso'
+                }`}
+              >
+                QRIS Statis
+              </button>
+            </div>
+
+            <div className="my-3 p-3.5 rounded-2xl bg-surface-container-low text-center">
               <span className="text-xs text-secondary font-semibold">Total Tagihan</span>
               <div className="font-serif-title text-2xl font-bold text-brand-espresso mt-0.5">
                 Rp {finalTotal.toLocaleString('id-ID')}
@@ -705,10 +860,79 @@ export const PosPage: React.FC = () => {
                   </span>
                 </div>
               </div>
+            ) : selectedPaymentMethod === 'DUITKU_QRIS' ? (
+              /* Duitku Dynamic QRIS */
+              <div className="flex flex-col items-center py-2 space-y-3">
+                {duitkuQrData?.isLoading ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
+                    <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
+                    <p className="text-xs text-secondary font-medium">Menyiapkan QRIS Duitku Dinamis...</p>
+                  </div>
+                ) : duitkuQrData?.qrString ? (
+                  <>
+                    <div className="p-3 bg-white rounded-2xl border-2 border-amber-500/80 shadow-md">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                          duitkuQrData.qrString
+                        )}`}
+                        alt="QRIS Dinamis Duitku"
+                        className="w-40 h-40 object-contain"
+                      />
+                    </div>
+
+                    <div className="flex flex-col items-center text-center px-2">
+                      <span className="text-[11px] font-mono font-bold text-brand-espresso">
+                        Order Ref: {duitkuQrData.orderId}
+                      </span>
+                      <span className="text-[10px] text-secondary mt-0.5">
+                        Pindai via BCA, Mandiri, BRI, BNI, GoPay, OVO, ShopeePay, Dana
+                      </span>
+                    </div>
+
+                    <div className="w-full p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-900 text-[11px] text-center font-medium">
+                      💡 Dana penjualan otomatis masuk ke <strong>Dompet Saldo POS</strong> secara real-time.
+                    </div>
+
+                    {/* Duitku actions */}
+                    <div className="w-full grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleCheckDuitkuPayment}
+                        disabled={isCheckingDuitku}
+                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-surface-container hover:bg-surface-container-high border border-border-subtle text-xs font-bold text-brand-espresso transition-all"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isCheckingDuitku ? 'animate-spin' : ''}`} />
+                        <span>Cek Status</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSimulateDuitkuCustomerPayment}
+                        disabled={isSimulatingDuitku}
+                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-bold shadow-sm transition-all"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>{isSimulatingDuitku ? 'Memproses...' : 'Simulasi Bayar'}</span>
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="py-6 flex flex-col items-center gap-2">
+                    <p className="text-xs text-red-500 font-semibold">Gagal memuat QRIS Duitku.</p>
+                    <button
+                      type="button"
+                      onClick={generateDuitkuQr}
+                      className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold"
+                    >
+                      Coba Buat Ulang
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
+              /* Static QRIS */
               <div className="flex flex-col items-center py-2 space-y-3">
                 <div className="p-4 bg-white rounded-2xl border-2 border-brand-espresso shadow-xs">
-                  {/* QRIS Pembayaran POS */}
                   <img
                     src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=00020101021226580016ID.CO.DIMSUMINTAN.POS015204581253033605802ID5912Dimsum+Intan6007Bandung62070703A0163046D5E"
                     alt="QRIS Resmi Dimsum Intan"

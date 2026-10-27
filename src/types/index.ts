@@ -63,7 +63,7 @@ export interface MenuItem {
 }
 
 export type OrderType = 'dine-in' | 'takeaway';
-export type PaymentMethod = 'CASH' | 'QRIS';
+export type PaymentMethod = 'CASH' | 'QRIS' | 'DUITKU_QRIS';
 
 export interface OrderCartItem {
   menuId: string;
@@ -242,3 +242,52 @@ export interface SubscriptionInvoice {
   createdAt: string;
   metadata?: any;
 }
+
+export interface WalletTransaction {
+  id: string;
+  tenantId: string;
+  outletId?: string | null;
+  outlet?: { id: string; name: string; code: string };
+  type: 'CREDIT' | 'DEBIT';
+  category: 'POS_SALES' | 'WITHDRAWAL' | 'ADJUSTMENT' | 'REFUND' | string;
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  referenceId?: string | null;
+  description: string;
+  createdAt: string;
+}
+
+export interface WithdrawalRequest {
+  id: string;
+  tenantId: string;
+  withdrawalNumber: string;
+  amount: number;
+  fee: number;
+  netAmount: number;
+  bankName: string;
+  bankAccountNumber: string;
+  bankAccountName: string;
+  status: 'PENDING' | 'PROCESSED' | 'REJECTED';
+  notes?: string | null;
+  rejectionReason?: string | null;
+  proofImageUrl?: string | null;
+  processedAt?: string | null;
+  createdAt: string;
+}
+
+export interface WalletSummary {
+  walletBalance: number;
+  totalCredited: number;
+  totalDebited: number;
+  pendingWithdrawalAmount: number;
+  pendingWithdrawalCount: number;
+  bankInfo: {
+    bankName: string;
+    bankAccountNumber: string;
+    bankAccountName: string;
+  };
+  recentTransactions: WalletTransaction[];
+  recentWithdrawals: WithdrawalRequest[];
+}
+

@@ -19,6 +19,7 @@ import {
   Globe,
   Sparkles,
   CreditCard,
+  Wallet,
 } from 'lucide-react';
 import { useApp, AppView } from '../../context/AppContext';
 import { OutletManagementModal } from '../outlet/OutletManagementModal';
@@ -134,6 +135,14 @@ export const Sidebar: React.FC = () => {
       section: 'akuntansi',
       icon: BarChart3,
       allowedRoles: ['SUPERADMIN', 'OWNER'],
+    },
+    {
+      id: 'dompet-penarikan-saldo',
+      label: 'Dompet & Tarik Saldo',
+      section: 'akuntansi',
+      icon: Wallet,
+      allowedRoles: ['SUPERADMIN', 'OWNER', 'SUPERVISOR'],
+      badge: 'QRIS & Payout',
     },
     {
       id: 'langganan-billing',

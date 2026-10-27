@@ -15,6 +15,9 @@ import {
   FixedExpense,
   BillingStatus,
   SubscriptionInvoice,
+  WalletSummary,
+  WalletTransaction,
+  WithdrawalRequest,
 } from '../types';
 import {
   api,
@@ -39,6 +42,7 @@ export type AppView =
   | 'tagihan-suplai-pabrik'
   | 'beban-operasional-tetap'
   | 'laporan-laba-rugi-arus-kas'
+  | 'dompet-penarikan-saldo'
   | 'langganan-billing'
   | 'superadmin-portal';
 
@@ -181,6 +185,29 @@ interface AppContextType {
   }) => Promise<any>;
   simulatePayInvoice: (invoiceId: string) => Promise<boolean>;
   fetchBillingInvoices: () => Promise<SubscriptionInvoice[]>;
+
+  // Dompet & Penarikan Saldo Tenant (Merchant Wallet & Payout)
+  walletSummary: WalletSummary | null;
+  isLoadingWallet: boolean;
+  fetchWalletSummary: () => Promise<void>;
+  requestWithdrawal: (data: {
+    amount: number;
+    bankName: string;
+    bankAccountNumber: string;
+    bankAccountName: string;
+    notes?: string;
+  }) => Promise<boolean>;
+  updateBankAccount: (data: {
+    bankName: string;
+    bankAccountNumber: string;
+    bankAccountName: string;
+  }) => Promise<boolean>;
+
+  // Duitku Payment Gateway
+  createDuitkuSubscriptionCheckout: (payload: any) => Promise<any>;
+  createDuitkuPosQr: (payload: any) => Promise<any>;
+  checkDuitkuStatus: (orderId: string) => Promise<any>;
+  simulateDuitkuPay: (orderId: string) => Promise<boolean>;
 
   // Refresh helper
   refreshData: () => Promise<void>;
@@ -1290,6 +1317,127 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, []);
 
+  // Dompet Digital & Penarikan Saldo (Merchant Wallet & Payout)
+  const [walletSummary, setWalletSummary] = useState<WalletSummary | null>(null);
+  const [isLoadingWallet, setIsLoadingWallet] = useState<boolean>(false);
+
+  const fetchWalletSummary = useCallback(async () => {
+    setIsLoadingWallet(true);
+    try {
+      const res = await api.get<{ success: boolean; data: WalletSummary }>('/wallet/summary');
+      if (res.success && res.data) {
+        setWalletSummary(res.data);
+      }
+    } catch (err) {
+      console.warn('[Wallet Summary Fetch Error]', err);
+    } finally {
+      setIsLoadingWallet(false);
+    }
+  }, []);
+
+  const requestWithdrawal = useCallback(
+    async (data: {
+      amount: number;
+      bankName: string;
+      bankAccountNumber: string;
+      bankAccountName: string;
+      notes?: string;
+    }) => {
+      try {
+        const res = await api.post<{ success: boolean; message: string; data: any }>('/wallet/withdraw', data);
+        if (res.success) {
+          showNotification(res.message || 'Permohonan penarikan saldo berhasil diajukan!', 'success');
+          await fetchWalletSummary();
+          return true;
+        }
+      } catch (err: any) {
+        showNotification(err.message || 'Gagal mengajukan penarikan dana', 'error');
+      }
+      return false;
+    },
+    [fetchWalletSummary, showNotification]
+  );
+
+  const updateBankAccount = useCallback(
+    async (data: { bankName: string; bankAccountNumber: string; bankAccountName: string }) => {
+      try {
+        const res = await api.put<{ success: boolean; message: string }>('/wallet/bank-account', data);
+        if (res.success) {
+          showNotification(res.message || 'Rekening bank berhasil disimpan!', 'success');
+          await fetchWalletSummary();
+          return true;
+        }
+      } catch (err: any) {
+        showNotification(err.message || 'Gagal menyimpan rekening bank', 'error');
+      }
+      return false;
+    },
+    [fetchWalletSummary, showNotification]
+  );
+
+  // Duitku Payment Gateway Integration
+  const createDuitkuSubscriptionCheckout = useCallback(
+    async (payload: any) => {
+      try {
+        return await api.post<{ success: boolean; data: any; message: string }>(
+          '/payment/duitku/subscription-checkout',
+          payload
+        );
+      } catch (err: any) {
+        showNotification(err.message || 'Gagal membuat invoice Duitku', 'error');
+        throw err;
+      }
+    },
+    [showNotification]
+  );
+
+  const createDuitkuPosQr = useCallback(
+    async (payload: any) => {
+      try {
+        return await api.post<{ success: boolean; data: any; message: string }>(
+          '/payment/duitku/pos-qr',
+          payload
+        );
+      } catch (err: any) {
+        showNotification(err.message || 'Gagal membuat QRIS Duitku', 'error');
+        throw err;
+      }
+    },
+    [showNotification]
+  );
+
+  const checkDuitkuStatus = useCallback(async (orderId: string) => {
+    try {
+      return await api.get<{ success: boolean; isPaid?: boolean; status?: string }>(
+        `/payment/duitku/status/${orderId}`
+      );
+    } catch (err) {
+      return null;
+    }
+  }, []);
+
+  const simulateDuitkuPay = useCallback(
+    async (orderId: string) => {
+      try {
+        const res = await api.post<{ success: boolean; message: string }>(
+          `/payment/duitku/simulate/${orderId}`,
+          {}
+        );
+        if (res.success) {
+          showNotification(res.message || 'Simulasi bayar Duitku berhasil!', 'success');
+          await fetchWalletSummary();
+          await fetchBillingStatus();
+          await refreshData();
+          return true;
+        }
+      } catch (err: any) {
+        showNotification(err.message || 'Gagal simulasi pembayaran Duitku', 'error');
+      }
+      return false;
+    },
+    [fetchWalletSummary, fetchBillingStatus, refreshData, showNotification]
+  );
+
   return (
     <AppContext.Provider
       value={{
@@ -1368,6 +1516,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         createCheckout,
         simulatePayInvoice,
         fetchBillingInvoices,
+        walletSummary,
+        isLoadingWallet,
+        fetchWalletSummary,
+        requestWithdrawal,
+        updateBankAccount,
+        createDuitkuSubscriptionCheckout,
+        createDuitkuPosQr,
+        checkDuitkuStatus,
+        simulateDuitkuPay,
       }}
     >
       {children}

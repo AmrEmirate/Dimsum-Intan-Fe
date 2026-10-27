@@ -14,6 +14,7 @@ import {
   Sparkles,
   Infinity as InfinityIcon,
   Layers,
+  ExternalLink,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { SubscriptionInvoice } from '../types';
@@ -91,7 +92,14 @@ export const OFFICIAL_SAAS_PLANS = [
 ];
 
 export const SubscriptionBillingPage: React.FC = () => {
-  const { billingStatus, fetchBillingStatus, createCheckout, simulatePayInvoice, fetchBillingInvoices } = useApp();
+  const {
+    billingStatus,
+    fetchBillingStatus,
+    createCheckout,
+    simulatePayInvoice,
+    fetchBillingInvoices,
+    createDuitkuSubscriptionCheckout,
+  } = useApp();
 
   const [invoices, setInvoices] = useState<SubscriptionInvoice[]>([]);
   const [isLoadingInvoices, setIsLoadingInvoices] = useState(false);
@@ -160,12 +168,31 @@ export const SubscriptionBillingPage: React.FC = () => {
       });
 
       if (res.success && res.data) {
-        setActivePaymentInvoice(res.data);
+        const paymentData = { ...res.data };
+
+        // Attempt Duitku Payment Gateway Checkout
+        try {
+          const duitkuRes = await createDuitkuSubscriptionCheckout({
+            invoiceId: res.data.invoice.id,
+            amount: Number(res.data.invoice.amount),
+            planName: res.data.invoice.planName || 'Paket Langganan Dimsum Intan',
+          });
+
+          if (duitkuRes.success) {
+            paymentData.gateway = 'DUITKU';
+            if (duitkuRes.paymentUrl) paymentData.snapRedirectUrl = duitkuRes.paymentUrl;
+            if (duitkuRes.qrString) paymentData.qrCodeUrl = duitkuRes.qrString;
+          }
+        } catch (duitkuErr) {
+          console.warn('Fallback to standard gateway:', duitkuErr);
+        }
+
+        setActivePaymentInvoice(paymentData);
         await loadInvoices();
 
         // If Midtrans Snap is integrated and snapToken is available
-        if (res.data.gateway === 'MIDTRANS' && res.data.snapToken && (window as any).snap) {
-          (window as any).snap.pay(res.data.snapToken, {
+        if (paymentData.gateway === 'MIDTRANS' && paymentData.snapToken && (window as any).snap) {
+          (window as any).snap.pay(paymentData.snapToken, {
             onSuccess: async () => {
               await fetchBillingStatus();
               await loadInvoices();
@@ -992,7 +1019,11 @@ export const SubscriptionBillingPage: React.FC = () => {
                 <div className="p-6 bg-white rounded-2xl inline-block shadow-2xl border border-slate-200">
                   <div className="flex items-center justify-center gap-2 mb-3 pb-2 border-b border-slate-200 text-slate-900 font-black text-xs tracking-wider">
                     <QrCode className="w-4 h-4 text-rose-600" />
-                    <span>QRIS STANDAR PEMBAYARAN NASIONAL</span>
+                    <span>
+                      {activePaymentInvoice.gateway === 'DUITKU'
+                        ? 'QRIS DUITKU PAYMENT GATEWAY'
+                        : 'QRIS STANDAR PEMBAYARAN NASIONAL'}
+                    </span>
                   </div>
 
                   {/* QRIS SVG / Visual Representation */}
@@ -1012,6 +1043,20 @@ export const SubscriptionBillingPage: React.FC = () => {
                   <div className="text-[10px] text-slate-500 mt-0.5">
                     Scan via BCA, Mandiri, BRI, BNI, GoPay, OVO, ShopeePay, Dana
                   </div>
+
+                  {activePaymentInvoice.snapRedirectUrl && (
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <a
+                        href={activePaymentInvoice.snapRedirectUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl text-xs transition-all shadow-sm"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>Buka Halaman Checkout Duitku</span>
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 {/* Virtual Account / Bank Transfer Option */}
