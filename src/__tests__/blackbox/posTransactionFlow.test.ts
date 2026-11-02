@@ -154,3 +154,4 @@ describe('Black Box Testing: POS Transaction Flow & Checkout Contract', () => {
     });
   });
 });
+

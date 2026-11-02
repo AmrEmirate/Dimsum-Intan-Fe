@@ -91,3 +91,4 @@ describe('White Box Testing: Receipt Formatting & Dynamic Brand White-Labeling',
     expect(textNoDiscount).not.toContain('Diskon:');
   });
 });
+
