@@ -59,11 +59,13 @@ export const PosPage: React.FC = () => {
 
   const [isMobileCartOpen, setIsMobileCartOpen] = useState<boolean>(false);
 
-  // Duitku POS QR states
+  // Duitku / Midtrans POS QR states
   const [duitkuQrData, setDuitkuQrData] = useState<{
     qrString?: string;
     orderId?: string;
     paymentUrl?: string;
+    providerName?: string;
+    gateway?: string;
     isLoading?: boolean;
   } | null>(null);
   const [isCheckingDuitku, setIsCheckingDuitku] = useState<boolean>(false);
@@ -87,25 +89,28 @@ export const PosPage: React.FC = () => {
     setDuitkuQrData({ isLoading: true });
     try {
       const tempOrderId = `INV/POS-${Date.now().toString().slice(-6)}`;
-      const res = await createDuitkuPosQr({
+      const res: any = await createDuitkuPosQr({
         orderId: tempOrderId,
         amount: finalTotal,
         customerName: customerName || 'Pelanggan POS',
       });
-      if (res.success && res.qrString) {
+      const data = res?.data || res;
+      if (res?.success && (data?.qrString || data?.paymentUrl)) {
         setDuitkuQrData({
-          qrString: res.qrString,
-          orderId: res.orderId || tempOrderId,
-          paymentUrl: res.paymentUrl,
+          qrString: data.qrString,
+          orderId: data.merchantOrderId || data.orderId || tempOrderId,
+          paymentUrl: data.paymentUrl,
+          providerName: data.providerName || 'QRIS Dinamis Toko',
+          gateway: data.gateway,
           isLoading: false,
         });
       } else {
         setDuitkuQrData(null);
-        showNotification('Gagal membuat QRIS Duitku dinamis.', 'error');
+        showNotification(res?.message || 'Gagal membuat QRIS dinamis.', 'error');
       }
     } catch (err) {
       setDuitkuQrData(null);
-      showNotification('Koneksi ke gateway Duitku bermasalah.', 'error');
+      showNotification('Koneksi ke gateway pembayaran bermasalah.', 'error');
     }
   };
 
@@ -880,7 +885,10 @@ export const PosPage: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col items-center text-center px-2">
-                      <span className="text-[11px] font-mono font-bold text-brand-espresso">
+                      <span className="text-xs font-bold text-orange-600">
+                        {duitkuQrData.providerName || 'QRIS Dinamis Toko'}
+                      </span>
+                      <span className="text-[11px] font-mono font-bold text-brand-espresso mt-0.5">
                         Order Ref: {duitkuQrData.orderId}
                       </span>
                       <span className="text-[10px] text-secondary mt-0.5">
@@ -888,8 +896,8 @@ export const PosPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="w-full p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-900 text-[11px] text-center font-medium">
-                      💡 Dana penjualan otomatis masuk ke <strong>Dompet Saldo POS</strong> secara real-time.
+                    <div className="w-full p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 text-[11px] text-center font-medium">
+                      💡 Dana penjualan langsung cair ke <strong>Rekening Gateway Toko Anda</strong>.
                     </div>
 
                     {/* Duitku actions */}

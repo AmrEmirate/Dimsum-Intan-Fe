@@ -20,6 +20,7 @@ import {
   Sparkles,
   CreditCard,
   Wallet,
+  QrCode,
 } from 'lucide-react';
 import { useApp, AppView } from '../../context/AppContext';
 import { OutletManagementModal } from '../outlet/OutletManagementModal';
@@ -143,6 +144,14 @@ export const Sidebar: React.FC = () => {
       icon: Wallet,
       allowedRoles: ['SUPERADMIN', 'OWNER', 'SUPERVISOR'],
       badge: 'QRIS & Payout',
+    },
+    {
+      id: 'pengaturan-payment-gateway',
+      label: 'Payment Gateway',
+      section: 'akuntansi',
+      icon: QrCode,
+      allowedRoles: ['SUPERADMIN', 'OWNER'],
+      badge: 'BYOK',
     },
     {
       id: 'langganan-billing',

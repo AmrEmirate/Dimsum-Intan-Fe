@@ -37,6 +37,7 @@ export const WalletWithdrawalPage: React.FC = () => {
     simulateDuitkuPay,
     showNotification,
     currentUser,
+    setCurrentView,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'mutasi' | 'penarikan'>('mutasi');
@@ -224,6 +225,28 @@ export const WalletWithdrawalPage: React.FC = () => {
             <span>Tarik Saldo</span>
           </button>
         </div>
+      </div>
+
+      {/* Banner Penarikan Langsung (BYOK) */}
+      <div className="bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-transparent border border-orange-500/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-orange-500/20 text-orange-400">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <h4 className="text-xs font-bold text-white">Ingin Omzet QRIS Kasir Langsung Cair ke Rekening Toko Anda?</h4>
+            <p className="text-xs text-gray-400">
+              Gunakan akun Midtrans atau Duitku Anda sendiri agar uang 100% langsung masuk ke rekening bank Anda tanpa request penarikan manual.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setCurrentView('pengaturan-payment-gateway')}
+          className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 self-start sm:self-auto flex-shrink-0 cursor-pointer"
+        >
+          <span>Setup Gateway Mandiri</span>
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* 4 SUMMARY STATS CARDS */}

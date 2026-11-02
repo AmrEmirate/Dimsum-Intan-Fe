@@ -44,7 +44,8 @@ export type AppView =
   | 'laporan-laba-rugi-arus-kas'
   | 'dompet-penarikan-saldo'
   | 'langganan-billing'
-  | 'superadmin-portal';
+  | 'superadmin-portal'
+  | 'pengaturan-payment-gateway';
 
 interface NotificationState {
   id: string;
@@ -203,11 +204,14 @@ interface AppContextType {
     bankAccountName: string;
   }) => Promise<boolean>;
 
-  // Duitku Payment Gateway
+  // Duitku & Multi-Tenant Payment Gateway
   createDuitkuSubscriptionCheckout: (payload: any) => Promise<any>;
   createDuitkuPosQr: (payload: any) => Promise<any>;
   checkDuitkuStatus: (orderId: string) => Promise<any>;
   simulateDuitkuPay: (orderId: string) => Promise<boolean>;
+  getPaymentGatewayConfig: () => Promise<any>;
+  updatePaymentGatewayConfig: (payload: any) => Promise<any>;
+  testPaymentGatewayConfig: (payload: any) => Promise<any>;
 
   // Refresh helper
   refreshData: () => Promise<void>;
@@ -1438,6 +1442,49 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     [fetchWalletSummary, fetchBillingStatus, refreshData, showNotification]
   );
 
+  const getPaymentGatewayConfig = useCallback(async () => {
+    try {
+      const res = await api.get<{ success: boolean; data: any }>('/payment/gateway/config');
+      return res.data;
+    } catch (err: any) {
+      showNotification(err.message || 'Gagal memuat konfigurasi payment gateway', 'error');
+      throw err;
+    }
+  }, [showNotification]);
+
+  const updatePaymentGatewayConfig = useCallback(
+    async (payload: any) => {
+      try {
+        const res = await api.put<{ success: boolean; message: string; provider: string }>(
+          '/payment/gateway/config',
+          payload
+        );
+        showNotification(res.message || 'Konfigurasi Payment Gateway berhasil disimpan!', 'success');
+        return res;
+      } catch (err: any) {
+        showNotification(err.message || 'Gagal menyimpan konfigurasi payment gateway', 'error');
+        throw err;
+      }
+    },
+    [showNotification]
+  );
+
+  const testPaymentGatewayConfig = useCallback(
+    async (payload: any) => {
+      try {
+        const res = await api.post<{ success: boolean; message: string }>(
+          '/payment/gateway/test',
+          payload
+        );
+        return res;
+      } catch (err: any) {
+        showNotification(err.message || 'Gagal menguji koneksi payment gateway', 'error');
+        throw err;
+      }
+    },
+    [showNotification]
+  );
+
   return (
     <AppContext.Provider
       value={{
@@ -1525,6 +1572,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         createDuitkuPosQr,
         checkDuitkuStatus,
         simulateDuitkuPay,
+        getPaymentGatewayConfig,
+        updatePaymentGatewayConfig,
+        testPaymentGatewayConfig,
       }}
     >
       {children}
