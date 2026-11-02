@@ -254,14 +254,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const applyTenantTheme = useCallback((tenant: TenantInfo | null) => {
     if (typeof document === 'undefined') return;
     const config = tenant?.themeConfig || {};
-    const brandColor = tenant?.themeColor || config.customColor || config.namedColors?.primary || '#ea580c';
-    const secondaryColor = config.namedColors?.secondary || config.overrideSecondaryColor || '#475569';
-    const surfaceColor = config.namedColors?.surface || '#ffffff';
+    const brandColor = config.primaryColor || tenant?.themeColor || config.customColor || config.namedColors?.primary || '#ea580c';
+    const secondaryColor = config.secondaryColor || config.namedColors?.secondary || config.overrideSecondaryColor || '#475569';
+    const surfaceColor = config.surfaceColor || config.namedColors?.surface || '#ffffff';
+    const accentColor = config.accentColor || config.namedColors?.accent || '#10b981';
 
     document.documentElement.style.setProperty('--brand-primary', brandColor);
     document.documentElement.style.setProperty('--brand-secondary', secondaryColor);
     document.documentElement.style.setProperty('--brand-surface', surfaceColor);
+    document.documentElement.style.setProperty('--brand-accent', accentColor);
 
+    if (config.fontFamily) {
+      document.documentElement.style.setProperty('--font-primary', config.fontFamily);
+    }
     if (config.headlineFont) {
       document.documentElement.style.setProperty('--font-headline', config.headlineFont);
     }
