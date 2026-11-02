@@ -275,22 +275,12 @@ export const PosPage: React.FC = () => {
             <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 no-scrollbar select-none">
               {[
                 { id: 'all', label: `Semua (${menuItems.length})` },
-                {
-                  id: 'mentai',
-                  label: `Mentai (${menuItems.filter((m) => m.category === 'mentai').length})`,
-                },
-                {
-                  id: 'kukus',
-                  label: `Kukus (${menuItems.filter((m) => m.category === 'kukus').length})`,
-                },
-                {
-                  id: 'goreng',
-                  label: `Goreng (${menuItems.filter((m) => m.category === 'goreng').length})`,
-                },
-                {
-                  id: 'minuman',
-                  label: `Minuman (${menuItems.filter((m) => m.category === 'minuman').length})`,
-                },
+                ...Array.from(new Set(menuItems.map((m) => m.category).filter(Boolean))).map((cat) => ({
+                  id: cat,
+                  label: `${cat.charAt(0).toUpperCase() + cat.slice(1)} (${
+                    menuItems.filter((m) => m.category === cat).length
+                  })`,
+                })),
               ].map((cat) => {
                 const active = selectedCategory === cat.id;
                 return (

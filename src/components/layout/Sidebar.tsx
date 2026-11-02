@@ -118,7 +118,7 @@ export const Sidebar: React.FC = () => {
     },
     {
       id: 'tagihan-suplai-pabrik',
-      label: 'Tagihan Suplai Pabrik',
+      label: 'Tagihan Supplier & Bahan',
       section: 'akuntansi',
       icon: Factory,
       allowedRoles: ['SUPERADMIN', 'OWNER'],

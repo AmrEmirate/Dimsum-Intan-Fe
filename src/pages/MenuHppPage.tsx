@@ -47,12 +47,28 @@ export const MenuHppPage: React.FC = () => {
   const [quickStockQty, setQuickStockQty] = useState('10');
 
   const [formName, setFormName] = useState('');
-  const [formCategory, setFormCategory] = useState<MenuCategory>('mentai');
+  const [formCategory, setFormCategory] = useState<MenuCategory>('Makanan Utama');
+  const [isCustomCategory, setIsCustomCategory] = useState<boolean>(false);
+  const [customCategoryText, setCustomCategoryText] = useState<string>('');
   const [formPrice, setFormPrice] = useState('25000');
   const [formCostPrice, setFormCostPrice] = useState('11500');
   const [formStock, setFormStock] = useState('40');
   const [formDescription, setFormDescription] = useState('');
   const [formImage, setFormImage] = useState('');
+
+  // Daftar Kategori Menu Tersedia (Default Universal F&B + Kategori Tenant)
+  const existingCategories = Array.from(
+    new Set([
+      'Makanan Utama',
+      'Minuman',
+      'Snack & Camilan',
+      'Paket Hemat',
+      'Mentai',
+      'Kukus',
+      'Goreng',
+      ...menuItems.map((m) => m.category).filter(Boolean),
+    ])
+  );
 
   // Calculations
   const totalItems = menuItems.length;
@@ -89,7 +105,9 @@ export const MenuHppPage: React.FC = () => {
     }
     setEditingItem(null);
     setFormName('');
-    setFormCategory('mentai');
+    setIsCustomCategory(false);
+    setCustomCategoryText('');
+    setFormCategory('Makanan Utama');
     setFormPrice('25000');
     setFormCostPrice('11500');
     setFormStock('30');
@@ -107,7 +125,9 @@ export const MenuHppPage: React.FC = () => {
     }
     setEditingItem(menu);
     setFormName(menu.name);
-    setFormCategory(menu.category);
+    setIsCustomCategory(false);
+    setCustomCategoryText('');
+    setFormCategory(menu.category || 'Makanan Utama');
     setFormPrice(menu.price.toString());
     setFormCostPrice(menu.costPrice.toString());
     setFormStock(menu.stock.toString());
@@ -121,11 +141,14 @@ export const MenuHppPage: React.FC = () => {
     const price = parseFloat(formPrice) || 0;
     const costPrice = parseFloat(formCostPrice) || 0;
     const stock = parseInt(formStock) || 0;
+    const finalCategory = isCustomCategory
+      ? customCategoryText.trim() || 'Lainnya'
+      : formCategory;
 
     if (editingItem) {
       updateMenuItem(editingItem.id, {
         name: formName,
-        category: formCategory,
+        category: finalCategory,
         price,
         costPrice,
         stock,
@@ -135,7 +158,7 @@ export const MenuHppPage: React.FC = () => {
     } else {
       addMenuItem({
         name: formName,
-        category: formCategory,
+        category: finalCategory,
         price,
         costPrice,
         stock,
@@ -633,12 +656,12 @@ export const MenuHppPage: React.FC = () => {
 
             <div className="mt-4 space-y-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">Nama Menu Dimsum</label>
+                <label className="text-xs font-bold text-brand-espresso">Nama Menu Produk</label>
                 <input
                   type="text"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  placeholder="Contoh: Dimsum Mozzarella Mentai"
+                  placeholder="Contoh: Dimsum Mentai, Kopi Latte, Burger Spesial"
                   className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
                   required
                 />
@@ -646,17 +669,46 @@ export const MenuHppPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-brand-espresso">Kategori</label>
-                  <select
-                    value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value as any)}
-                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                  >
-                    <option value="mentai">Dimsum Mentai</option>
-                    <option value="kukus">Dimsum Kukus</option>
-                    <option value="goreng">Dimsum Goreng</option>
-                    <option value="minuman">Minuman & Ekstra</option>
-                  </select>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-brand-espresso">Kategori</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomCategory(!isCustomCategory)}
+                      className="text-[10px] text-orange-600 hover:underline font-semibold"
+                    >
+                      {isCustomCategory ? '← Pilih dari daftar' : '+ Kategori Baru'}
+                    </button>
+                  </div>
+                  {isCustomCategory ? (
+                    <input
+                      type="text"
+                      value={customCategoryText}
+                      onChange={(e) => setCustomCategoryText(e.target.value)}
+                      placeholder="Ketik kategori baru..."
+                      className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none border border-orange-500/50"
+                      required
+                    />
+                  ) : (
+                    <select
+                      value={formCategory}
+                      onChange={(e) => {
+                        if (e.target.value === '__NEW__') {
+                          setIsCustomCategory(true);
+                          setCustomCategoryText('');
+                        } else {
+                          setFormCategory(e.target.value);
+                        }
+                      }}
+                      className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none cursor-pointer"
+                    >
+                      {existingCategories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                      <option value="__NEW__">+ Tambah Kategori Baru...</option>
+                    </select>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1">

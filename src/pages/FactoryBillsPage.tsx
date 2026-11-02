@@ -54,7 +54,7 @@ export const FactoryBillsPage: React.FC = () => {
     () => localStorage.getItem('dimsum_supplier_bank') || 'BCA 7788-990-112'
   );
   const [supplierName, setSupplierName] = useState<string>(
-    () => localStorage.getItem('dimsum_supplier_name') || 'PT Dimsum Prima Rasa'
+    () => localStorage.getItem('dimsum_supplier_name') || 'Supplier Utama'
   );
   const [supplierStatus, setSupplierStatus] = useState<string>(
     () => localStorage.getItem('dimsum_supplier_status') || 'Lancar'
@@ -257,18 +257,18 @@ export const FactoryBillsPage: React.FC = () => {
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-brand-gold text-brand-espresso text-[11px] font-bold uppercase tracking-wider">
                 <Lock className="w-3 h-3" />
-                Akses Terkunci: Owner Only (Hj. Intan Permata)
+                Akses Terkunci: Owner Only
               </span>
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                Rekanan: PT Dimsum Prima Rasa
+                Rekanan: {supplierName}
               </span>
             </div>
             <h1 className="font-serif-title text-2xl font-bold text-white tracking-tight">
-              Tagihan Suplai Pabrik Dimsum
+              Tagihan Supplier &amp; Bahan Baku
             </h1>
             <p className="text-xs text-white/70 leading-relaxed">
-              Pengelolaan faktur masuk kiriman dimsum beku & siomay dari PT Dimsum Prima Rasa ke seluruh cabang operasional.
+              Pengelolaan faktur masuk pasokan bahan baku dari supplier ke seluruh cabang operasional.
             </p>
           </div>
 

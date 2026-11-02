@@ -45,7 +45,7 @@ export interface Outlet {
   targetDailySales: number;
 }
 
-export type MenuCategory = 'mentai' | 'kukus' | 'goreng' | 'minuman';
+export type MenuCategory = string;
 
 export interface MenuItem {
   id: string;

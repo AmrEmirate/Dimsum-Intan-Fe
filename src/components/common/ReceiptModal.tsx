@@ -10,12 +10,13 @@ interface ReceiptModalProps {
 }
 
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClose }) => {
-  const { outlets } = useApp();
+  const { outlets, currentTenant } = useApp();
   const [paperSize, setPaperSize] = useState<'80mm' | '58mm'>('80mm');
   const [receiptType, setReceiptType] = useState<'customer' | 'kitchen'>('customer');
 
   if (!isOpen || !order) return null;
 
+  const brandName = currentTenant?.name || 'POS Kasir';
   const currentOutlet = outlets.find((o) => o.id === order.outletId);
   const outletAddress = currentOutlet?.address || order.outletName;
   const outletPhone = currentOutlet?.phone || '0812-3344-5500';
@@ -28,7 +29,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
     const itemsText = order.items
       .map((it) => `- ${it.name} (${it.quantity}x) = Rp ${(it.price * it.quantity).toLocaleString('id-ID')}`)
       .join('%0A');
-    const text = `*NOTA PEMBAYARAN DIMSUM INTAN*%0A` +
+    const text = `*NOTA PEMBAYARAN ${brandName.toUpperCase()}*%0A` +
       `No. Nota: ${order.invoiceNumber}%0A` +
       `Outlet: ${order.outletName}%0A` +
       `Waktu: ${new Date(order.createdAt).toLocaleString('id-ID')}%0A` +
@@ -41,7 +42,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
       `*TOTAL BAYAR: Rp ${order.total.toLocaleString('id-ID')}*%0A` +
       `Metode: ${order.paymentMethod}%0A` +
       (order.paymentMethod === 'CASH' ? `Tunai: Rp ${(order.cashReceived || order.total).toLocaleString('id-ID')}%0AKembalian: Rp ${(order.changeAmount || 0).toLocaleString('id-ID')}%0A` : '') +
-      `%0AHatur nuhun tos jajan di Dimsum Intan! 🙏`;
+      `%0ATerima kasih telah berbelanja di ${brandName}! 🙏`;
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
@@ -159,10 +160,10 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
             <>
               {/* Header Store */}
               <div className="text-center pb-3 border-b border-dashed border-gray-300">
-                <h2 className="font-serif-title font-bold text-lg tracking-wider text-black">
-                  DIMSUM INTAN
+                <h2 className="font-serif-title font-bold text-lg tracking-wider text-black uppercase">
+                  {brandName}
                 </h2>
-                <p className="text-[11px] font-sans text-gray-600">{order.outletName}</p>
+                <p className="text-[11px] font-sans text-gray-600 font-semibold">{order.outletName}</p>
                 <p className="text-[10px] text-gray-500">{outletAddress}</p>
                 <p className="text-[10px] text-gray-500">Telp: {outletPhone}</p>
               </div>
@@ -259,18 +260,18 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
               {/* Footer Note */}
               <div className="pt-4 text-center space-y-1 text-[10px] text-gray-500">
                 <p className="font-serif-title font-bold text-xs text-gray-800">
-                  Hatur Nuhun!
+                  Terima Kasih!
                 </p>
-                <p>Nikmati Kelezatan Dimsum Intan Asli</p>
+                <p>Selamat Menikmati Hidangan Kami</p>
                 <p>Kritik & Saran Hubungi Kasir</p>
               </div>
             </>
           ) : (
-            /* =================== TIKET DAPUR / STEAMER =================== */
+            /* =================== TIKET DAPUR / KITCHEN =================== */
             <>
               <div className="text-center pb-2 border-b-2 border-black">
                 <h2 className="font-bold text-base tracking-widest text-black">
-                  *** TIKET DAPUR / STEAMER ***
+                  *** TIKET DAPUR / KITCHEN ***
                 </h2>
                 <p className="text-[10px] text-gray-600">{order.outletName}</p>
               </div>

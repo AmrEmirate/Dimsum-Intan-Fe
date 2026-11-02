@@ -678,3 +678,4 @@ export const PaymentGatewayPage: React.FC = () => {
     </div>
   );
 };
+
