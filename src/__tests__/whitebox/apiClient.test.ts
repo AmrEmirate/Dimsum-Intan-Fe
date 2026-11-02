@@ -51,8 +51,8 @@ describe('White Box Testing: apiClient.ts (Token & Multi-Tenant State Storage)',
     });
   });
 
-  describe('White Box: Tenant Slug Storage', () => {
-    it('should store and retrieve tenant slug', () => {
+  describe('White Box: Tenant Slug Storage & Subdomain Parsing', () => {
+    it('should store and retrieve tenant slug from localStorage', () => {
       setTenantSlug('dimsum-intan');
       expect(getTenantSlug()).toBe('dimsum-intan');
     });
@@ -61,6 +61,28 @@ describe('White Box Testing: apiClient.ts (Token & Multi-Tenant State Storage)',
       setTenantSlug('dimsum-intan');
       clearTenantSlug();
       expect(getTenantSlug()).toBeNull();
+    });
+
+    it('should extract tenant slug from pos-[slug].vimtk.cloud hostname', () => {
+      (globalThis as any).window = {
+        location: {
+          hostname: 'pos-kedaikopi.vimtk.cloud',
+          search: '',
+        },
+      };
+
+      expect(getTenantSlug()).toBe('kedaikopi');
+    });
+
+    it('should prioritize query parameter ?tenant= over subdomain', () => {
+      (globalThis as any).window = {
+        location: {
+          hostname: 'pos-default.vimtk.cloud',
+          search: '?tenant=warungkopi',
+        },
+      };
+
+      expect(getTenantSlug()).toBe('warungkopi');
     });
   });
 
