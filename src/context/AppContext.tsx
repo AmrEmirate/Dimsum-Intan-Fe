@@ -169,7 +169,7 @@ interface AppContextType {
   deleteFixedExpense: (id: string) => Promise<boolean>;
 
   // Financial Reports
-  fetchProfitLossReport: (outletId?: string) => Promise<any>;
+  fetchProfitLossReport: (outletId?: string, startDate?: string, endDate?: string) => Promise<any>;
 
   // Security & Settings
   updatePin: (newPin: string) => Promise<boolean>;
@@ -906,7 +906,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const res = await api.post<{ success: boolean; message: string; data: ShiftSession }>(
         '/shifts/close',
-        { actualEndingCash, notes }
+        {
+          actualEndingCash,
+          notes,
+          shiftId: activeShift?.id,
+          outletId: selectedOutletId === 'all' ? (currentUser?.outletId || activeShift?.outletId) : selectedOutletId,
+        }
       );
 
       if (res.success && res.data) {
@@ -1240,9 +1245,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Financial Report from Backend
-  const fetchProfitLossReport = async (outletId?: string): Promise<any> => {
+  const fetchProfitLossReport = async (outletId?: string, startDate?: string, endDate?: string): Promise<any> => {
     try {
-      const query = outletId && outletId !== 'all' ? `?outletId=${outletId}` : '';
+      const params = new URLSearchParams();
+      if (outletId && outletId !== 'all') params.append('outletId', outletId);
+      if (startDate) params.append('startDate', startDate);
+      if (endDate) params.append('endDate', endDate);
+      const query = params.toString() ? `?${params.toString()}` : '';
       const res = await api.get<{ success: boolean; data: any }>(`/reports/profit-loss${query}`);
       if (res.success) {
         return res.data;
