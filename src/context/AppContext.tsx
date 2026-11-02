@@ -744,7 +744,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const changeAmount = paymentMethod === 'CASH' ? Math.max(0, cashReceived - finalTotal) : 0;
 
     const currentOutlet = getActiveOutlet() || outlets[0];
-    const targetOutletId = currentOutlet ? currentOutlet.id : 'du';
+    const targetOutletId = currentOutlet ? currentOutlet.id : '';
 
     try {
       const payload = {
@@ -885,7 +885,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Shift Actions via Backend API
   const openShift = async (startingCash: number) => {
     const currentOutlet = getActiveOutlet() || outlets[0];
-    const targetOutletId = currentOutlet ? currentOutlet.id : 'du';
+    const targetOutletId = currentOutlet ? currentOutlet.id : '';
 
     try {
       const res = await api.post<{ success: boolean; message: string; data: ShiftSession }>(
@@ -931,7 +931,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     receiptImage?: File | string | null
   ): Promise<boolean> => {
     const currentOutlet = getActiveOutlet() || outlets[0];
-    const targetOutletId = currentOutlet ? currentOutlet.id : 'du';
+    const targetOutletId = currentOutlet ? currentOutlet.id : '';
 
     try {
       let res: { success: boolean; message: string; data: PettyCashExpense };
