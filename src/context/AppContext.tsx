@@ -253,8 +253,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const applyTenantTheme = useCallback((tenant: TenantInfo | null) => {
     if (typeof document === 'undefined') return;
-    const brandColor = tenant?.themeColor || '#ea580c';
+    const config = tenant?.themeConfig || {};
+    const brandColor = tenant?.themeColor || config.customColor || config.namedColors?.primary || '#ea580c';
+    const secondaryColor = config.namedColors?.secondary || config.overrideSecondaryColor || '#475569';
+    const surfaceColor = config.namedColors?.surface || '#ffffff';
+
     document.documentElement.style.setProperty('--brand-primary', brandColor);
+    document.documentElement.style.setProperty('--brand-secondary', secondaryColor);
+    document.documentElement.style.setProperty('--brand-surface', surfaceColor);
+
+    if (config.headlineFont) {
+      document.documentElement.style.setProperty('--font-headline', config.headlineFont);
+    }
+    if (config.bodyFont) {
+      document.documentElement.style.setProperty('--font-body', config.bodyFont);
+    }
+
     if (tenant?.name) {
       document.title = `${tenant.name} - Cloud POS & Accounting`;
     }
