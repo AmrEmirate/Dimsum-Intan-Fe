@@ -20,6 +20,10 @@ import {
   HelpCircle,
   Building2,
   ArrowRight,
+  Wallet,
+  Coins,
+  Cpu,
+  CheckCheck,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -64,6 +68,7 @@ export const PaymentGatewayPage: React.FC = () => {
   const [testResult, setTestResult] = useState<{
     status: 'idle' | 'success' | 'error';
     message?: string;
+    latencyMs?: number;
   }>({ status: 'idle' });
 
   // Load Config
@@ -108,7 +113,7 @@ export const PaymentGatewayPage: React.FC = () => {
   const handleCopy = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(id);
-    showNotification('Link webhook berhasil disalin ke clipboard!', 'info');
+    showNotification('Link webhook callback berhasil disalin!', 'info');
     setTimeout(() => setCopiedKey(null), 2500);
   };
 
@@ -128,6 +133,7 @@ export const PaymentGatewayPage: React.FC = () => {
         midtransIsProduction,
       });
       await loadConfig();
+      showNotification('Konfigurasi payment gateway berhasil disimpan!', 'success');
     } catch (e) {
       // Error handled by context
     } finally {
@@ -138,6 +144,7 @@ export const PaymentGatewayPage: React.FC = () => {
   const handleTestConnection = async () => {
     setIsTesting(true);
     setTestResult({ status: 'idle' });
+    const startTime = Date.now();
     try {
       const payload: any = {
         provider: selectedProvider,
@@ -152,530 +159,607 @@ export const PaymentGatewayPage: React.FC = () => {
       } else if (selectedProvider === 'MIDTRANS') {
         payload.credentials = {
           serverKey: midtransServerKey,
+          clientKey: midtransClientKey,
+          merchantId: midtransMerchantId,
           isProduction: midtransIsProduction,
         };
       }
 
       const res = await testPaymentGatewayConfig(payload);
+      const elapsed = Date.now() - startTime;
       if (res.success) {
-        setTestResult({ status: 'success', message: res.message });
-        showNotification(res.message || 'Koneksi ke gateway berhasil!', 'success');
+        setTestResult({
+          status: 'success',
+          message: res.message || `Koneksi API ${selectedProvider} berhasil terverifikasi!`,
+          latencyMs: elapsed,
+        });
+        showNotification(`Uji koneksi ${selectedProvider} berhasil (${elapsed} ms)`, 'success');
       } else {
-        setTestResult({ status: 'error', message: res.message });
-        showNotification(res.message || 'Koneksi ke gateway ditolak.', 'error');
+        setTestResult({
+          status: 'error',
+          message: res.message || 'Kredensial atau otentikasi API Gateway ditolak oleh provider.',
+        });
+        showNotification('Uji koneksi gateway gagal.', 'error');
       }
-    } catch (err: any) {
-      setTestResult({ status: 'error', message: err.message || 'Gagal menghubungi server gateway' });
+    } catch (e: any) {
+      setTestResult({
+        status: 'error',
+        message: e?.message || 'Gagal tersambung ke server Payment Gateway.',
+      });
+      showNotification('Uji koneksi gateway gagal.', 'error');
     } finally {
       setIsTesting(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <RefreshCw className="w-10 h-10 text-orange-500 animate-spin" />
-        <p className="text-gray-400 font-medium text-sm">Memuat pengaturan Payment Gateway...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-8 animate-fadeIn max-w-6xl mx-auto pb-12">
-      {/* Header Banner */}
-      <div className="bg-gradient-to-r from-gray-900 via-gray-850 to-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-orange-500/10 text-orange-400 border border-orange-500/20">
-              <Sparkles className="w-3.5 h-3.5" />
-              Sistem Mandiri (Bring Your Own Keys)
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              Pengaturan Payment Gateway
+    <div className="flex flex-col gap-6 w-full max-w-full overflow-x-hidden animate-in fade-in duration-200 pb-16">
+      {/* 1. TOP HEADER SECTION */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 bg-surface-card border border-border-subtle p-6 rounded-2xl shadow-xs">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2 text-secondary mb-1">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
+              Integrasi Pembayaran Digital
+            </span>
+            <span className="text-secondary/40">/</span>
+            <span className="text-[11px] font-bold text-brand-espresso">Payment Gateway POS</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="font-serif-title text-2xl lg:text-3xl font-bold text-brand-espresso tracking-tight">
+              Payment Gateway &amp; Integrasi Digital
             </h1>
-            <p className="text-gray-400 text-sm max-w-2xl leading-relaxed">
-              Hubungkan akun <strong className="text-gray-200">Midtrans</strong> atau{' '}
-              <strong className="text-gray-200">Duitku</strong> milik Anda sendiri. Uang hasil scan QRIS kasir akan{' '}
-              <span className="text-emerald-400 font-medium">100% langsung cair ke rekening bank Anda</span> tanpa
-              melalui penampungan platform dan tanpa antrean penarikan dana manual.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={loadConfig}
-              className="p-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl transition border border-gray-700/50 shadow-sm"
-              title="Refresh status"
+            <span
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                isEnabled && selectedProvider !== 'NONE'
+                  ? 'bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border'
+                  : 'bg-status-pending-bg text-status-pending-text border border-status-pending-border'
+              }`}
             >
-              <RefreshCw className="w-5 h-5" />
-            </button>
+              <ShieldCheck className="w-3.5 h-3.5" />
+              {isEnabled && selectedProvider !== 'NONE' ? `Gateway Aktif: ${selectedProvider}` : 'Mode Tunai Saja'}
+            </span>
           </div>
-        </div>
-      </div>
-
-      {/* Status Ringkas Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-        <div className="bg-gray-850/80 border border-gray-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-gray-400 text-xs font-medium">
-            <span>Provider Kasir Aktif</span>
-            <Radio className="w-4 h-4 text-orange-400" />
-          </div>
-          <div className="text-lg font-bold text-white flex items-center gap-2">
-            {selectedProvider === 'DUITKU' && <span className="text-blue-400">Duitku Payment Gateway</span>}
-            {selectedProvider === 'MIDTRANS' && <span className="text-emerald-400">Midtrans Snap & QRIS</span>}
-            {selectedProvider === 'NONE' && <span className="text-gray-400">Mode Simulator / Uji Coba</span>}
-          </div>
-          <p className="text-xs text-gray-400">
-            {selectedProvider === 'NONE'
-              ? 'Kasir menggunakan QRIS simulasi offline'
-              : 'Aktif otomatis pada setiap transaksi kasir POS'}
+          <p className="text-secondary text-sm mt-1">
+            Konfigurasi gateway pembayaran otomatis QRIS Dinamis, Virtual Account Bank, dan E-Wallet untuk kasir POS Dimsum Intan.
           </p>
         </div>
 
-        <div className="bg-gray-850/80 border border-gray-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-gray-400 text-xs font-medium">
-            <span>Alur Pencairan (Settlement)</span>
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="text-lg font-bold text-emerald-400">Langsung ke Rekening Anda</div>
-          <p className="text-xs text-gray-400">Sesuai jadwal settlement akun gateway Anda (H+0 / H+1)</p>
-        </div>
-
-        <div className="bg-gray-850/80 border border-gray-800 rounded-2xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-gray-400 text-xs font-medium">
-            <span>Mode Keamanan API</span>
-            <Lock className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="text-lg font-bold text-white">SHA-512 & MD5 Webhook</div>
-          <p className="text-xs text-gray-400">Validasi signature ketat untuk mencegah manipulasi nota</p>
+        {/* Quick Sync */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={loadConfig}
+            disabled={isLoading}
+            className="inline-flex items-center justify-center gap-1.5 min-h-[44px] bg-surface-card hover:bg-surface-container-low text-brand-espresso px-4 py-2.5 rounded-xl border border-border-subtle shadow-xs text-xs font-semibold transition-all active:scale-95"
+          >
+            <RefreshCw className={`w-4 h-4 text-secondary ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Muat Ulang</span>
+          </button>
         </div>
       </div>
 
-      {/* Main Settings Form */}
-      <form onSubmit={handleSave} className="space-y-8">
-        {/* Step 1: Pilih Provider */}
-        <div className="bg-gray-850 border border-gray-800 rounded-3xl p-6 sm:p-8 space-y-6">
-          <div className="border-b border-gray-800 pb-4">
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-orange-400" />
-              1. Pilih Provider Payment Gateway
-            </h2>
-            <p className="text-sm text-gray-400 mt-1">
-              Tentukan provider yang ingin digunakan untuk transaksi kasir di toko Anda.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Duitku Card */}
-            <div
-              onClick={() => setSelectedProvider('DUITKU')}
-              className={`cursor-pointer rounded-2xl p-5 border-2 transition-all relative ${
-                selectedProvider === 'DUITKU'
-                  ? 'border-orange-500 bg-orange-500/10 shadow-lg shadow-orange-500/10'
-                  : 'border-gray-800 bg-gray-900/40 hover:border-gray-700'
-              }`}
-            >
-              {selectedProvider === 'DUITKU' && (
-                <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center">
-                  <Check className="w-4 h-4" />
-                </div>
-              )}
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-base mb-3 border border-blue-500/20">
+      {/* 2. PROVIDER SELECTION CARDS */}
+      <div className="flex flex-col gap-3">
+        <label className="text-xs font-bold uppercase tracking-wider text-secondary">
+          Pilih Provider Payment Gateway Utama
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Option 1: Duitku */}
+          <div
+            onClick={() => setSelectedProvider('DUITKU')}
+            className={`p-5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden ${
+              selectedProvider === 'DUITKU'
+                ? 'bg-brand-gold-subtle/40 border-brand-gold shadow-sm ring-2 ring-brand-gold/20'
+                : 'bg-surface-card border-border-subtle hover:border-brand-gold/50'
+            }`}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-brand-gold text-brand-espresso flex items-center justify-center font-bold font-mono shadow-xs">
                 DK
               </div>
-              <h3 className="font-bold text-white text-base">Duitku</h3>
-              <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                Rekomendasi terbaik untuk QRIS Dinamis instan, VA BCA/Mandiri/BRI/BNI, dan e-wallet lokal.
-              </p>
-              <div className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-400">
-                <span>Rekomendasi POS F&B</span>
-                <Zap className="w-3.5 h-3.5" />
-              </div>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-gold text-brand-espresso">
+                REKOMENDASI UMKM
+              </span>
             </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-serif-title text-base font-bold text-brand-espresso">Duitku PG</h3>
+                {selectedProvider === 'DUITKU' && <CheckCircle2 className="w-4 h-4 text-primary" />}
+              </div>
+              <p className="text-xs text-secondary mt-1">
+                Indonesian Payment Gateway spesialis QRIS Dinamis, Transfer Virtual Account (BCA, Mandiri, BRI, BNI), ShopeePay &amp; OVO.
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-border-subtle/60 flex items-center justify-between text-[11px] text-secondary">
+              <span>Settlement: H+1 Otomatis</span>
+              <span className="font-bold text-primary">Biaya MDR 0.7%</span>
+            </div>
+          </div>
 
-            {/* Midtrans Card */}
-            <div
-              onClick={() => setSelectedProvider('MIDTRANS')}
-              className={`cursor-pointer rounded-2xl p-5 border-2 transition-all relative ${
-                selectedProvider === 'MIDTRANS'
-                  ? 'border-orange-500 bg-orange-500/10 shadow-lg shadow-orange-500/10'
-                  : 'border-gray-800 bg-gray-900/40 hover:border-gray-700'
-              }`}
-            >
-              {selectedProvider === 'MIDTRANS' && (
-                <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center">
-                  <Check className="w-4 h-4" />
-                </div>
-              )}
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-base mb-3 border border-emerald-500/20">
+          {/* Option 2: Midtrans */}
+          <div
+            onClick={() => setSelectedProvider('MIDTRANS')}
+            className={`p-5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden ${
+              selectedProvider === 'MIDTRANS'
+                ? 'bg-brand-gold-subtle/40 border-brand-gold shadow-sm ring-2 ring-brand-gold/20'
+                : 'bg-surface-card border-border-subtle hover:border-brand-gold/50'
+            }`}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-surface-container-high text-brand-espresso flex items-center justify-center font-bold font-mono shadow-xs">
                 MT
               </div>
-              <h3 className="font-bold text-white text-base">Midtrans</h3>
-              <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                Mendukung GoPay, QRIS, Kartu Kredit, Virtual Account, dan ekosistem pembayaran GoTo.
-              </p>
-              <div className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-400">
-                <span>GoPay & Kartu Kredit</span>
-              </div>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-container text-secondary">
+                POPULER SAAS
+              </span>
             </div>
-
-            {/* Simulator Card */}
-            <div
-              onClick={() => setSelectedProvider('NONE')}
-              className={`cursor-pointer rounded-2xl p-5 border-2 transition-all relative ${
-                selectedProvider === 'NONE'
-                  ? 'border-orange-500 bg-orange-500/10 shadow-lg shadow-orange-500/10'
-                  : 'border-gray-800 bg-gray-900/40 hover:border-gray-700'
-              }`}
-            >
-              {selectedProvider === 'NONE' && (
-                <div className="absolute top-4 right-4 w-6 h-6 rounded-full bg-orange-500 text-white flex items-center justify-center">
-                  <Check className="w-4 h-4" />
-                </div>
-              )}
-              <div className="w-10 h-10 rounded-xl bg-gray-800 text-gray-300 flex items-center justify-center font-bold text-base mb-3 border border-gray-700">
-                SM
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-serif-title text-base font-bold text-brand-espresso">Midtrans PG</h3>
+                {selectedProvider === 'MIDTRANS' && <CheckCircle2 className="w-4 h-4 text-primary" />}
               </div>
-              <h3 className="font-bold text-white text-base">Mode Simulator</h3>
-              <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-                Gunakan mode uji coba lokal tanpa akun gateway. Berguna untuk demonstrasi dan pelatihan kasir baru.
+              <p className="text-xs text-secondary mt-1">
+                Midtrans Snap payment flow terpadu untuk GoPay, QRIS, Kartu Kredit/Debit, dan ShopeePay.
               </p>
-              <div className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-gray-400">
-                <span>Uji Coba Offline</span>
+            </div>
+            <div className="mt-4 pt-3 border-t border-border-subtle/60 flex items-center justify-between text-[11px] text-secondary">
+              <span>Snap Pop-Up Gateway</span>
+              <span className="font-bold text-primary">Enterprise Ready</span>
+            </div>
+          </div>
+
+          {/* Option 3: Offline Only */}
+          <div
+            onClick={() => setSelectedProvider('NONE')}
+            className={`p-5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden ${
+              selectedProvider === 'NONE'
+                ? 'bg-brand-gold-subtle/40 border-brand-gold shadow-sm ring-2 ring-brand-gold/20'
+                : 'bg-surface-card border-border-subtle hover:border-brand-gold/50'
+            }`}
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="w-10 h-10 rounded-xl bg-surface-container-high text-secondary flex items-center justify-center shadow-xs">
+                <Coins className="w-5 h-5" />
               </div>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-surface-container text-secondary">
+                OFFLINE ONLY
+              </span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-serif-title text-base font-bold text-brand-espresso">Offline / Tunai Saja</h3>
+                {selectedProvider === 'NONE' && <CheckCircle2 className="w-4 h-4 text-primary" />}
+              </div>
+              <p className="text-xs text-secondary mt-1">
+                Bypass seluruh sistem gateway online. Kasir hanya melayani transaksi tunai cash dan transfer manual tanpa auto-settlement.
+              </p>
+            </div>
+            <div className="mt-4 pt-3 border-t border-border-subtle/60 flex items-center justify-between text-[11px] text-secondary">
+              <span>Bypass API Cloud</span>
+              <span className="font-bold text-secondary">0 Biaya MDR</span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Step 2: Form Kredensial sesuai Provider Terpilih */}
-        {selectedProvider === 'DUITKU' && (
-          <div className="bg-gray-850 border border-gray-800 rounded-3xl p-6 sm:p-8 space-y-6 animate-fadeIn">
-            <div className="border-b border-gray-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* 3. MAIN FORM & CONFIGURATION */}
+      <form onSubmit={handleSave} className="flex flex-col gap-6">
+        <div className="bg-surface-card border border-border-subtle rounded-2xl p-6 shadow-xs space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-border-subtle gap-2">
+            <div>
+              <h2 className="font-serif-title text-lg font-bold text-brand-espresso">
+                Konfigurasi Kredensial API ({selectedProvider === 'DUITKU' ? 'Duitku' : selectedProvider === 'MIDTRANS' ? 'Midtrans' : 'Mode Offline'})
+              </h2>
+              <p className="text-xs text-secondary mt-0.5">
+                Kunci API (BYOK - Bring Your Own Keys) disimpan terenkripsi di server untuk mengotentikasi pesanan POS.
+              </p>
+            </div>
+
+            {/* Enable/Disable Toggle */}
+            <div className="flex items-center gap-3 self-start sm:self-auto">
+              <span className="text-xs font-semibold text-secondary">Status Integrasi:</span>
+              <button
+                type="button"
+                onClick={() => setIsEnabled(!isEnabled)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  isEnabled ? 'bg-brand-gold' : 'bg-surface-container-high'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                    isEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          {selectedProvider === 'NONE' ? (
+            <div className="bg-surface-container-low border border-border-subtle rounded-2xl p-6 text-center space-y-2">
+              <Coins className="w-10 h-10 text-secondary mx-auto" />
+              <h3 className="font-serif-title text-base font-bold text-brand-espresso">Mode Offline Aktif</h3>
+              <p className="text-xs text-secondary max-w-md mx-auto">
+                Kasir POS Dimsum Intan beroperasi secara manual tanpa integrasi gateway pihak ketiga. Semua transaksi ditutup melalui laci uang tunai atau rekonsiliasi manual.
+              </p>
+            </div>
+          ) : selectedProvider === 'DUITKU' ? (
+            /* DUITKU CONFIGURATION FIELDS */
+            <div className="space-y-5">
+              {/* Environment Toggle */}
+              <div className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low border border-border-subtle">
+                <div>
+                  <span className="text-xs font-bold text-brand-espresso block">Mode Lingkungan (Environment)</span>
+                  <span className="text-[11px] text-secondary">
+                    {duitkuIsProduction
+                      ? 'Production Mode: Transaksi nyata memproses dana perbankan riil.'
+                      : 'Sandbox Mode: Simulasi pengujian tanpa memotong saldo bank.'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setDuitkuIsProduction(false)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      !duitkuIsProduction
+                        ? 'bg-brand-gold text-brand-espresso shadow-xs'
+                        : 'bg-surface-card text-secondary hover:bg-surface-container'
+                    }`}
+                  >
+                    Sandbox
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDuitkuIsProduction(true)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      duitkuIsProduction
+                        ? 'bg-status-lunas-text text-white shadow-xs'
+                        : 'bg-surface-card text-secondary hover:bg-surface-container'
+                    }`}
+                  >
+                    Production (Live)
+                  </button>
+                </div>
+              </div>
+
+              {/* Merchant Code */}
               <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Key className="w-5 h-5 text-blue-400" />
-                  2. Kredensial Akun Duitku Anda
-                </h2>
-                <p className="text-sm text-gray-400 mt-1">
-                  Ambil Merchant Code dan API Key dari dashboard resmi Duitku (passport.duitku.com).
+                <label className="text-xs font-bold text-brand-espresso block mb-1.5">
+                  Duitku Merchant Code <span className="text-brand-terracotta">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={duitkuMerchantCode}
+                    onChange={(e) => setDuitkuMerchantCode(e.target.value)}
+                    placeholder="Contoh: D1234 atau DSINTAN01"
+                    required={isEnabled && selectedProvider === 'DUITKU'}
+                    className="w-full bg-surface-canvas border border-border-strong rounded-xl px-4 py-2.5 text-xs font-mono text-brand-espresso focus:outline-none focus:border-brand-gold focus:ring-2 focus:ring-brand-gold/20 transition-all"
+                  />
+                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 text-secondary text-xs">
+                    <Key className="w-4 h-4 text-secondary/60" />
+                  </div>
+                </div>
+                <p className="text-[11px] text-secondary mt-1">
+                  Didapatkan dari dashboard Duitku Merchant pada menu My Account &gt; General Settings.
                 </p>
               </div>
 
-              {/* Mode Sandbox vs Production Toggle */}
-              <div className="flex items-center gap-3 bg-gray-900 p-1.5 rounded-2xl border border-gray-800 self-start sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setDuitkuIsProduction(false)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-                    !duitkuIsProduction
-                      ? 'bg-amber-500 text-gray-950 shadow'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Sandbox (Uji Coba)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDuitkuIsProduction(true)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-                    duitkuIsProduction
-                      ? 'bg-emerald-500 text-gray-950 shadow'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Live (Production)
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Merchant Code */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider">
-                  Duitku Merchant Code <span className="text-red-400">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={duitkuMerchantCode}
-                  onChange={(e) => setDuitkuMerchantCode(e.target.value)}
-                  placeholder="Contoh: D12345"
-                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 font-mono text-sm"
-                  required
-                />
-                <p className="text-xs text-gray-500">Kode merchant unik dari Duitku.</p>
-              </div>
-
               {/* API Key */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider">
-                  Duitku API Key <span className="text-red-400">*</span>
+              <div>
+                <label className="text-xs font-bold text-brand-espresso block mb-1.5">
+                  Duitku Merchant API Key <span className="text-brand-terracotta">*</span>
                 </label>
                 <div className="relative">
                   <input
                     type={showDuitkuKey ? 'text' : 'password'}
                     value={duitkuApiKey}
                     onChange={(e) => setDuitkuApiKey(e.target.value)}
-                    placeholder={hasDuitkuKey ? '•••••••• (Tersimpan aman)' : 'Masukkan API Key Duitku'}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 pr-11 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 font-mono text-sm"
-                    required={!hasDuitkuKey}
+                    placeholder={hasDuitkuKey ? '••••••••••••••••••••••••••••••••' : 'Masukkan API Key Duitku'}
+                    required={isEnabled && selectedProvider === 'DUITKU' && !hasDuitkuKey}
+                    className="w-full bg-surface-canvas border border-border-strong rounded-xl px-4 py-2.5 pr-20 text-xs font-mono text-brand-espresso focus:outline-none focus:border-brand-gold focus:ring-2 focus:ring-brand-gold/20 transition-all"
+                  />
+                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowDuitkuKey(!showDuitkuKey)}
+                      className="p-1 text-secondary hover:text-brand-espresso"
+                      title={showDuitkuKey ? 'Sembunyikan' : 'Lihat'}
+                    >
+                      {showDuitkuKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                    {hasDuitkuKey && (
+                      <span className="text-[10px] font-bold text-status-lunas-text bg-status-lunas-bg px-2 py-0.5 rounded-md border border-status-lunas-border">
+                        Tersimpan
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Webhook Callback URL */}
+              <div>
+                <label className="text-xs font-bold text-brand-espresso block mb-1.5">
+                  URL Webhook Callback Duitku (Salin ke Dashboard Duitku)
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={webhookUrls.duitku}
+                    className="w-full bg-surface-container-low border border-border-subtle rounded-xl px-4 py-2.5 text-xs font-mono text-secondary select-all"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowDuitkuKey(!showDuitkuKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                    onClick={() => handleCopy(webhookUrls.duitku, 'duitku_webhook')}
+                    className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-4 bg-surface-card hover:bg-surface-container text-brand-espresso border border-border-subtle rounded-xl text-xs font-bold shadow-xs transition-all active:scale-95 shrink-0"
                   >
-                    {showDuitkuKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {copiedKey === 'duitku_webhook' ? (
+                      <Check className="w-4 h-4 text-status-lunas-text" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-secondary" />
+                    )}
+                    <span>Salin URL</span>
                   </button>
                 </div>
-                <p className="text-xs text-gray-500">
-                  {hasDuitkuKey
-                    ? 'Kunci telah tersimpan. Kosongkan/biarkan bertanda titik jika tidak ingin mengubah.'
-                    : 'Kunci rahasia API dari menu Integrasi di portal Duitku.'}
+                <p className="text-[11px] text-secondary mt-1">
+                  Tempel URL ini pada kolom &quot;Callback URL&quot; di dashboard Duitku agar sistem kasir dapat otomatis menerima notifikasi lunas QRIS.
                 </p>
               </div>
             </div>
-
-            {/* Webhook Callback Box */}
-            <div className="bg-gray-900/80 border border-blue-500/20 rounded-2xl p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
-                  <Globe className="w-4 h-4" />
-                  Duitku Callback URL (Wajib Didaftarkan)
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleCopy(webhookUrls.duitku, 'duitku-url')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 rounded-lg text-xs font-semibold border border-blue-500/30 transition"
-                >
-                  {copiedKey === 'duitku-url' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedKey === 'duitku-url' ? 'Tersalin' : 'Salin URL'}
-                </button>
+          ) : (
+            /* MIDTRANS CONFIGURATION FIELDS */
+            <div className="space-y-5">
+              {/* Environment Toggle */}
+              <div className="flex items-center justify-between p-4 rounded-xl bg-surface-container-low border border-border-subtle">
+                <div>
+                  <span className="text-xs font-bold text-brand-espresso block">Mode Lingkungan (Environment)</span>
+                  <span className="text-[11px] text-secondary">
+                    {midtransIsProduction
+                      ? 'Production Mode: Transaksi nyata memproses dana perbankan riil.'
+                      : 'Sandbox Mode: Simulasi pengujian menggunakan kartu uji coba.'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setMidtransIsProduction(false)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      !midtransIsProduction
+                        ? 'bg-brand-gold text-brand-espresso shadow-xs'
+                        : 'bg-surface-card text-secondary hover:bg-surface-container'
+                    }`}
+                  >
+                    Sandbox
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMidtransIsProduction(true)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      midtransIsProduction
+                        ? 'bg-status-lunas-text text-white shadow-xs'
+                        : 'bg-surface-card text-secondary hover:bg-surface-container'
+                    }`}
+                  >
+                    Production (Live)
+                  </button>
+                </div>
               </div>
-              <div className="font-mono text-xs bg-black/40 px-3.5 py-2.5 rounded-xl text-gray-300 break-all select-all border border-gray-800">
-                {webhookUrls.duitku}
-              </div>
-              <p className="text-xs text-gray-400">
-                Masukkan URL ini ke kolom <strong>Callback URL</strong> di menu <em>Proyek & Integrasi &gt; Pengaturan URL</em> pada dashboard Duitku Anda.
-              </p>
-            </div>
-          </div>
-        )}
 
-        {selectedProvider === 'MIDTRANS' && (
-          <div className="bg-gray-850 border border-gray-800 rounded-3xl p-6 sm:p-8 space-y-6 animate-fadeIn">
-            <div className="border-b border-gray-800 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Key className="w-5 h-5 text-emerald-400" />
-                  2. Kredensial Akun Midtrans Anda
-                </h2>
-                <p className="text-sm text-gray-400 mt-1">
-                  Ambil Access Keys dari dashboard resmi Midtrans (dashboard.midtrans.com).
-                </p>
-              </div>
-
-              {/* Mode Sandbox vs Production Toggle */}
-              <div className="flex items-center gap-3 bg-gray-900 p-1.5 rounded-2xl border border-gray-800 self-start sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setMidtransIsProduction(false)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-                    !midtransIsProduction
-                      ? 'bg-amber-500 text-gray-950 shadow'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Sandbox (Uji Coba)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMidtransIsProduction(true)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition ${
-                    midtransIsProduction
-                      ? 'bg-emerald-500 text-gray-950 shadow'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Live (Production)
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Server Key */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider">
-                  Midtrans Server Key <span className="text-red-400">*</span>
+              <div>
+                <label className="text-xs font-bold text-brand-espresso block mb-1.5">
+                  Midtrans Server Key <span className="text-brand-terracotta">*</span>
                 </label>
                 <div className="relative">
                   <input
                     type={showMidtransKey ? 'text' : 'password'}
                     value={midtransServerKey}
                     onChange={(e) => setMidtransServerKey(e.target.value)}
-                    placeholder={hasMidtransKey ? '•••••••• (Tersimpan aman)' : 'Contoh: Mid-server-xxxx'}
-                    className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 pr-11 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 font-mono text-sm"
-                    required={!hasMidtransKey}
+                    placeholder={hasMidtransKey ? '••••••••••••••••••••••••••••••••' : 'SB-Mid-server-XXXXX'}
+                    required={isEnabled && selectedProvider === 'MIDTRANS' && !hasMidtransKey}
+                    className="w-full bg-surface-canvas border border-border-strong rounded-xl px-4 py-2.5 pr-20 text-xs font-mono text-brand-espresso focus:outline-none focus:border-brand-gold focus:ring-2 focus:ring-brand-gold/20 transition-all"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowMidtransKey(!showMidtransKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                  >
-                    {showMidtransKey ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowMidtransKey(!showMidtransKey)}
+                      className="p-1 text-secondary hover:text-brand-espresso"
+                      title={showMidtransKey ? 'Sembunyikan' : 'Lihat'}
+                    >
+                      {showMidtransKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                    {hasMidtransKey && (
+                      <span className="text-[10px] font-bold text-status-lunas-text bg-status-lunas-bg px-2 py-0.5 rounded-md border border-status-lunas-border">
+                        Tersimpan
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500">Kunci rahasia server untuk request transaksi kasir.</p>
               </div>
 
               {/* Client Key */}
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider">
-                  Midtrans Client Key
-                </label>
+              <div>
+                <label className="text-xs font-bold text-brand-espresso block mb-1.5">Midtrans Client Key</label>
                 <input
                   type="text"
                   value={midtransClientKey}
                   onChange={(e) => setMidtransClientKey(e.target.value)}
-                  placeholder="Contoh: Mid-client-xxxx"
-                  className="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500 font-mono text-sm"
+                  placeholder="SB-Mid-client-XXXXX"
+                  className="w-full bg-surface-canvas border border-border-strong rounded-xl px-4 py-2.5 text-xs font-mono text-brand-espresso focus:outline-none focus:border-brand-gold focus:ring-2 focus:ring-brand-gold/20 transition-all"
                 />
-                <p className="text-xs text-gray-500">Client Key publik dari dashboard Midtrans.</p>
+              </div>
+
+              {/* Merchant ID */}
+              <div>
+                <label className="text-xs font-bold text-brand-espresso block mb-1.5">Midtrans Merchant ID</label>
+                <input
+                  type="text"
+                  value={midtransMerchantId}
+                  onChange={(e) => setMidtransMerchantId(e.target.value)}
+                  placeholder="Contoh: G123456789"
+                  className="w-full bg-surface-canvas border border-border-strong rounded-xl px-4 py-2.5 text-xs font-mono text-brand-espresso focus:outline-none focus:border-brand-gold focus:ring-2 focus:ring-brand-gold/20 transition-all"
+                />
+              </div>
+
+              {/* Webhook Callback URL */}
+              <div>
+                <label className="text-xs font-bold text-brand-espresso block mb-1.5">
+                  URL Notification / Webhook Midtrans
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={webhookUrls.midtrans}
+                    className="w-full bg-surface-container-low border border-border-subtle rounded-xl px-4 py-2.5 text-xs font-mono text-secondary select-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleCopy(webhookUrls.midtrans, 'midtrans_webhook')}
+                    className="inline-flex items-center justify-center gap-1.5 min-h-[44px] px-4 bg-surface-card hover:bg-surface-container text-brand-espresso border border-border-subtle rounded-xl text-xs font-bold shadow-xs transition-all active:scale-95 shrink-0"
+                  >
+                    {copiedKey === 'midtrans_webhook' ? (
+                      <Check className="w-4 h-4 text-status-lunas-text" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-secondary" />
+                    )}
+                    <span>Salin URL</span>
+                  </button>
+                </div>
               </div>
             </div>
-
-            {/* Webhook Callback Box */}
-            <div className="bg-gray-900/80 border border-emerald-500/20 rounded-2xl p-5 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                  <Globe className="w-4 h-4" />
-                  Midtrans Notification URL (Wajib Didaftarkan)
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleCopy(webhookUrls.midtrans, 'midtrans-url')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-500/30 transition"
-                >
-                  {copiedKey === 'midtrans-url' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedKey === 'midtrans-url' ? 'Tersalin' : 'Salin URL'}
-                </button>
-              </div>
-              <div className="font-mono text-xs bg-black/40 px-3.5 py-2.5 rounded-xl text-gray-300 break-all select-all border border-gray-800">
-                {webhookUrls.midtrans}
-              </div>
-              <p className="text-xs text-gray-400">
-                Masukkan URL ini ke kolom <strong>Payment Notification URL</strong> di menu <em>Settings &gt; Configuration</em> pada dashboard Midtrans Anda.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Test Result Message */}
-        {testResult.status !== 'idle' && (
-          <div
-            className={`p-4 rounded-2xl border flex items-start gap-3 animate-fadeIn ${
-              testResult.status === 'success'
-                ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300'
-                : 'bg-red-950/40 border-red-500/40 text-red-300'
-            }`}
-          >
-            {testResult.status === 'success' ? (
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5 text-emerald-400" />
-            ) : (
-              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-400" />
-            )}
-            <div className="space-y-1">
-              <p className="text-sm font-bold">
-                {testResult.status === 'success' ? 'Verifikasi Sukses' : 'Gagal Verifikasi'}
-              </p>
-              <p className="text-xs opacity-90 leading-relaxed">{testResult.message}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-gray-800">
-          {selectedProvider !== 'NONE' && (
-            <button
-              type="button"
-              onClick={handleTestConnection}
-              disabled={isTesting || isSaving}
-              className="w-full sm:w-auto px-6 py-3 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-xl font-bold text-sm border border-gray-700 transition flex items-center justify-center gap-2 shadow-sm disabled:opacity-50"
-            >
-              {isTesting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 text-amber-400" />}
-              <span>Uji Koneksi (Test API Keys)</span>
-            </button>
           )}
+        </div>
+
+        {/* 4. DIAGNOSTICS & TEST CONNECTION PANEL */}
+        {selectedProvider !== 'NONE' && (
+          <div className="bg-surface-card border border-border-subtle rounded-2xl p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h3 className="font-serif-title text-base font-bold text-brand-espresso">
+                  Diagnostik &amp; Uji Tes Koneksi API
+                </h3>
+                <p className="text-xs text-secondary mt-0.5">
+                  Verifikasi apakah server POS Dimsum Intan dapat mengotentikasi dan bertukar sinyal handshake dengan provider {selectedProvider}.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleTestConnection}
+                disabled={isTesting}
+                className="inline-flex items-center justify-center gap-2 min-h-[44px] bg-surface-card hover:bg-surface-container-low text-brand-espresso px-5 py-2.5 rounded-xl border border-border-strong shadow-xs text-xs font-bold transition-all active:scale-95 self-start sm:self-auto disabled:opacity-50"
+              >
+                <Cpu className={`w-4 h-4 text-primary ${isTesting ? 'animate-spin' : ''}`} />
+                <span>{isTesting ? 'Menguji API...' : `Uji Koneksi ${selectedProvider}`}</span>
+              </button>
+            </div>
+
+            {/* Test Result Indicator */}
+            {testResult.status !== 'idle' && (
+              <div
+                className={`p-4 rounded-xl text-xs flex items-start gap-3 border ${
+                  testResult.status === 'success'
+                    ? 'bg-status-lunas-bg text-status-lunas-text border-status-lunas-border'
+                    : 'bg-status-unpaid-bg text-status-unpaid-text border-status-unpaid-border'
+                }`}
+              >
+                {testResult.status === 'success' ? (
+                  <CheckCircle2 className="w-5 h-5 shrink-0 text-status-lunas-text" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 shrink-0 text-status-unpaid-text" />
+                )}
+                <div>
+                  <div className="font-bold">
+                    {testResult.status === 'success' ? 'Koneksi Berhasil Terverifikasi' : 'Koneksi Gagal'}
+                    {testResult.latencyMs && (
+                      <span className="font-mono ml-2 font-normal">({testResult.latencyMs} ms)</span>
+                    )}
+                  </div>
+                  <div className="mt-0.5">{testResult.message}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 5. ACTIVE PAYMENT METHODS SUMMARY */}
+        <div className="bg-surface-card border border-border-subtle rounded-2xl p-6 shadow-xs">
+          <h3 className="font-serif-title text-base font-bold text-brand-espresso mb-1">
+            Ringkasan Metode Pembayaran Kasir POS
+          </h3>
+          <p className="text-xs text-secondary mb-4">
+            Metode pembayaran yang akan muncul pada popup checkout kasir outlet Dimsum Intan.
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3.5 rounded-xl bg-surface-container-low border border-border-subtle flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <QrCode className="w-5 h-5 text-primary" />
+                <span className="w-2 h-2 rounded-full bg-status-lunas-text" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-brand-espresso block">QRIS Dinamis</span>
+                <span className="text-[10px] text-secondary">Settlement Instan</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-surface-container-low border border-border-subtle flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <CreditCard className="w-5 h-5 text-primary" />
+                <span className="w-2 h-2 rounded-full bg-status-lunas-text" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-brand-espresso block">Virtual Account</span>
+                <span className="text-[10px] text-secondary">BCA, Mandiri, BRI, BNI</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-surface-container-low border border-border-subtle flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <Wallet className="w-5 h-5 text-primary" />
+                <span className="w-2 h-2 rounded-full bg-status-lunas-text" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-brand-espresso block">E-Wallet</span>
+                <span className="text-[10px] text-secondary">ShopeePay, OVO, Dana</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-surface-container-low border border-border-subtle flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-2">
+                <Coins className="w-5 h-5 text-primary" />
+                <span className="w-2 h-2 rounded-full bg-status-lunas-text" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-brand-espresso block">Tunai Kasir</span>
+                <span className="text-[10px] text-secondary">Laci Uang Kasir</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 6. FORM ACTIONS */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <button
+            type="button"
+            onClick={loadConfig}
+            className="inline-flex items-center justify-center min-h-[48px] px-5 bg-surface-card hover:bg-surface-container-low text-secondary hover:text-brand-espresso border border-border-subtle rounded-xl text-xs font-bold transition-all"
+          >
+            Reset ke Pengaturan Awal
+          </button>
 
           <button
             type="submit"
-            disabled={isSaving || isTesting}
-            className="w-full sm:w-auto px-8 py-3 bg-orange-600 hover:bg-orange-500 text-white rounded-xl font-bold text-sm shadow-lg shadow-orange-600/30 transition flex items-center justify-center gap-2 disabled:opacity-50"
+            disabled={isSaving}
+            className="inline-flex items-center justify-center gap-2 min-h-[48px] px-8 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95 disabled:opacity-50"
           >
-            {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-            <span>Simpan Pengaturan Gateway</span>
+            <CheckCheck className="w-4 h-4" />
+            <span>{isSaving ? 'Menyimpan Konfigurasi...' : 'Simpan Konfigurasi Gateway'}</span>
           </button>
         </div>
       </form>
-
-      {/* Panduan 3 Langkah Pendaftaran */}
-      <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 space-y-4">
-        <h3 className="text-base font-bold text-white flex items-center gap-2">
-          <HelpCircle className="w-5 h-5 text-orange-400" />
-          Panduan Singkat: Cara Membuat Akun Payment Gateway Toko Anda
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-          <div className="bg-gray-850 p-4 rounded-2xl border border-gray-800/80 space-y-2">
-            <div className="w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 font-bold text-xs flex items-center justify-center border border-orange-500/30">
-              1
-            </div>
-            <h4 className="font-bold text-sm text-white">Daftar Akun Merchant</h4>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Daftar gratis di{' '}
-              <a
-                href="https://duitku.com"
-                target="_blank"
-                rel="noreferrer"
-                className="text-orange-400 hover:underline inline-flex items-center gap-0.5"
-              >
-                Duitku.com <ExternalLink className="w-3 h-3" />
-              </a>{' '}
-              atau{' '}
-              <a
-                href="https://midtrans.com"
-                target="_blank"
-                rel="noreferrer"
-                className="text-orange-400 hover:underline inline-flex items-center gap-0.5"
-              >
-                Midtrans.com <ExternalLink className="w-3 h-3" />
-              </a>
-              . Lengkapi verifikasi KTP/rekening bank toko Anda.
-            </p>
-          </div>
-
-          <div className="bg-gray-850 p-4 rounded-2xl border border-gray-800/80 space-y-2">
-            <div className="w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 font-bold text-xs flex items-center justify-center border border-orange-500/30">
-              2
-            </div>
-            <h4 className="font-bold text-sm text-white">Salin Kredensial & Webhook</h4>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Buka menu Integrasi / API Keys di dashboard gateway. Salin Merchant Code & API Key ke formulir di atas, lalu daftarkan Webhook URL kita.
-            </p>
-          </div>
-
-          <div className="bg-gray-850 p-4 rounded-2xl border border-gray-800/80 space-y-2">
-            <div className="w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 font-bold text-xs flex items-center justify-center border border-orange-500/30">
-              3
-            </div>
-            <h4 className="font-bold text-sm text-white">Siap Dipakai Kasir</h4>
-            <p className="text-xs text-gray-400 leading-relaxed">
-              Begitu disimpan, saat kasir klik bayar QRIS, QR dinamis akan terhubung ke rekening gateway Anda. Uang langsung masuk tanpa perantara!
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
-
