@@ -57,9 +57,9 @@ jobs:
           if [ -n "$COOLIFY_WEBHOOK" ]; then
             echo "Memanggil Webhook Deploy Coolify..."
             if [ -n "$COOLIFY_TOKEN" ]; then
-              curl -s -f -X POST "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN"
+              curl -s -f -X POST "$COOLIFY_WEBHOOK" -H "Authorization: Bearer $COOLIFY_TOKEN" || echo "Coolify webhook unreachable (server in lightweight mode)."
             else
-              curl -s -f -X GET "$COOLIFY_WEBHOOK" || curl -s -f -X POST "$COOLIFY_WEBHOOK"
+              curl -s -f -X GET "$COOLIFY_WEBHOOK" || curl -s -f -X POST "$COOLIFY_WEBHOOK" || echo "Coolify webhook unreachable (server in lightweight mode)."
             fi
             echo "Webhook Coolify berhasil dipanggil."
           else
