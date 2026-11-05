@@ -1,7 +1,27 @@
 import React, { useState } from 'react';
-import { Printer, X, CheckCircle2, Share2, Smartphone, UtensilsCrossed, Receipt } from 'lucide-react';
+import {
+  Printer,
+  X,
+  CheckCircle2,
+  Share2,
+  Smartphone,
+  UtensilsCrossed,
+  Receipt,
+  Copy,
+  Check,
+  Bluetooth,
+  RefreshCw,
+  Usb,
+} from 'lucide-react';
 import { Order } from '../../types';
 import { useApp } from '../../context/AppContext';
+import {
+  generateEscPosBuffer,
+  printViaBluetooth,
+  printViaUsb,
+  isWebBluetoothSupported,
+  isWebUsbSupported,
+} from '../../utils/thermalPrinter';
 
 interface ReceiptModalProps {
   order: Order | null;
@@ -10,9 +30,12 @@ interface ReceiptModalProps {
 }
 
 export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClose }) => {
-  const { outlets, currentTenant } = useApp();
+  const { outlets, currentTenant, showNotification } = useApp();
   const [paperSize, setPaperSize] = useState<'80mm' | '58mm'>('80mm');
   const [receiptType, setReceiptType] = useState<'customer' | 'kitchen'>('customer');
+  const [copiedRaw, setCopiedRaw] = useState(false);
+  const [isPrintingBluetooth, setIsPrintingBluetooth] = useState(false);
+  const [bluetoothStatus, setBluetoothStatus] = useState<string | null>(null);
 
   if (!isOpen || !order) return null;
 
@@ -41,59 +64,101 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
       (order.discount > 0 ? `Diskon: -Rp ${order.discount.toLocaleString('id-ID')}%0A` : '') +
       `*TOTAL BAYAR: Rp ${order.total.toLocaleString('id-ID')}*%0A` +
       `Metode: ${order.paymentMethod}%0A` +
-      (order.paymentMethod === 'CASH' ? `Tunai: Rp ${(order.cashReceived || order.total).toLocaleString('id-ID')}%0AKembalian: Rp ${(order.changeAmount || 0).toLocaleString('id-ID')}%0A` : '') +
+      (order.paymentMethod === 'CASH'
+        ? `Tunai: Rp ${(order.cashReceived || order.total).toLocaleString('id-ID')}%0AKembalian: Rp ${(order.changeAmount || 0).toLocaleString('id-ID')}%0A`
+        : '') +
       `%0ATerima kasih telah berbelanja di ${brandName}! 🙏`;
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
+  const handleCopyRawText = () => {
+    const divider = paperSize === '58mm' ? '--------------------------------' : '------------------------------------------';
+    const itemsText = order.items
+      .map(
+        (it) =>
+          `${it.name}\n  ${it.quantity}x @ Rp ${it.price.toLocaleString('id-ID')} = Rp ${(it.price * it.quantity).toLocaleString('id-ID')}`
+      )
+      .join('\n');
+    const raw = `${brandName.toUpperCase()}\n${order.outletName}\n${divider}\nNo: ${order.invoiceNumber}\nKasir: ${order.cashierName}\nWaktu: ${new Date(order.createdAt).toLocaleString('id-ID')}\n${divider}\n${itemsText}\n${divider}\nSUBTOTAL: Rp ${order.subtotal.toLocaleString('id-ID')}\n${order.discount > 0 ? `DISKON: -Rp ${order.discount.toLocaleString('id-ID')}\n` : ''}TOTAL: Rp ${order.total.toLocaleString('id-ID')}\nMETODE: ${order.paymentMethod}\n${order.paymentMethod === 'CASH' ? `TUNAI: Rp ${(order.cashReceived || order.total).toLocaleString('id-ID')}\nKEMBALI: Rp ${(order.changeAmount || 0).toLocaleString('id-ID')}\n` : ''}${divider}\nTerima kasih atas kunjungan Anda!\n`;
+
+    navigator.clipboard.writeText(raw);
+    setCopiedRaw(true);
+    showNotification('Teks struk berhasil disalin!', 'success');
+    setTimeout(() => setCopiedRaw(false), 2000);
+  };
+
+  const handlePrintBluetooth = async () => {
+    setIsPrintingBluetooth(true);
+    setBluetoothStatus('Menyiapkan printer Bluetooth...');
+
+    try {
+      const buffer = generateEscPosBuffer(order, {
+        brandName,
+        outletName: order.outletName,
+        outletAddress,
+        outletPhone,
+        paperSize,
+        receiptType,
+      });
+
+      const res = await printViaBluetooth(buffer, (status) => {
+        setBluetoothStatus(status);
+      });
+
+      if (res.success) {
+        showNotification(res.message, 'success');
+      } else {
+        showNotification(res.message, 'error');
+        // Gracefully prompt for system print if Bluetooth pairing is rejected or unavailable
+        if (!isWebBluetoothSupported()) {
+          handlePrint();
+        }
+      }
+    } catch (err: any) {
+      showNotification(`Gagal mencetak: ${err?.message || 'Error'}`, 'error');
+    } finally {
+      setIsPrintingBluetooth(false);
+      setBluetoothStatus(null);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="w-full max-w-md bg-surface-card rounded-3xl border border-border-subtle shadow-2xl overflow-hidden my-6">
-        {/* Modal Top Controls (Not in print) */}
-        <div className="flex flex-col gap-2 px-6 py-4 border-b border-border-subtle bg-surface-container-low">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span className="font-bold text-sm text-brand-espresso">
-                {receiptType === 'customer' ? 'Nota Pembayaran Sah' : 'Tiket Dapur / Steamer'}
-              </span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto">
+      <div className="w-full max-w-lg bg-surface-card rounded-3xl border border-border-subtle shadow-2xl overflow-hidden my-4 sm:my-6 animate-in zoom-in-95 duration-150">
+        {/* Modal Top Controls (Hidden in browser print) */}
+        <div className="flex flex-col gap-2.5 p-4 sm:p-5 border-b border-border-subtle bg-surface-container-low select-none">
+          {/* Header Bar */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="min-w-0">
+                <span className="font-bold text-sm text-brand-espresso truncate block">
+                  {receiptType === 'customer' ? 'Nota Pembayaran Kasir' : 'Tiket Dapur / Steamer'}
+                </span>
+                <span className="text-[10px] text-secondary truncate block">
+                  {order.invoiceNumber} • {order.outletName}
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              {receiptType === 'customer' && (
-                <button
-                  type="button"
-                  onClick={handleShareWhatsApp}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
-                  title="Kirim Struk Digital via WhatsApp"
-                >
-                  <Share2 className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Kirim WA</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={handlePrint}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-espresso hover:bg-brand-espresso-muted text-brand-gold rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
-              >
-                <Printer className="w-3.5 h-3.5" />
-                <span>Cetak ({paperSize})</span>
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1.5 text-secondary hover:bg-surface-container rounded-lg cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 text-secondary hover:text-brand-espresso hover:bg-surface-container rounded-xl cursor-pointer shrink-0 transition-colors"
+              title="Tutup Nota"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Tab Selector: Struk Kasir vs Tiket Dapur */}
-          <div className="grid grid-cols-2 gap-1.5 bg-surface-container p-1 rounded-xl mt-1">
+          <div className="grid grid-cols-2 gap-1.5 bg-surface-container p-1 rounded-xl">
             <button
               type="button"
               onClick={() => setReceiptType('customer')}
-              className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 receiptType === 'customer'
                   ? 'bg-surface-card text-brand-espresso shadow-xs'
                   : 'text-secondary hover:text-brand-espresso'
@@ -105,7 +170,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
             <button
               type="button"
               onClick={() => setReceiptType('kitchen')}
-              className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 receiptType === 'kitchen'
                   ? 'bg-brand-espresso text-brand-gold shadow-xs'
                   : 'text-secondary hover:text-brand-espresso'
@@ -116,16 +181,76 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
             </button>
           </div>
 
+          {/* Action Buttons: Responsive Multi-Breakpoint Layout */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+            {/* Kirim WA */}
+            {receiptType === 'customer' ? (
+              <button
+                type="button"
+                onClick={handleShareWhatsApp}
+                className="flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
+                title="Kirim Struk Digital via WhatsApp"
+              >
+                <Share2 className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">Kirim WA</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleCopyRawText}
+                className="flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 border border-border-strong text-brand-espresso hover:bg-surface-container rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                {copiedRaw ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                <span className="truncate">{copiedRaw ? 'Tersalin' : 'Salin Tiket'}</span>
+              </button>
+            )}
+
+            {/* Direct Bluetooth Thermal Print (58mm / 80mm) */}
+            <button
+              type="button"
+              onClick={handlePrintBluetooth}
+              disabled={isPrintingBluetooth}
+              className="flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95 disabled:opacity-50"
+              title="Cetak langsung ke Thermal Mini Printer Bluetooth (ESC/POS)"
+            >
+              {isPrintingBluetooth ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin shrink-0" />
+              ) : (
+                <Bluetooth className="w-3.5 h-3.5 shrink-0" />
+              )}
+              <span className="truncate">Cetak BT ({paperSize})</span>
+            </button>
+
+            {/* Browser / System Print */}
+            <button
+              type="button"
+              onClick={handlePrint}
+              className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-2 bg-brand-espresso hover:bg-black text-brand-gold rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer active:scale-95"
+              title="Cetak menggunakan dialog cetak browser (PDF / USB / Printer Fisik)"
+            >
+              <Printer className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">Cetak Nota</span>
+            </button>
+          </div>
+
+          {/* Bluetooth Status Banner if printing */}
+          {bluetoothStatus && (
+            <div className="mt-1 px-3 py-1.5 rounded-xl bg-sky-50 border border-sky-200 text-sky-900 text-[11px] font-medium flex items-center gap-2">
+              <RefreshCw className="w-3 h-3 text-sky-600 animate-spin shrink-0" />
+              <span className="truncate">{bluetoothStatus}</span>
+            </div>
+          )}
+
           {/* Paper Size Selector */}
-          <div className="flex items-center justify-between pt-1 border-t border-border-subtle/80 text-[11px]">
+          <div className="flex items-center justify-between pt-2 border-t border-border-subtle/80 text-[11px]">
             <span className="text-secondary font-medium flex items-center gap-1">
-              <Smartphone className="w-3.5 h-3.5 text-primary" /> Format Kertas Kasir:
+              <Smartphone className="w-3.5 h-3.5 text-primary shrink-0" /> Format Kertas Kasir:
             </span>
-            <div className="flex items-center bg-surface-container p-0.5 rounded-lg">
+            <div className="flex items-center bg-surface-container p-0.5 rounded-lg shrink-0">
               <button
                 type="button"
                 onClick={() => setPaperSize('80mm')}
-                className={`px-2.5 py-1 rounded-md font-bold transition-all ${
+                className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
                   paperSize === '80mm'
                     ? 'bg-brand-espresso text-brand-gold shadow-xs'
                     : 'text-secondary hover:text-brand-espresso'
@@ -136,7 +261,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
               <button
                 type="button"
                 onClick={() => setPaperSize('58mm')}
-                className={`px-2.5 py-1 rounded-md font-bold transition-all ${
+                className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer ${
                   paperSize === '58mm'
                     ? 'bg-brand-espresso text-brand-gold shadow-xs'
                     : 'text-secondary hover:text-brand-espresso'
@@ -150,7 +275,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
 
         {/* Thermal Receipt Body (Target of @media print) */}
         <div
-          className={`p-6 bg-white text-gray-900 font-mono text-xs ${
+          className={`p-5 sm:p-6 bg-white text-gray-900 font-mono text-xs max-h-[60vh] overflow-y-auto no-scrollbar ${
             paperSize === '58mm' ? 'receipt-58mm max-w-[280px] mx-auto text-[11px]' : 'receipt-80mm'
           }`}
           id="thermal-receipt"
@@ -324,11 +449,20 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 bg-surface-container-low border-t border-border-subtle flex justify-end gap-2">
+        <div className="p-4 bg-surface-container-low border-t border-border-subtle flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={handleCopyRawText}
+            className="flex items-center gap-1.5 min-h-[44px] px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-container transition-all cursor-pointer"
+            title="Salin teks nota untuk dicetak atau dikirim manual"
+          >
+            {copiedRaw ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+            <span>{copiedRaw ? 'Tersalin' : 'Salin Teks Struk'}</span>
+          </button>
           <button
             id="btn-close-receipt"
             onClick={onClose}
-            className="w-full py-2.5 rounded-xl bg-surface-card border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-container cursor-pointer"
+            className="min-h-[44px] px-6 py-2.5 rounded-xl bg-brand-espresso text-brand-gold text-xs font-bold hover:bg-[#2e211e] transition-all cursor-pointer shadow-xs active:scale-95"
           >
             Tutup Nota
           </button>
@@ -337,4 +471,3 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({ order, isOpen, onClo
     </div>
   );
 };
-

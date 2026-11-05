@@ -27,6 +27,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { MenuItem, MenuCategory } from '../types';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { ConfirmationModal } from '../components/common/ConfirmationModal';
 import {
   exportToCsv,
   exportToJson,
@@ -63,6 +64,7 @@ export const MenuHppPage: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<MenuItem | null>(null);
 
   // Bulk Import State (Google Stitch Architecture)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -691,9 +693,10 @@ export const MenuHppPage: React.FC = () => {
                         Edit HPP
                       </button>
                       <button
-                        onClick={() => deleteMenuItem(item.id)}
-                        className="p-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100"
-                        title="Hapus"
+                        type="button"
+                        onClick={() => setDeleteConfirmItem(item)}
+                        className="p-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer"
+                        title="Hapus Menu"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -806,9 +809,10 @@ export const MenuHppPage: React.FC = () => {
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => deleteMenuItem(item.id)}
-                            className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors"
-                            title="Hapus Menu (Soft delete)"
+                            type="button"
+                            onClick={() => setDeleteConfirmItem(item)}
+                            className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors cursor-pointer"
+                            title="Hapus Menu"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -1434,6 +1438,23 @@ export const MenuHppPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Confirmation Modal for Menu Deletion (Tactile UI) */}
+      <ConfirmationModal
+        isOpen={Boolean(deleteConfirmItem)}
+        type="danger"
+        title="Hapus Menu dari Katalog?"
+        message={`Apakah Anda yakin ingin menghapus "${deleteConfirmItem?.name}"? Menu ini tidak akan ditampilkan lagi di katalog kasir POS dan perhitungan HPP.`}
+        confirmLabel="Ya, Hapus Menu"
+        cancelLabel="Batal"
+        onConfirm={() => {
+          if (deleteConfirmItem) {
+            deleteMenuItem(deleteConfirmItem.id);
+            setDeleteConfirmItem(null);
+            showNotification('Menu berhasil dihapus dari sistem', 'success');
+          }
+        }}
+        onCancel={() => setDeleteConfirmItem(null)}
+      />
     </div>
   );
 };

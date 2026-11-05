@@ -18,10 +18,15 @@ import {
   RefreshCw,
   Wallet,
   ExternalLink,
+  Ban,
+  AlertTriangle,
+  Timer,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { MenuCategory, MenuItem, PaymentMethod, Order } from '../types';
 import { ReceiptModal } from '../components/common/ReceiptModal';
+import { ConfirmationModal } from '../components/common/ConfirmationModal';
+import { CloseShiftModal } from '../components/common/CloseShiftModal';
 
 export const PosPage: React.FC = () => {
   const {
@@ -58,6 +63,8 @@ export const PosPage: React.FC = () => {
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);
 
   const [isMobileCartOpen, setIsMobileCartOpen] = useState<boolean>(false);
+  const [isCloseShiftModalOpen, setIsCloseShiftModalOpen] = useState<boolean>(false);
+  const [isClearCartModalOpen, setIsClearCartModalOpen] = useState<boolean>(false);
 
   // Duitku / Midtrans POS QR states
   const [duitkuQrData, setDuitkuQrData] = useState<{
@@ -266,7 +273,17 @@ export const PosPage: React.FC = () => {
                   Kukus & Goreng Standby
                 </span>
               </div>
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              {activeShift && activeShift.status === 'ACTIVE' && (
+                <button
+                  type="button"
+                  onClick={() => setIsCloseShiftModalOpen(true)}
+                  className="px-2.5 py-1 rounded-xl bg-surface-card hover:bg-amber-50 text-amber-900 border border-amber-300 text-[11px] font-bold shadow-xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer shrink-0"
+                  title="Rekonsiliasi Kas Laci & Tutup Shift"
+                >
+                  <Timer className="w-3.5 h-3.5 text-brand-terracotta" />
+                  <span>Tutup Shift</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -304,6 +321,8 @@ export const PosPage: React.FC = () => {
           <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3.5">
             {filteredMenus.map((menu) => {
               const isOutOfStock = !menu.isAvailable || menu.stock <= 0;
+              const isLowStock = !isOutOfStock && menu.stock <= 5;
+              const isWarningStock = !isOutOfStock && menu.stock > 5 && menu.stock <= 10;
               const cartItem = cart.find((i) => i.menuId === menu.id);
               const inCartQty = cartItem?.quantity || 0;
 
@@ -311,10 +330,12 @@ export const PosPage: React.FC = () => {
                 <div
                   key={menu.id}
                   onClick={() => !isOutOfStock && addToCart(menu)}
-                  className={`group bg-surface-card rounded-2xl p-2 sm:p-3 border border-border-subtle shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden select-none ${
+                  className={`group bg-surface-card rounded-2xl p-2 sm:p-3 border shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden select-none ${
                     isOutOfStock
-                      ? 'opacity-60 cursor-not-allowed'
-                      : 'cursor-pointer active:scale-[0.98]'
+                      ? 'opacity-60 cursor-not-allowed border-dashed border-red-300 bg-red-50/10'
+                      : isLowStock
+                      ? 'border-amber-400/80 hover:border-amber-500 cursor-pointer active:scale-[0.98]'
+                      : 'border-border-subtle hover:border-border-strong cursor-pointer active:scale-[0.98]'
                   }`}
                 >
                   {/* Image Container */}
@@ -322,9 +343,11 @@ export const PosPage: React.FC = () => {
                     <img
                       src={menu.image}
                       alt={menu.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${
+                        isOutOfStock ? 'grayscale contrast-75' : ''
+                      }`}
                     />
-                    {menu.isBestSeller && (
+                    {menu.isBestSeller && !isOutOfStock && (
                       <div className="absolute top-1.5 left-1.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-brand-terracotta text-white text-[9px] sm:text-[10px] font-bold shadow-xs flex items-center gap-1">
                         <Flame className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                         <span>Best</span>
@@ -335,9 +358,29 @@ export const PosPage: React.FC = () => {
                         {inCartQty}x di Nota
                       </div>
                     )}
-                    <div className="absolute bottom-1.5 right-1.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-brand-espresso/80 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-semibold">
-                      {isOutOfStock ? 'Habis' : `Sisa: ${menu.stock}`}
-                    </div>
+
+                    {/* Low Stock & Out of Stock Badges (Stitch MCP Architecture) */}
+                    {isOutOfStock ? (
+                      <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center p-2 text-center">
+                        <span className="px-2.5 py-1 rounded-full bg-red-600 text-white font-black text-[10px] uppercase tracking-wider shadow-lg flex items-center gap-1">
+                          <Ban className="w-3 h-3" />
+                          <span>Habis</span>
+                        </span>
+                      </div>
+                    ) : isLowStock ? (
+                      <div className="absolute bottom-1.5 right-1.5 px-2 py-0.5 rounded-full bg-amber-500 text-stone-950 text-[10px] font-black shadow-md flex items-center gap-1 animate-pulse">
+                        <AlertTriangle className="w-3 h-3" />
+                        <span>Sisa {menu.stock} pcs!</span>
+                      </div>
+                    ) : isWarningStock ? (
+                      <div className="absolute bottom-1.5 right-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[9px] sm:text-[10px] font-bold shadow-xs">
+                        <span>Stok: {menu.stock}</span>
+                      </div>
+                    ) : (
+                      <div className="absolute bottom-1.5 right-1.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-brand-espresso/80 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-semibold">
+                        Sisa: {menu.stock}
+                      </div>
+                    )}
                   </div>
 
                   {/* Menu info */}
@@ -345,7 +388,9 @@ export const PosPage: React.FC = () => {
                     <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-secondary">
                       {menu.category.toUpperCase()}
                     </span>
-                    <h3 className="font-serif-title font-bold text-xs sm:text-sm text-brand-espresso group-hover:text-primary transition-colors line-clamp-1">
+                    <h3 className={`font-serif-title font-bold text-xs sm:text-sm text-brand-espresso group-hover:text-primary transition-colors line-clamp-1 ${
+                      isOutOfStock ? 'line-through text-secondary' : ''
+                    }`}>
                       {menu.name}
                     </h3>
                     <p className="hidden sm:block text-[11px] text-secondary mt-0.5 line-clamp-2 leading-relaxed">
@@ -365,9 +410,17 @@ export const PosPage: React.FC = () => {
                         if (!isOutOfStock) addToCart(menu);
                       }}
                       disabled={isOutOfStock}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-brand-gold text-brand-espresso flex items-center justify-center font-bold shadow-xs group-hover:bg-brand-espresso group-hover:text-brand-gold transition-colors active:scale-90 cursor-pointer"
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold shadow-xs transition-colors active:scale-90 cursor-pointer ${
+                        isOutOfStock
+                          ? 'bg-surface-muted text-secondary cursor-not-allowed'
+                          : 'bg-brand-gold text-brand-espresso group-hover:bg-brand-espresso group-hover:text-brand-gold'
+                      }`}
                     >
-                      <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      {isOutOfStock ? (
+                        <Ban className="w-3.5 h-3.5" />
+                      ) : (
+                        <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -393,7 +446,8 @@ export const PosPage: React.FC = () => {
                 </span>
                 {cart.length > 0 && (
                   <button
-                    onClick={clearCart}
+                    type="button"
+                    onClick={() => setIsClearCartModalOpen(true)}
                     className="p-1 rounded-lg text-secondary hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                     title="Kosongkan Keranjang"
                   >
@@ -608,7 +662,8 @@ export const PosPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 {cart.length > 0 && (
                   <button
-                    onClick={clearCart}
+                    type="button"
+                    onClick={() => setIsClearCartModalOpen(true)}
                     className="p-1.5 text-xs text-red-600 hover:bg-red-50 rounded-lg font-semibold flex items-center gap-1 cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -971,6 +1026,28 @@ export const PosPage: React.FC = () => {
         order={completedOrder}
         isOpen={!!completedOrder}
         onClose={() => setCompletedOrder(null)}
+      />
+
+      {/* Confirmation Modal for Clearing Cart (Tactile UI) */}
+      <ConfirmationModal
+        isOpen={isClearCartModalOpen}
+        type="danger"
+        title="Kosongkan Keranjang Belanja?"
+        message="Apakah Anda yakin ingin menghapus seluruh pesanan di nota kasir ini? Seluruh item yang sudah dipilih akan direset."
+        confirmLabel="Ya, Kosongkan"
+        cancelLabel="Batal"
+        onConfirm={() => {
+          clearCart();
+          setIsClearCartModalOpen(false);
+          setIsMobileCartOpen(false);
+        }}
+        onCancel={() => setIsClearCartModalOpen(false)}
+      />
+
+      {/* Close Shift Reconciliation Modal (Stitch MCP Architecture) */}
+      <CloseShiftModal
+        isOpen={isCloseShiftModalOpen}
+        onClose={() => setIsCloseShiftModalOpen(false)}
       />
     </div>
   );

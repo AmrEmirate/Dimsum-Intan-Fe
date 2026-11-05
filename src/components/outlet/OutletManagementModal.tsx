@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Outlet } from '../../types';
+import { ConfirmationModal } from '../common/ConfirmationModal';
 
 interface OutletManagementModalProps {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export const OutletManagementModal: React.FC<OutletManagementModalProps> = ({ is
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingOutlet, setEditingOutlet] = useState<Outlet | null>(null);
+  const [outletToDelete, setOutletToDelete] = useState<Outlet | null>(null);
 
   // Form State
   const [code, setCode] = useState('');
@@ -103,11 +105,14 @@ export const OutletManagementModal: React.FC<OutletManagementModalProps> = ({ is
     }
   };
 
-  const handleDelete = async (outlet: Outlet) => {
-    const confirmText = `Apakah Anda yakin ingin menghapus "${outlet.name}" (${outlet.code})?\n\nPerhatian: Cabang yang telah memiliki riwayat shift/transaksi tidak dapat dihapus.`;
-    if (!window.confirm(confirmText)) return;
+  const handleDelete = (outlet: Outlet) => {
+    setOutletToDelete(outlet);
+  };
 
-    await deleteOutlet(outlet.id);
+  const handleConfirmDelete = async () => {
+    if (!outletToDelete) return;
+    await deleteOutlet(outletToDelete.id);
+    setOutletToDelete(null);
   };
 
   return (
@@ -360,12 +365,24 @@ export const OutletManagementModal: React.FC<OutletManagementModalProps> = ({ is
         <div className="p-4 bg-surface-container-low border-t border-border-subtle flex justify-end shrink-0">
           <button
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-brand-espresso text-brand-gold text-xs font-bold hover:bg-[#2e211e] transition-all"
+            className="px-5 py-2.5 rounded-xl bg-brand-espresso text-brand-gold text-xs font-bold hover:bg-[#2e211e] transition-all cursor-pointer"
           >
             Tutup
           </button>
         </div>
       </div>
+
+      {/* Confirmation Modal for Outlet Deletion */}
+      <ConfirmationModal
+        isOpen={Boolean(outletToDelete)}
+        title="Hapus Cabang Outlet"
+        message={`Apakah Anda yakin ingin menghapus outlet "${outletToDelete?.name}" (${outletToDelete?.code})?\n\nPerhatian: Cabang yang telah memiliki riwayat shift atau transaksi tidak dapat dihapus.`}
+        confirmText="Ya, Hapus Cabang"
+        cancelText="Batal"
+        variant="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setOutletToDelete(null)}
+      />
     </div>
   );
 };

@@ -28,6 +28,7 @@ import { useApp } from '../context/AppContext';
 import { TenantInfo } from '../types';
 import { api } from '../services/apiClient';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { ConfirmationModal } from '../components/common/ConfirmationModal';
 
 interface PlatformStats {
   totalTenants: number;
@@ -60,6 +61,7 @@ export const SuperadminPortalPage: React.FC = () => {
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState<boolean>(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [editingTenant, setEditingTenant] = useState<TenantInfo | null>(null);
+  const [tenantToDelete, setTenantToDelete] = useState<TenantInfo | null>(null);
   const [successResult, setSuccessResult] = useState<any | null>(null);
 
   // Quick Onboarding Form State
@@ -195,25 +197,26 @@ export const SuperadminPortalPage: React.FC = () => {
     }
   };
 
-  const handleDeleteTenant = async (tenant: TenantInfo) => {
+  const handleDeleteTenant = (tenant: TenantInfo) => {
     if (tenant.slug === 'dimsum-intan') {
       showNotification('Tenant bawaan sistem (Dimsum Intan) tidak boleh dihapus!', 'warning');
       return;
     }
+    setTenantToDelete(tenant);
+  };
 
-    const confirmDelete = window.confirm(
-      `PERINGATAN: Anda yakin ingin menghapus tenant "${tenant.name}" (${tenant.slug})?\nSeluruh data cabang, user, menu, dan transaksi akan dihapus secara permanen!`
-    );
-    if (!confirmDelete) return;
-
+  const handleConfirmDeleteTenant = async () => {
+    if (!tenantToDelete) return;
     try {
-      const res = await api.delete<{ success: boolean; message: string }>(`/superadmin/tenants/${tenant.id}`);
+      const res = await api.delete<{ success: boolean; message: string }>(`/superadmin/tenants/${tenantToDelete.id}`);
       if (res.success) {
         showNotification(res.message, 'success');
         fetchPlatformData();
       }
     } catch (err: any) {
       showNotification(err.message || 'Gagal menghapus tenant', 'error');
+    } finally {
+      setTenantToDelete(null);
     }
   };
 
@@ -984,6 +987,18 @@ export const SuperadminPortalPage: React.FC = () => {
           </form>
         </div>
       )}
+
+      {/* Modal Konfirmasi Hapus Tenant */}
+      <ConfirmationModal
+        isOpen={Boolean(tenantToDelete)}
+        title="Hapus Tenant Platform"
+        message={`PERINGATAN KRITIS: Anda yakin ingin menghapus tenant "${tenantToDelete?.name}" (${tenantToDelete?.slug})?\nSeluruh data cabang, user kasir, katalog menu, dan riwayat transaksi akan dihapus secara permanen dari basis data!`}
+        confirmText="Ya, Hapus Permanen"
+        cancelText="Batal"
+        variant="danger"
+        onConfirm={handleConfirmDeleteTenant}
+        onCancel={() => setTenantToDelete(null)}
+      />
     </div>
   );
 };

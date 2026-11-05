@@ -18,6 +18,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { FixedExpense, FixedExpenseCategory } from '../types';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { ConfirmationModal } from '../components/common/ConfirmationModal';
 
 
 export const FixedExpensesPage: React.FC = () => {
@@ -81,14 +82,32 @@ export const FixedExpensesPage: React.FC = () => {
     setEditingExpense(null);
   };
 
-  const handleDeleteExpense = async (expense: FixedExpense) => {
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: async () => {},
+  });
+
+  const handleDeleteExpense = (expense: FixedExpense) => {
     if (!isOwner) {
       showNotification('Hanya OWNER yang berwenang menghapus beban operasional!', 'error');
       return;
     }
-    if (window.confirm(`Hapus catatan beban operasional "${expense.title}"?`)) {
-      await deleteFixedExpense(expense.id);
-    }
+    setDeleteConfirmation({
+      isOpen: true,
+      title: `Hapus Beban "${expense.title}"?`,
+      message: `Apakah Anda yakin ingin menghapus catatan beban operasional "${expense.title}" sebesar Rp ${Number(expense.amount).toLocaleString('id-ID')}?`,
+      onConfirm: async () => {
+        await deleteFixedExpense(expense.id);
+        setDeleteConfirmation((prev) => ({ ...prev, isOpen: false }));
+      },
+    });
   };
 
   // Calculations
@@ -654,6 +673,17 @@ export const FixedExpensesPage: React.FC = () => {
           </form>
         </div>
       )}
+      {/* Tactile Confirmation Modal (Stitch MCP Architecture) */}
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        type="danger"
+        title={deleteConfirmation.title}
+        message={deleteConfirmation.message}
+        confirmLabel="Ya, Hapus Beban"
+        cancelLabel="Batal"
+        onConfirm={deleteConfirmation.onConfirm}
+        onCancel={() => setDeleteConfirmation((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

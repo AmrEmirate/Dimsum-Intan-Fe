@@ -118,6 +118,8 @@ export interface ShiftSession {
   status: 'ACTIVE' | 'CLOSED';
 }
 
+export type Shift = ShiftSession;
+
 export type PettyCashCategory = 'ES_BATU' | 'GALON_AIR' | 'PLASTIK_KEMASAN' | 'KEBERSIHAN' | 'LAINNYA';
 
 export interface PettyCashExpense {
@@ -135,6 +137,8 @@ export interface PettyCashExpense {
   verifiedAt?: string;
   createdAt: string;
 }
+
+export type PettyCashTransaction = PettyCashExpense;
 
 export interface FactoryInvoiceItem {
   itemName: string;

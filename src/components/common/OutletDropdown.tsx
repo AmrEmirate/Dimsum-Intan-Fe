@@ -141,7 +141,13 @@ export const OutletDropdown: React.FC<OutletDropdownProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-xs sm:text-sm font-black text-brand-espresso truncate block">
+              <span
+                className={`text-xs sm:text-sm font-black text-brand-espresso truncate block ${
+                  variant === 'compact'
+                    ? 'max-w-[100px] md:max-w-[130px] lg:max-w-[180px] xl:max-w-[240px]'
+                    : ''
+                }`}
+              >
                 {isAllSelected
                   ? outlets.length > 0
                     ? `Semua Outlet (${outlets.length})`

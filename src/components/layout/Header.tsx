@@ -21,6 +21,7 @@ import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
 import { OutletManagementModal } from '../outlet/OutletManagementModal';
 import { OutletDropdown } from '../common/OutletDropdown';
+import { CloseShiftModal } from '../common/CloseShiftModal';
 
 export const Header: React.FC = () => {
   const {
@@ -41,6 +42,7 @@ export const Header: React.FC = () => {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
   const [isOutletModalOpen, setIsOutletModalOpen] = useState<boolean>(false);
+  const [isCloseShiftModalOpen, setIsCloseShiftModalOpen] = useState<boolean>(false);
   const [newPinInput, setNewPinInput] = useState<string>('');
   const [isUpdatingPin, setIsUpdatingPin] = useState<boolean>(false);
 
@@ -107,10 +109,23 @@ export const Header: React.FC = () => {
             <Menu className="w-5 h-5" />
           </button>
 
-          {/* Shift status pill */}
-          <div className="flex items-center gap-1.5 sm:gap-2 bg-surface-container-high px-2 sm:px-3 py-1.5 rounded-full border border-border-subtle shrink-0">
+          {/* Shift status pill - Interactive for Cashier/Owner */}
+          <button
+            type="button"
+            onClick={() => {
+              if (activeShift?.status === 'ACTIVE') {
+                setIsCloseShiftModalOpen(true);
+              }
+            }}
+            className={`flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full border border-border-subtle shrink-0 transition-all ${
+              activeShift?.status === 'ACTIVE'
+                ? 'bg-surface-container-high hover:bg-amber-100/60 cursor-pointer active:scale-95'
+                : 'bg-surface-container-high opacity-70 cursor-default'
+            }`}
+            title={activeShift?.status === 'ACTIVE' ? 'Klik untuk rekonsiliasi kas & tutup shift' : 'Shift Kasir Sedang Tutup'}
+          >
             <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-            <span className="text-[10px] sm:text-xs font-bold text-brand-espresso tracking-tight whitespace-nowrap truncate max-w-[80px] sm:max-w-none">
+            <span className="text-[10px] sm:text-xs font-bold text-brand-espresso tracking-tight whitespace-nowrap truncate max-w-[80px] sm:max-w-[120px] md:max-w-[150px] lg:max-w-none">
               {activeShift?.status === 'ACTIVE' ? (
                 <>
                   <span>{activeShift.shiftName}</span>
@@ -123,7 +138,7 @@ export const Header: React.FC = () => {
             {activeShift?.status === 'ACTIVE' && (
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-0.5 shrink-0"></span>
             )}
-          </div>
+          </button>
 
           {/* Network Connection Indicator - Compact icon on mobile, full pill on sm+ */}
           <div
@@ -358,6 +373,12 @@ export const Header: React.FC = () => {
       <OutletManagementModal
         isOpen={isOutletModalOpen}
         onClose={() => setIsOutletModalOpen(false)}
+      />
+
+      {/* Close Shift Reconciliation Modal (Stitch MCP Architecture) */}
+      <CloseShiftModal
+        isOpen={isCloseShiftModalOpen}
+        onClose={() => setIsCloseShiftModalOpen(false)}
       />
     </>
   );

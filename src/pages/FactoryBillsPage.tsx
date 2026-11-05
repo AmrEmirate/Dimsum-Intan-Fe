@@ -21,6 +21,7 @@ import { useApp } from '../context/AppContext';
 import { FactoryInvoice } from '../types';
 import { exportToCsv } from '../utils/exportUtils';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { ConfirmationModal } from '../components/common/ConfirmationModal';
 
 export const FactoryBillsPage: React.FC = () => {
   const {
@@ -42,6 +43,7 @@ export const FactoryBillsPage: React.FC = () => {
   const [selectedInvoiceForDetail, setSelectedInvoiceForDetail] = useState<FactoryInvoice | null>(
     null
   );
+  const [deleteConfirmInvoice, setDeleteConfirmInvoice] = useState<FactoryInvoice | null>(null);
 
   const [formOutletId, setFormOutletId] = useState('du');
   const [formDueDate, setFormDueDate] = useState('2024-11-15');
@@ -238,13 +240,18 @@ export const FactoryBillsPage: React.FC = () => {
     setEditingInvoice(null);
   };
 
-  const handleDeleteInvoice = async (invoice: FactoryInvoice) => {
+  const handleDeleteInvoice = (invoice: FactoryInvoice) => {
     if (!isOwner) {
       showNotification('Hanya OWNER yang berhak menghapus draf tagihan pabrik!', 'error');
       return;
     }
-    if (window.confirm(`Hapus draf faktur ${invoice.invoiceNumber} dari database?`)) {
-      await deleteFactoryInvoice(invoice.id);
+    setDeleteConfirmInvoice(invoice);
+  };
+
+  const handleConfirmDeleteInvoice = async () => {
+    if (deleteConfirmInvoice) {
+      await deleteFactoryInvoice(deleteConfirmInvoice.id);
+      setDeleteConfirmInvoice(null);
     }
   };
 
@@ -1033,6 +1040,18 @@ export const FactoryBillsPage: React.FC = () => {
           </form>
         </div>
       )}
+
+      {/* Modal Konfirmasi Hapus Faktur */}
+      <ConfirmationModal
+        isOpen={Boolean(deleteConfirmInvoice)}
+        title="Hapus Draf Faktur Pabrik"
+        message={`Apakah Anda yakin ingin menghapus faktur "${deleteConfirmInvoice?.invoiceNumber}" senilai Rp ${(deleteConfirmInvoice?.totalAmount || 0).toLocaleString('id-ID')}? Tindakan ini tidak dapat dibatalkan.`}
+        confirmText="Ya, Hapus Faktur"
+        cancelText="Batal"
+        variant="danger"
+        onConfirm={handleConfirmDeleteInvoice}
+        onCancel={() => setDeleteConfirmInvoice(null)}
+      />
     </div>
   );
 };

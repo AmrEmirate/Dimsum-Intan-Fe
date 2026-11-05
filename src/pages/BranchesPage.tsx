@@ -38,6 +38,7 @@ import { useApp } from '../context/AppContext';
 import { Outlet, UserRole } from '../types';
 import { exportToCsv } from '../utils/exportUtils';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { ConfirmationModal } from '../components/common/ConfirmationModal';
 
 export const BranchesPage: React.FC = () => {
   const {
@@ -90,6 +91,19 @@ export const BranchesPage: React.FC = () => {
   const [staffPin, setStaffPin] = useState('');
   const [staffError, setStaffError] = useState<string | null>(null);
   const [isSavingStaff, setIsSavingStaff] = useState(false);
+
+  // Tactile Confirmation Dialog State
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: async () => {},
+  });
 
   // Calculated Summary Metrics
   const totalDailyTarget = outlets.reduce((sum, o) => sum + (Number(o.targetDailySales) || 0), 0);
@@ -226,11 +240,16 @@ export const BranchesPage: React.FC = () => {
     }
   };
 
-  const handleDeleteOutlet = async (outlet: Outlet) => {
-    const confirmMessage = `Hapus cabang "${outlet.name}" (${outlet.code})?\n\nPerhatian: Cabang yang telah memiliki riwayat pesanan/shift/beban tidak dapat dihapus demi integritas akuntansi.`;
-    if (!window.confirm(confirmMessage)) return;
-
-    await deleteOutlet(outlet.id);
+  const handleDeleteOutlet = (outlet: Outlet) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      title: `Hapus Cabang "${outlet.name}"?`,
+      message: `Apakah Anda yakin ingin menghapus gerai cabang ${outlet.name} (${outlet.code})? Perhatian: Cabang yang telah memiliki riwayat transaksi/shift tidak dapat dihapus demi integritas akuntansi.`,
+      onConfirm: async () => {
+        await deleteOutlet(outlet.id);
+        setDeleteConfirmation((prev) => ({ ...prev, isOpen: false }));
+      },
+    });
   };
 
   const handleExportBranches = () => {
@@ -293,9 +312,16 @@ export const BranchesPage: React.FC = () => {
     }
   };
 
-  const handleDeleteStaff = async (staffId: string, staffName: string) => {
-    if (!window.confirm(`Hapus akun staf "${staffName}"?`)) return;
-    await deleteStaffUser(staffId);
+  const handleDeleteStaff = (staffId: string, staffName: string) => {
+    setDeleteConfirmation({
+      isOpen: true,
+      title: `Hapus Akun Staf "${staffName}"?`,
+      message: `Apakah Anda yakin ingin menghapus akun pengguna "${staffName}"? Pengguna ini tidak akan dapat login lagi ke sistem kasir.`,
+      onConfirm: async () => {
+        await deleteStaffUser(staffId);
+        setDeleteConfirmation((prev) => ({ ...prev, isOpen: false }));
+      },
+    });
   };
 
   return (
@@ -1648,6 +1674,17 @@ export const BranchesPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Tactile Confirmation Modal (Stitch MCP Architecture) */}
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        type="danger"
+        title={deleteConfirmation.title}
+        message={deleteConfirmation.message}
+        confirmLabel="Ya, Hapus Data"
+        cancelLabel="Batal"
+        onConfirm={deleteConfirmation.onConfirm}
+        onCancel={() => setDeleteConfirmation((prev) => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
