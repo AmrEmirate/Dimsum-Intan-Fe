@@ -44,7 +44,6 @@ export const WalletWithdrawalPage: React.FC = () => {
     fetchWalletSummary,
     requestWithdrawal,
     updateBankAccount,
-    simulateDuitkuPay,
     showNotification,
     currentUser,
     setCurrentView,
@@ -62,7 +61,6 @@ export const WalletWithdrawalPage: React.FC = () => {
   const [selectedTxForDetail, setSelectedTxForDetail] = useState<WalletTransaction | null>(null);
 
   // Loading States
-  const [isSimulating, setIsSimulating] = useState(false);
   const [isSubmittingWithdraw, setIsSubmittingWithdraw] = useState(false);
   const [isSubmittingBank, setIsSubmittingBank] = useState(false);
   const [isSubmittingCalc, setIsSubmittingCalc] = useState(false);
@@ -211,14 +209,6 @@ export const WalletWithdrawalPage: React.FC = () => {
     }
   };
 
-  // Trigger Mock POS QRIS Payment (Adds Rp 50.000 to wallet immediately)
-  const handleSimulateSales = async () => {
-    setIsSimulating(true);
-    const mockOrderNum = `INV/PST/${new Date().toISOString().slice(0, 10).replace(/-/g, '')}/${Math.floor(100 + Math.random() * 900)}`;
-    await simulateDuitkuPay(mockOrderNum);
-    setIsSimulating(false);
-  };
-
   // Superadmin Action to Process or Reject Withdrawal
   const handleSuperadminProcess = async (id: string, status: 'PROCESSED' | 'REJECTED') => {
     try {
@@ -300,16 +290,6 @@ export const WalletWithdrawalPage: React.FC = () => {
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoadingWallet ? 'animate-spin' : ''}`} />
             <span>Segarkan Saldo</span>
-          </button>
-
-          <button
-            onClick={handleSimulateSales}
-            disabled={isSimulating}
-            className="min-h-[44px] px-3.5 py-2.5 bg-surface-card border border-border-strong rounded-xl hover:bg-surface-muted text-brand-espresso font-semibold text-xs shadow-2xs transition-all active:scale-[0.98] flex items-center gap-1.5 cursor-pointer text-brand-espresso"
-            title="Simulasi transaksi kasir QRIS masuk seketika"
-          >
-            <QrCode className="w-3.5 h-3.5 text-brand-gold" />
-            <span>Simulasi QRIS Masuk</span>
           </button>
 
           <button
@@ -688,15 +668,8 @@ export const WalletWithdrawalPage: React.FC = () => {
                       Tidak Ada Catatan Mutasi yang Sesuai
                     </h3>
                     <p className="text-xs text-secondary max-w-sm mx-auto leading-relaxed">
-                      Mutasi saldo otomatis tercatat saat kasir menerima pembayaran QRIS Duitku atau saat Anda menarik dana ke rekening bank.
+                      Mutasi saldo otomatis tercatat saat kasir menerima pembayaran pesanan pelanggan atau saat Anda mengajukan penarikan dana ke rekening bank.
                     </p>
-                    <button
-                      onClick={handleSimulateSales}
-                      className="min-h-[40px] px-4 py-2 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso rounded-xl text-xs font-bold cursor-pointer transition-all inline-flex items-center gap-1.5 shadow-xs"
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Coba Simulasi QRIS Masuk</span>
-                    </button>
                   </div>
                 ) : (
                   <table className="w-full text-left border-collapse text-xs">

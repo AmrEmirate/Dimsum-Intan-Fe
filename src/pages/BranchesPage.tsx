@@ -33,6 +33,7 @@ import {
   ExternalLink,
   Zap,
   Download,
+  Upload,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Outlet, UserRole } from '../types';
@@ -55,6 +56,7 @@ export const BranchesPage: React.FC = () => {
     billingStatus,
     fetchBillingStatus,
     createCheckout,
+    submitManualPayment,
     showNotification,
   } = useApp();
 
@@ -129,6 +131,9 @@ export const BranchesPage: React.FC = () => {
   const [isLicenseModalOpen, setIsLicenseModalOpen] = useState(false);
   const [licensePaymentMethod, setLicensePaymentMethod] = useState<'QRIS' | 'VA'>('QRIS');
   const [isProcessingLicensePayment, setIsProcessingLicensePayment] = useState(false);
+  const [licenseSenderName, setLicenseSenderName] = useState('');
+  const [licenseSenderBank, setLicenseSenderBank] = useState('BCA');
+  const [licenseProofBase64, setLicenseProofBase64] = useState('');
 
   // Staff Form Modal State
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
@@ -218,37 +223,50 @@ export const BranchesPage: React.FC = () => {
     setIsOutletModalOpen(true);
   };
 
+  const handleLicenseProofUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showNotification('Bukti transfer harus berupa file gambar!', 'warning');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setLicenseProofBase64(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleConfirmLicensePayment = async () => {
+    if (!licenseSenderName.trim()) {
+      showNotification('Nama pengirim rekening / e-wallet wajib diisi!', 'warning');
+      return;
+    }
+    if (!licenseProofBase64) {
+      showNotification('Foto bukti transfer QRIS wajib dilampirkan!', 'warning');
+      return;
+    }
+
     setIsProcessingLicensePayment(true);
     try {
-      if (createCheckout) {
-        await createCheckout({
-          type: 'ADD_OUTLET',
-          quantity: 1,
-          months: 1,
-        }).catch(() => null);
-      }
+      await submitManualPayment({
+        type: 'ADD_OUTLET',
+        quantity: 1,
+        senderName: licenseSenderName.trim(),
+        senderBank: licenseSenderBank,
+        proofImage: licenseProofBase64,
+        notes: 'Pengajuan Penambahan Kuota Cabang dari Halaman Cabang',
+      });
 
+      showNotification('Bukti transfer lisensi cabang berhasil dikirim! Menunggu persetujuan Superadmin.', 'success');
+      setIsLicenseModalOpen(false);
+      setLicenseSenderName('');
+      setLicenseProofBase64('');
       if (fetchBillingStatus) {
         await fetchBillingStatus().catch(() => null);
       }
-
-      showNotification('Pembayaran Lisensi Cabang Baru Rp 100.000 Berhasil Diverifikasi! Kuota cabang aktif.', 'success');
-      setIsLicenseModalOpen(false);
-
-      // Open Add Branch form modal directly
-      setEditingOutlet(null);
-      setOutletCode(`CB-0${outlets.length + 1}`);
-      setOutletName('');
-      setOutletCity('Bandung');
-      setOutletAddress('');
-      setOutletPhone('');
-      setOutletTarget('4500000');
-      setSelectedPlan(billingStatus?.plan || 'PAKET_100K');
-      setOutletError(null);
-      setIsOutletModalOpen(true);
     } catch (err: any) {
-      showNotification('Gagal memproses verifikasi lisensi.', 'error');
+      showNotification(err?.message || 'Gagal mengirim bukti pembayaran.', 'error');
     } finally {
       setIsProcessingLicensePayment(false);
     }
@@ -1388,61 +1406,107 @@ export const BranchesPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* QRIS / VA Interactive Display */}
+              {/* Official QRIS & Bukti Transfer Container */}
               <div className="p-4 bg-surface-container/60 border border-border-subtle rounded-2xl flex flex-col items-center text-center space-y-3">
-                <div className="inline-flex items-center gap-1.5 text-[11px] text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>Berlaku 15:00 Menit (Auto-Check Gateway)</span>
+                <div className="p-3 bg-white border border-border-strong rounded-2xl shadow-xs flex flex-col items-center max-w-[220px] w-full">
+                  <img
+                    src="/qris.jpeg"
+                    alt="QRIS Resmi Cloud POS"
+                    className="w-full h-auto rounded-xl object-contain shadow-xs"
+                  />
+                  <span className="text-[10px] font-mono font-bold text-brand-espresso mt-2">
+                    NMID: ID1024889210928
+                  </span>
+                  <span className="text-[9px] text-secondary">
+                    PT PRO TEKNOLOGI / DIMSUM INTAN
+                  </span>
                 </div>
 
-                {licensePaymentMethod === 'QRIS' ? (
-                  <div className="p-4 bg-white border border-border-strong rounded-2xl shadow-inner flex flex-col items-center">
-                    <div className="w-36 h-36 bg-brand-espresso p-2 rounded-xl flex flex-col justify-between items-center relative">
-                      <div className="w-full flex justify-between">
-                        <div className="w-7 h-7 bg-surface-canvas rounded-sm p-1">
-                          <div className="w-full h-full bg-brand-espresso" />
-                        </div>
-                        <div className="w-7 h-7 bg-surface-canvas rounded-sm p-1">
-                          <div className="w-full h-full bg-brand-espresso" />
-                        </div>
-                      </div>
-                      <div className="w-8 h-8 bg-brand-gold rounded-lg flex items-center justify-center text-brand-espresso font-black text-[10px]">
-                        QRIS
-                      </div>
-                      <div className="w-full flex justify-between">
-                        <div className="w-7 h-7 bg-surface-canvas rounded-sm p-1">
-                          <div className="w-full h-full bg-brand-espresso" />
-                        </div>
-                        <div className="w-5 h-5 bg-brand-terracotta rounded-full" />
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-mono font-bold text-brand-espresso mt-2">
-                      NMID: ID1024889210928
-                    </span>
+                <p className="text-[11px] text-secondary max-w-xs leading-relaxed">
+                  Pindai QRIS di atas melalui m-Banking atau E-Wallet, lalu unggah foto bukti transfer di bawah ini untuk persetujuan Superadmin.
+                </p>
+              </div>
+
+              {/* Form Input Bukti Transfer */}
+              <div className="space-y-3 bg-surface-container-low p-4 rounded-2xl border border-border-subtle">
+                <div>
+                  <label className="text-[11px] font-bold text-brand-espresso block mb-1">
+                    Nama Pengirim Rekening / E-Wallet <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={licenseSenderName}
+                    onChange={(e) => setLicenseSenderName(e.target.value)}
+                    placeholder="Contoh: Budi Santoso"
+                    className="w-full p-2.5 rounded-xl border border-border-strong bg-surface-card text-xs text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="text-[11px] font-bold text-brand-espresso block mb-1">
+                      Bank / Platform
+                    </label>
+                    <select
+                      value={licenseSenderBank}
+                      onChange={(e) => setLicenseSenderBank(e.target.value)}
+                      className="w-full p-2.5 rounded-xl border border-border-strong bg-surface-card text-xs text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-gold cursor-pointer"
+                    >
+                      <option value="BCA">BCA</option>
+                      <option value="Mandiri">Bank Mandiri</option>
+                      <option value="BRI">Bank BRI</option>
+                      <option value="BNI">Bank BNI</option>
+                      <option value="GoPay">GoPay</option>
+                      <option value="OVO">OVO</option>
+                      <option value="Dana">DANA</option>
+                      <option value="Lainnya">Lainnya</option>
+                    </select>
                   </div>
-                ) : (
-                  <div className="p-4 bg-white border border-border-strong rounded-2xl shadow-inner w-full max-w-sm text-left space-y-2">
-                    <span className="text-[10px] uppercase font-bold text-secondary block">
-                      Nomor Virtual Account Mandiri / BCA:
-                    </span>
-                    <div className="text-base font-mono font-black text-brand-espresso tracking-wider bg-surface-container p-2 rounded-xl text-center">
-                      8801 0812 3456 7890
+
+                  <div>
+                    <label className="text-[11px] font-bold text-brand-espresso block mb-1">
+                      Bukti Transfer <span className="text-red-500">*</span>
+                    </label>
+                    <label className="flex items-center justify-center p-2.5 rounded-xl border border-dashed border-border-strong bg-surface-card hover:bg-surface-container cursor-pointer transition-all text-xs text-secondary gap-1.5 min-h-[42px]">
+                      <Upload className="w-3.5 h-3.5 text-brand-gold shrink-0" />
+                      <span className="truncate">
+                        {licenseProofBase64 ? 'Ganti Foto' : 'Pilih Foto'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleLicenseProofUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+
+                {licenseProofBase64 && (
+                  <div className="rounded-xl overflow-hidden border border-border-strong p-2 bg-surface-card flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <img
+                        src={licenseProofBase64}
+                        alt="Bukti Preview"
+                        className="w-10 h-10 object-cover rounded-lg border border-border-subtle"
+                      />
+                      <span className="text-[11px] font-bold text-brand-espresso">Foto Bukti Terlampir</span>
                     </div>
-                    <span className="text-[10px] text-secondary text-center block">
-                      Atas Nama: <strong className="text-brand-espresso">PT Pro Teknologi / Dimsum Intan</strong>
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setLicenseProofBase64('')}
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 )}
-
-                <p className="text-[11px] text-secondary max-w-xs leading-relaxed">
-                  Pindai QR atau transfer via VA di atas. Setelah pembayaran selesai, kuota cabang akan otomatis aktif seketika.
-                </p>
               </div>
 
               {/* Security Guarantee Notice */}
               <div className="flex items-center gap-2 text-[11px] text-secondary justify-center">
                 <Shield className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Diproses aman secara otomatis oleh Duitku / Midtrans Network</span>
+                <span>Verifikasi langsung melalui Superadmin Cloud POS</span>
               </div>
             </div>
 
@@ -1457,12 +1521,12 @@ export const BranchesPage: React.FC = () => {
               </button>
               <button
                 type="button"
-                disabled={isProcessingLicensePayment}
+                disabled={isProcessingLicensePayment || !licenseProofBase64 || !licenseSenderName.trim()}
                 onClick={handleConfirmLicensePayment}
                 className="px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <CheckCircle2 className="w-4 h-4 text-brand-espresso" />
-                <span>{isProcessingLicensePayment ? 'Memverifikasi Pembayaran...' : 'Konfirmasi & Terbitkan Kuota Outlet'}</span>
+                <span>{isProcessingLicensePayment ? 'Mengirim Bukti...' : 'Kirim Bukti Pembayaran ke Superadmin'}</span>
               </button>
             </div>
           </div>

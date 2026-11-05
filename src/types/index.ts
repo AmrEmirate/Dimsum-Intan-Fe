@@ -247,7 +247,7 @@ export interface SubscriptionInvoice {
   type: 'RENEWAL' | 'ADD_OUTLET' | 'ADD_TX_QUOTA' | string;
   description: string;
   amount: number;
-  status: 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED';
+  status: 'PENDING' | 'PENDING_APPROVAL' | 'PAID' | 'EXPIRED' | 'CANCELLED';
   paymentMethod?: string | null;
   snapToken?: string | null;
   snapRedirectUrl?: string | null;

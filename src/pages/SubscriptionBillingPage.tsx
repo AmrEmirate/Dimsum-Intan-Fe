@@ -21,6 +21,10 @@ import {
   Clock,
   ArrowRight,
   TrendingUp,
+  Upload,
+  Image as ImageIcon,
+  Eye,
+  Trash2,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { SubscriptionInvoice } from '../types';
@@ -106,7 +110,7 @@ export const SubscriptionBillingPage: React.FC = () => {
     billingStatus,
     fetchBillingStatus,
     createCheckout,
-    simulatePayInvoice,
+    submitManualPayment,
     fetchBillingInvoices,
     createDuitkuSubscriptionCheckout,
     showNotification,
@@ -134,7 +138,20 @@ export const SubscriptionBillingPage: React.FC = () => {
     vaNumber?: string;
   } | null>(null);
 
-  const [isVerifyingPay, setIsVerifyingPay] = useState(false);
+  // Manual QRIS Proof Submission States
+  const [senderName, setSenderName] = useState('');
+  const [senderBank, setSenderBank] = useState('BCA');
+  const [proofImageBase64, setProofImageBase64] = useState<string>('');
+  const [paymentNotes, setPaymentNotes] = useState('');
+  const [isSubmittingProof, setIsSubmittingProof] = useState(false);
+  const [selectedProofModal, setSelectedProofModal] = useState<{
+    image: string;
+    invoiceNumber: string;
+    senderName?: string;
+    senderBank?: string;
+    amount?: number;
+    submittedAt?: string;
+  } | null>(null);
 
   // Load Invoices
   const loadInvoices = async () => {
@@ -234,18 +251,67 @@ export const SubscriptionBillingPage: React.FC = () => {
     }
   };
 
-  // Instant Verification / Test Pay
-  const handleVerifyInstantPayment = async () => {
+  // File selection for transfer proof (Converted to Base64)
+  const handleProofFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showNotification('File harus berupa gambar (JPG, PNG, WebP)!', 'warning');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showNotification('Ukuran file maksimal 5MB!', 'warning');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setProofImageBase64(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Submit transfer proof for Superadmin approval
+  const handleSubmitProofPayment = async () => {
     if (!activePaymentInvoice?.invoice?.id) return;
-    setIsVerifyingPay(true);
-    const success = await simulatePayInvoice(activePaymentInvoice.invoice.id);
-    setIsVerifyingPay(false);
-    if (success) {
-      setActivePaymentInvoice(null);
-      setIsCheckoutModalOpen(false);
-      await fetchBillingStatus();
-      await loadInvoices();
-      showNotification('Pembayaran lisensi berhasil diselesaikan!', 'success');
+    if (!senderName.trim()) {
+      showNotification('Nama pengirim rekening / e-wallet wajib diisi!', 'warning');
+      return;
+    }
+    if (!proofImageBase64) {
+      showNotification('Foto bukti transfer QRIS wajib dilampirkan!', 'warning');
+      return;
+    }
+
+    setIsSubmittingProof(true);
+    try {
+      const res = await submitManualPayment({
+        invoiceId: activePaymentInvoice.invoice.id,
+        senderName: senderName.trim(),
+        senderBank,
+        proofImage: proofImageBase64,
+        notes: paymentNotes.trim(),
+      });
+
+      if (res?.success) {
+        showNotification(
+          'Bukti pembayaran QRIS berhasil dikirim! Menunggu persetujuan Superadmin.',
+          'success'
+        );
+        setActivePaymentInvoice(null);
+        setIsCheckoutModalOpen(false);
+        setSenderName('');
+        setProofImageBase64('');
+        setPaymentNotes('');
+        await fetchBillingStatus();
+        await loadInvoices();
+      }
+    } catch (err: any) {
+      showNotification(err?.message || 'Gagal mengirim bukti pembayaran.', 'error');
+    } finally {
+      setIsSubmittingProof(false);
     }
   };
 
@@ -630,6 +696,7 @@ export const SubscriptionBillingPage: React.FC = () => {
               ) : (
                 invoices.map((inv) => {
                   const isPaid = inv.status === 'PAID';
+                  const isPendingApproval = inv.status === 'PENDING_APPROVAL';
                   const isPending = inv.status === 'PENDING';
                   return (
                     <tr key={inv.id} className="hover:bg-surface-container-low/50 transition-colors">
@@ -666,7 +733,7 @@ export const SubscriptionBillingPage: React.FC = () => {
                       </td>
                       <td className="py-3 px-4 text-secondary">
                         <span className="px-2 py-0.5 rounded-md bg-surface-container text-[11px] font-semibold">
-                          {inv.paymentMethod || inv.paymentGatewayRef || 'QRIS / VA'}
+                          {inv.paymentMethod || inv.paymentGatewayRef || 'QRIS'}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -674,16 +741,41 @@ export const SubscriptionBillingPage: React.FC = () => {
                           className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
                             isPaid
                               ? 'bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border'
+                              : isPendingApproval
+                              ? 'bg-amber-100 text-amber-800 border border-amber-300'
                               : isPending
                               ? 'bg-status-pending-bg text-status-pending-text border border-status-pending-border'
                               : 'bg-status-unpaid-bg text-status-unpaid-text border border-status-unpaid-border'
                           }`}
                         >
-                          {isPaid ? 'LUNAS' : isPending ? 'MENUNGGU' : inv.status}
+                          {isPaid ? 'LUNAS' : isPendingApproval ? 'MENUNGGU PERSETUJUAN' : isPending ? 'MENUNGGU PEMBAYARAN' : inv.status}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right">
-                        {isPending ? (
+                        {isPendingApproval ? (
+                          <div className="inline-flex items-center gap-1.5 justify-end">
+                            {(inv.metadata as any)?.proofImage ? (
+                              <button
+                                onClick={() =>
+                                  setSelectedProofModal({
+                                    image: (inv.metadata as any).proofImage,
+                                    invoiceNumber: inv.invoiceNumber || inv.id,
+                                    senderName: (inv.metadata as any).senderName,
+                                    senderBank: (inv.metadata as any).senderBank,
+                                    amount: Number(inv.amount),
+                                    submittedAt: (inv.metadata as any).submittedAt || inv.createdAt,
+                                  })
+                                }
+                                className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-lg transition-all cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5 text-amber-700" />
+                                <span>Bukti</span>
+                              </button>
+                            ) : (
+                              <span className="text-[11px] text-amber-800 font-medium">Verifikasi Admin</span>
+                            )}
+                          </div>
+                        ) : isPending ? (
                           <button
                             onClick={() => {
                               setActivePaymentInvoice({
@@ -692,7 +784,7 @@ export const SubscriptionBillingPage: React.FC = () => {
                               });
                               setIsCheckoutModalOpen(true);
                             }}
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold rounded-lg shadow-xs transition-all"
+                            className="inline-flex items-center gap-1 px-3 py-1 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold rounded-lg shadow-xs transition-all cursor-pointer"
                           >
                             <QrCode className="w-3.5 h-3.5" />
                             <span>Bayar</span>
@@ -700,7 +792,7 @@ export const SubscriptionBillingPage: React.FC = () => {
                         ) : (
                           <button
                             onClick={() => showNotification(`Faktur ${inv.invoiceNumber} telah terverifikasi lunas.`, 'success')}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-surface-container hover:bg-surface-container-high text-secondary text-xs font-semibold rounded-lg transition-all"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-surface-container hover:bg-surface-container-high text-secondary text-xs font-semibold rounded-lg transition-all cursor-pointer"
                           >
                             <Receipt className="w-3.5 h-3.5" />
                             <span>Struk</span>
@@ -761,36 +853,145 @@ export const SubscriptionBillingPage: React.FC = () => {
                   </span>
                 </div>
 
-                {/* QRIS Container */}
-                <div className="bg-surface-card border-2 border-dashed border-border-strong rounded-2xl p-6 flex flex-col items-center justify-center text-center">
-                  <div className="w-48 h-48 bg-white border border-border-subtle rounded-xl p-3 flex flex-col items-center justify-center shadow-xs mb-3">
-                    <QrCode className="w-36 h-36 text-brand-espresso" />
-                    <span className="text-[10px] font-bold font-mono tracking-wider text-secondary mt-1">
-                      QRIS DINAMIS BI
+                {/* Official QRIS Container */}
+                <div className="bg-surface-card border border-border-strong rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-xs">
+                  <div className="p-3 bg-white rounded-2xl border border-border-strong shadow-xs flex flex-col items-center max-w-[240px] w-full">
+                    <img
+                      src="/qris.jpeg"
+                      alt="QRIS Pembayaran Resmi Cloud POS Dimsum Intan"
+                      className="w-full h-auto rounded-xl object-contain shadow-xs"
+                    />
+                    <span className="text-[10px] font-mono font-bold text-brand-espresso mt-2">
+                      NMID: ID1024889210928
+                    </span>
+                    <span className="text-[9px] text-secondary">
+                      PT PRO TEKNOLOGI / DIMSUM INTAN
                     </span>
                   </div>
-                  <span className="text-xs font-bold text-brand-espresso">Pindai QRIS Menggunakan BCA, Mandiri, GoPay, OVO, Dana</span>
-                  <p className="text-[11px] text-secondary mt-1">
-                    Settlement instan terintegrasi dengan engine sinkronisasi lisensi otomatis.
+                  <p className="text-xs font-bold text-brand-espresso mt-3">
+                    Pindai QRIS Menggunakan BCA, Mandiri, BRI, BNI, GoPay, OVO, atau Dana
+                  </p>
+                  <p className="text-[11px] text-secondary mt-0.5">
+                    Setelah melakukan pembayaran, mohon isi nama pengirim &amp; unggah bukti transfer di bawah ini.
                   </p>
                 </div>
 
-                {/* Simulated Verification / Test Button */}
+                {/* Transfer Proof Submission Form */}
+                <div className="space-y-3.5 bg-surface-container-low p-4 rounded-2xl border border-border-subtle">
+                  <div className="text-xs font-bold text-brand-espresso flex items-center gap-1.5">
+                    <Upload className="w-4 h-4 text-brand-gold" />
+                    <span>Konfirmasi Bukti Pembayaran QRIS</span>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold text-brand-espresso block mb-1">
+                      Nama Pengirim Rekening / E-Wallet <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={senderName}
+                      onChange={(e) => setSenderName(e.target.value)}
+                      placeholder="Contoh: Budi Santoso / Siti Rahma"
+                      className="w-full p-2.5 rounded-xl border border-border-strong bg-surface-card text-xs text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-brand-espresso block mb-1">
+                        Bank / Platform Pengirim
+                      </label>
+                      <select
+                        value={senderBank}
+                        onChange={(e) => setSenderBank(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-border-strong bg-surface-card text-xs text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-gold cursor-pointer"
+                      >
+                        <option value="BCA">BCA (Bank Central Asia)</option>
+                        <option value="Mandiri">Bank Mandiri</option>
+                        <option value="BRI">Bank BRI</option>
+                        <option value="BNI">Bank BNI</option>
+                        <option value="BSI">BSI (Bank Syariah)</option>
+                        <option value="GoPay">GoPay</option>
+                        <option value="OVO">OVO</option>
+                        <option value="Dana">DANA</option>
+                        <option value="ShopeePay">ShopeePay</option>
+                        <option value="Lainnya">Bank Lainnya</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-brand-espresso block mb-1">
+                        Unggah Foto Bukti Transfer <span className="text-red-500">*</span>
+                      </label>
+                      <label className="flex items-center justify-center p-2.5 rounded-xl border border-dashed border-border-strong bg-surface-card hover:bg-surface-container cursor-pointer transition-all text-xs text-secondary gap-1.5 min-h-[42px]">
+                        <Upload className="w-3.5 h-3.5 text-brand-gold shrink-0" />
+                        <span className="truncate">
+                          {proofImageBase64 ? 'Ganti Foto' : 'Pilih Foto Bukti'}
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleProofFileSelect}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {proofImageBase64 && (
+                    <div className="rounded-xl overflow-hidden border border-border-strong p-2.5 bg-surface-card flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src={proofImageBase64}
+                          alt="Preview Bukti"
+                          className="w-12 h-12 object-cover rounded-lg border border-border-subtle"
+                        />
+                        <div>
+                          <span className="text-xs font-bold text-brand-espresso block">Bukti Siap Dikirim</span>
+                          <span className="text-[10px] text-emerald-600 font-semibold">Format gambar valid (Base64)</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setProofImageBase64('')}
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition-colors cursor-pointer"
+                        title="Hapus Bukti"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="text-[11px] font-bold text-brand-espresso block mb-1">
+                      Catatan Tambahan (Opsional)
+                    </label>
+                    <input
+                      type="text"
+                      value={paymentNotes}
+                      onChange={(e) => setPaymentNotes(e.target.value)}
+                      placeholder="Contoh: Pembayaran upgrade paket gerai 1"
+                      className="w-full p-2.5 rounded-xl border border-border-strong bg-surface-card text-xs text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-gold"
+                    />
+                  </div>
+                </div>
+
+                {/* Actions */}
                 <div className="space-y-2 pt-2">
                   <button
-                    onClick={handleVerifyInstantPayment}
-                    disabled={isVerifyingPay}
-                    className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso font-bold text-sm rounded-xl shadow-xs transition-all active:scale-95 disabled:opacity-50"
+                    onClick={handleSubmitProofPayment}
+                    disabled={isSubmittingProof || !proofImageBase64 || !senderName.trim()}
+                    className="w-full min-h-[48px] flex items-center justify-center gap-2 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso font-bold text-sm rounded-xl shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
                   >
                     <CheckCircle2 className="w-4 h-4" />
-                    <span>{isVerifyingPay ? 'Memverifikasi Pembayaran...' : 'Simulasi Verifikasi Pembayaran Sukses'}</span>
+                    <span>{isSubmittingProof ? 'Mengirim Bukti Pembayaran...' : 'Kirim Bukti Pembayaran QRIS'}</span>
                   </button>
                   <button
                     onClick={() => {
                       setIsCheckoutModalOpen(false);
                       setActivePaymentInvoice(null);
                     }}
-                    className="w-full min-h-[44px] flex items-center justify-center text-secondary text-xs font-semibold hover:text-brand-espresso transition-colors"
+                    className="w-full min-h-[44px] flex items-center justify-center text-secondary text-xs font-semibold hover:text-brand-espresso transition-colors cursor-pointer"
                   >
                     Tutup dan Bayar Nanti
                   </button>
@@ -1028,6 +1229,64 @@ export const SubscriptionBillingPage: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 6. MODAL DETAIL / INSPEKSI BUKTI TRANSFER QRIS */}
+      {selectedProofModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-espresso/70 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-surface-card rounded-3xl border border-border-strong shadow-2xl max-w-lg w-full overflow-hidden p-6 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
+              <div>
+                <h3 className="font-serif-title font-bold text-base text-brand-espresso">
+                  Bukti Pembayaran QRIS
+                </h3>
+                <p className="text-xs text-secondary font-mono">
+                  No. Faktur: {selectedProofModal.invoiceNumber}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedProofModal(null)}
+                className="w-8 h-8 rounded-full hover:bg-surface-container flex items-center justify-center text-secondary hover:text-brand-espresso cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden border border-border-strong bg-black/5 flex items-center justify-center max-h-[50vh] p-2">
+              <img
+                src={selectedProofModal.image}
+                alt="Bukti Transfer QRIS"
+                className="max-h-[46vh] w-auto object-contain rounded-xl shadow-xs"
+              />
+            </div>
+
+            <div className="bg-surface-container-low p-3.5 rounded-2xl border border-border-subtle text-xs space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-secondary">Nama Pengirim:</span>
+                <span className="font-bold text-brand-espresso">{selectedProofModal.senderName || '-'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-secondary">Bank / Platform:</span>
+                <span className="font-bold text-brand-espresso">{selectedProofModal.senderBank || 'QRIS'}</span>
+              </div>
+              {selectedProofModal.amount && (
+                <div className="flex justify-between">
+                  <span className="text-secondary">Nominal Tagihan:</span>
+                  <span className="font-mono font-bold text-brand-espresso">
+                    Rp {selectedProofModal.amount.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={() => setSelectedProofModal(null)}
+              className="w-full py-2.5 bg-surface-container hover:bg-surface-container-high rounded-xl text-xs font-bold text-brand-espresso transition-colors cursor-pointer"
+            >
+              Tutup
+            </button>
           </div>
         </div>
       )}

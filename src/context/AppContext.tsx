@@ -190,7 +190,19 @@ interface AppContextType {
     targetPlan?: string;
     targetOutletId?: string;
   }) => Promise<any>;
-  simulatePayInvoice: (invoiceId: string) => Promise<boolean>;
+  submitManualPayment: (data: {
+    invoiceId?: string;
+    type?: 'ADD_OUTLET' | 'ADD_TX_QUOTA' | 'RENEWAL' | 'CHANGE_PLAN' | 'UPGRADE_PLAN';
+    quantity?: number;
+    extraTxQuota?: number;
+    months?: number;
+    targetPlan?: string;
+    targetOutletId?: string;
+    senderName: string;
+    senderBank?: string;
+    proofImage: string;
+    notes?: string;
+  }) => Promise<any>;
   fetchBillingInvoices: () => Promise<SubscriptionInvoice[]>;
 
   // Dompet & Penarikan Saldo Tenant (Merchant Wallet & Payout)
@@ -214,7 +226,6 @@ interface AppContextType {
   createDuitkuSubscriptionCheckout: (payload: any) => Promise<any>;
   createDuitkuPosQr: (payload: any) => Promise<any>;
   checkDuitkuStatus: (orderId: string) => Promise<any>;
-  simulateDuitkuPay: (orderId: string) => Promise<boolean>;
   getPaymentGatewayConfig: () => Promise<any>;
   updatePaymentGatewayConfig: (payload: any) => Promise<any>;
   testPaymentGatewayConfig: (payload: any) => Promise<any>;
@@ -1398,26 +1409,37 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     []
   );
 
-  const simulatePayInvoice = useCallback(
-    async (invoiceId: string) => {
+  const submitManualPayment = useCallback(
+    async (data: {
+      invoiceId?: string;
+      type?: 'ADD_OUTLET' | 'ADD_TX_QUOTA' | 'RENEWAL' | 'CHANGE_PLAN' | 'UPGRADE_PLAN';
+      quantity?: number;
+      extraTxQuota?: number;
+      months?: number;
+      targetPlan?: string;
+      targetOutletId?: string;
+      senderName: string;
+      senderBank?: string;
+      proofImage: string;
+      notes?: string;
+    }) => {
       try {
-        const res = await api.post<{ success: boolean; message: string; data: any }>(
-          `/billing/pay-mock/${invoiceId}`,
-          {}
+        const res = await api.post<{ success: boolean; data: any; message: string }>(
+          '/billing/manual-pay',
+          data
         );
-        if (res.success) {
-          showNotification(res.message || 'Pembayaran berhasil dikonfirmasi!', 'success');
-          await fetchBillingStatus();
-          await refreshData();
-          return true;
-        }
-        return false;
+        showNotification(
+          res.message || 'Bukti transfer QRIS berhasil dikirim! Menunggu persetujuan Superadmin.',
+          'success'
+        );
+        await fetchBillingStatus();
+        return res;
       } catch (err: any) {
-        showNotification(err.message || 'Gagal memproses pembayaran', 'error');
-        return false;
+        showNotification(err.message || 'Gagal mengirim bukti transfer', 'error');
+        throw err;
       }
     },
-    [fetchBillingStatus, refreshData]
+    [fetchBillingStatus, showNotification]
   );
 
   const fetchBillingInvoices = useCallback(async () => {
@@ -1528,28 +1550,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return null;
     }
   }, []);
-
-  const simulateDuitkuPay = useCallback(
-    async (orderId: string) => {
-      try {
-        const res = await api.post<{ success: boolean; message: string }>(
-          `/payment/duitku/simulate/${orderId}`,
-          {}
-        );
-        if (res.success) {
-          showNotification(res.message || 'Simulasi bayar Duitku berhasil!', 'success');
-          await fetchWalletSummary();
-          await fetchBillingStatus();
-          await refreshData();
-          return true;
-        }
-      } catch (err: any) {
-        showNotification(err.message || 'Gagal simulasi pembayaran Duitku', 'error');
-      }
-      return false;
-    },
-    [fetchWalletSummary, fetchBillingStatus, refreshData, showNotification]
-  );
 
   const getPaymentGatewayConfig = useCallback(async () => {
     try {
@@ -1670,7 +1670,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         billingStatus,
         fetchBillingStatus,
         createCheckout,
-        simulatePayInvoice,
+        submitManualPayment,
         fetchBillingInvoices,
         walletSummary,
         isLoadingWallet,
@@ -1680,7 +1680,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         createDuitkuSubscriptionCheckout,
         createDuitkuPosQr,
         checkDuitkuStatus,
-        simulateDuitkuPay,
         getPaymentGatewayConfig,
         updatePaymentGatewayConfig,
         testPaymentGatewayConfig,

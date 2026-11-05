@@ -50,7 +50,6 @@ export const PosPage: React.FC = () => {
     getActiveOutlet,
     createDuitkuPosQr,
     checkDuitkuStatus,
-    simulateDuitkuPay,
     fetchWalletSummary,
   } = useApp();
 
@@ -76,7 +75,6 @@ export const PosPage: React.FC = () => {
     isLoading?: boolean;
   } | null>(null);
   const [isCheckingDuitku, setIsCheckingDuitku] = useState<boolean>(false);
-  const [isSimulatingDuitku, setIsSimulatingDuitku] = useState<boolean>(false);
 
   // Cart calculations
   const totalCartQty = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -155,25 +153,6 @@ export const PosPage: React.FC = () => {
       showNotification('Gagal memeriksa status gateway Duitku.', 'error');
     } finally {
       setIsCheckingDuitku(false);
-    }
-  };
-
-  const handleSimulateDuitkuCustomerPayment = async () => {
-    if (!duitkuQrData?.orderId) return;
-    setIsSimulatingDuitku(true);
-    try {
-      const isSuccess = await simulateDuitkuPay(duitkuQrData.orderId);
-      if (isSuccess) {
-        showNotification('Simulasi pembayaran pelanggan berhasil diverifikasi!', 'success');
-        await handleConfirmPayment();
-        await fetchWalletSummary();
-      } else {
-        showNotification('Gagal simulasi pembayaran gateway Duitku', 'error');
-      }
-    } catch (err) {
-      showNotification('Gagal menjalankan simulasi pembayaran.', 'error');
-    } finally {
-      setIsSimulatingDuitku(false);
     }
   };
 
