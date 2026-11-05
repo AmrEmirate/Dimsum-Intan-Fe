@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Lock,
   PlusCircle,
@@ -15,10 +15,37 @@ import {
   FileSpreadsheet,
   PackagePlus,
   Trash,
+  Upload,
+  Download,
+  FileUp,
+  FileDown,
+  Sparkles,
+  Layers,
+  Check,
+  RefreshCw,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { MenuItem, MenuCategory } from '../types';
-import { exportToCsv } from '../utils/exportUtils';
+import {
+  exportToCsv,
+  exportToJson,
+  parseCsv,
+  downloadMenuCsvTemplate,
+} from '../utils/exportUtils';
+
+interface ParsedImportItem {
+  name: string;
+  category: MenuCategory;
+  price: number;
+  costPrice: number;
+  stock: number;
+  description: string;
+  margin: number;
+  isValid: boolean;
+  errorReason?: string;
+  isWarning?: boolean;
+  warningReason?: string;
+}
 
 export const MenuHppPage: React.FC = () => {
   const {
@@ -35,6 +62,14 @@ export const MenuHppPage: React.FC = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+
+  // Bulk Import State (Google Stitch Architecture)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [parsedImportRows, setParsedImportRows] = useState<ParsedImportItem[]>([]);
+  const [importMode, setImportMode] = useState<'UPSERT' | 'APPEND'>('UPSERT');
+  const [isProcessingImport, setIsProcessingImport] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Waste & Spoilage Modal
   const [isWasteModalOpen, setIsWasteModalOpen] = useState(false);
@@ -208,6 +243,140 @@ export const MenuHppPage: React.FC = () => {
     showNotification('Katalog Menu & HPP berhasil diunduh ke Excel!', 'success');
   };
 
+  const handleExportJson = () => {
+    exportToJson(
+      `Master_Menu_HPP_Dimsum_Intan_${new Date().toISOString().slice(0, 10)}`,
+      menuItems
+    );
+    showNotification('Data menu berhasil diekspor ke JSON!', 'success');
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFile(file);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      const rawRows = parseCsv(text);
+      if (rawRows.length < 2) {
+        showNotification('File CSV kosong atau tidak memiliki data!', 'error');
+        return;
+      }
+
+      // Skip header row
+      const dataRows = rawRows.slice(1);
+      const parsed: ParsedImportItem[] = dataRows.map((row) => {
+        const name = (row[0] || '').trim();
+        const rawCategory = (row[1] || '').trim();
+        const category: MenuCategory = rawCategory ? (rawCategory as MenuCategory) : 'Makanan Utama';
+        const price = parseFloat(row[2]?.replace(/[^0-9.]/g, '') || '0') || 0;
+        const costPrice = parseFloat(row[3]?.replace(/[^0-9.]/g, '') || '0') || 0;
+        const stock = parseInt(row[4]?.replace(/[^0-9]/g, '') || '0', 10) || 0;
+        const description = (row[5] || '').trim();
+
+        const profit = price - costPrice;
+        const margin = price > 0 ? (profit / price) * 100 : 0;
+
+        let isValid = true;
+        let errorReason: string | undefined;
+        let isWarning = false;
+        let warningReason: string | undefined;
+
+        if (!name) {
+          isValid = false;
+          errorReason = 'Nama menu kosong';
+        } else if (price <= 0) {
+          isValid = false;
+          errorReason = 'Harga jual harus > 0';
+        } else if (costPrice <= 0) {
+          isValid = false;
+          errorReason = 'HPP harus > 0';
+        } else if (margin < 0) {
+          isValid = false;
+          errorReason = 'HPP melebihi harga jual (Rugi)';
+        } else if (margin < 25) {
+          isWarning = true;
+          warningReason = 'Margin rendah (< 25%)';
+        }
+
+        return {
+          name,
+          category,
+          price,
+          costPrice,
+          stock,
+          description,
+          margin: parseFloat(margin.toFixed(1)),
+          isValid,
+          errorReason,
+          isWarning,
+          warningReason,
+        };
+      });
+
+      setParsedImportRows(parsed);
+      showNotification(`Terdeteksi ${parsed.length} baris data dari ${file.name}.`, 'info');
+    };
+    reader.readAsText(file);
+  };
+
+  const handleExecuteImport = async () => {
+    const validItems = parsedImportRows.filter((r) => r.isValid);
+    if (validItems.length === 0) {
+      showNotification('Tidak ada data menu yang valid untuk diimpor!', 'error');
+      return;
+    }
+
+    setIsProcessingImport(true);
+    let createdCount = 0;
+    let updatedCount = 0;
+
+    for (const item of validItems) {
+      const existing = menuItems.find(
+        (m) => m.name.toLowerCase().trim() === item.name.toLowerCase().trim()
+      );
+
+      if (existing && importMode === 'UPSERT') {
+        await updateMenuItem(existing.id, {
+          ...existing,
+          category: item.category,
+          price: item.price,
+          costPrice: item.costPrice,
+          stock: item.stock > 0 ? item.stock : existing.stock,
+          description: item.description || existing.description,
+          isAvailable: true,
+        });
+        updatedCount++;
+      } else {
+        await addMenuItem({
+          name: item.name,
+          category: item.category,
+          price: item.price,
+          costPrice: item.costPrice,
+          stock: item.stock,
+          isAvailable: item.stock > 0,
+          description: item.description,
+          image: '',
+        });
+        createdCount++;
+      }
+    }
+
+    setIsProcessingImport(false);
+    setIsImportModalOpen(false);
+    setImportFile(null);
+    setParsedImportRows([]);
+
+    showNotification(
+      `Impor Berhasil! ${createdCount} menu baru ditambahkan, ${updatedCount} menu diperbarui.`,
+      'success'
+    );
+  };
+
   const handleRecordWaste = (e: React.FormEvent) => {
     e.preventDefault();
     const item = menuItems.find((m) => m.id === wasteMenuId);
@@ -293,14 +462,35 @@ export const MenuHppPage: React.FC = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            {isOwner && (
+              <button
+                type="button"
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex items-center gap-1.5 bg-brand-gold/15 hover:bg-brand-gold/30 text-brand-espresso text-xs font-bold px-3.5 py-2 rounded-xl border border-brand-gold/40 shadow-xs transition-all active:scale-95 cursor-pointer"
+                title="Impor Massal Data Menu & HPP dari CSV / Excel"
+              >
+                <FileUp className="w-4 h-4 text-brand-terracotta" />
+                <span>Impor Massal (CSV)</span>
+              </button>
+            )}
+
             <button
               onClick={handleExportMenuHpp}
               className="flex items-center gap-1.5 bg-surface-container hover:bg-surface-container-high text-brand-espresso text-xs font-semibold px-3.5 py-2 rounded-xl border border-border-subtle shadow-xs transition-all active:scale-95 cursor-pointer"
               title="Unduh Katalog Menu & HPP ke Excel / CSV"
             >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
-              <span>Ekspor Excel</span>
+              <FileDown className="w-4 h-4 text-emerald-700" />
+              <span>Ekspor CSV / Excel</span>
             </button>
+
+            <button
+              onClick={handleExportJson}
+              className="hidden sm:flex items-center gap-1.5 bg-surface-container hover:bg-surface-container-high text-brand-espresso text-xs font-semibold px-3 py-2 rounded-xl border border-border-subtle shadow-xs transition-all active:scale-95 cursor-pointer"
+              title="Ekspor Data JSON"
+            >
+              <span>JSON</span>
+            </button>
+
             <button
               onClick={() => {
                 setWasteMenuId(menuItems[0]?.id || '');
@@ -310,7 +500,7 @@ export const MenuHppPage: React.FC = () => {
               title="Catat Produk Basi / Kukusan Rusak"
             >
               <Trash className="w-4 h-4 text-red-600" />
-              <span>Catat Waste / Basi</span>
+              <span>Catat Waste</span>
             </button>
             {!isOwner && (
               <div className="flex items-center gap-1.5 bg-status-pending-bg text-status-pending-text px-3 py-1.5 rounded-xl text-xs font-semibold">
@@ -324,7 +514,7 @@ export const MenuHppPage: React.FC = () => {
                 className="flex items-center gap-1.5 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
               >
                 <PlusCircle className="w-4 h-4" />
-                <span>+ Tambah Menu Baru</span>
+                <span>+ Tambah Menu</span>
               </button>
             )}
           </div>
@@ -956,6 +1146,286 @@ export const MenuHppPage: React.FC = () => {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: IMPOR MASSAL MENU & HPP DIMSUM (Google Stitch Architecture)       */}
+      {/* ========================================================================= */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-espresso/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-surface-card rounded-3xl border border-border-strong shadow-2xl w-full max-w-3xl overflow-hidden animate-in zoom-in-95 duration-150 flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-border-subtle bg-surface-container-low flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-brand-gold/20 text-brand-terracotta border border-brand-gold/40">
+                  <FileUp className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-serif-title font-bold text-base text-brand-espresso">
+                    Impor Data Massal Menu & HPP Dimsum
+                  </h3>
+                  <p className="text-[11px] text-secondary">
+                    Unggah file CSV untuk menambahkan atau memperbarui katalog menu dan HPP sekaligus
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setImportFile(null);
+                  setParsedImportRows([]);
+                }}
+                className="w-8 h-8 rounded-xl hover:bg-surface-container flex items-center justify-center text-secondary hover:text-brand-espresso transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
+              {/* Template Callout Card */}
+              <div className="p-4 rounded-2xl bg-surface-container border border-border-subtle flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <FileSpreadsheet className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-xs font-bold text-brand-espresso">Format File Standar Pabrik & POS</div>
+                    <div className="text-[11px] text-secondary mt-0.5">
+                      Gunakan format kolom: Nama Menu, Kategori, Harga Jual, Modal HPP, Stok Awal, Deskripsi.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={downloadMenuCsvTemplate}
+                  className="px-3.5 py-2 rounded-xl bg-surface-card hover:bg-surface-container-high border border-border-strong text-xs font-bold text-brand-espresso flex items-center gap-1.5 shadow-xs transition-all cursor-pointer whitespace-nowrap self-stretch sm:self-auto justify-center"
+                >
+                  <Download className="w-3.5 h-3.5 text-primary" />
+                  <span>Unduh Template CSV</span>
+                </button>
+              </div>
+
+              {/* Drag & Drop File Zone */}
+              <div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept=".csv,text/csv,text/plain"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+
+                {!importFile ? (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-brand-gold/60 hover:border-brand-gold bg-brand-gold-subtle/40 hover:bg-brand-gold-subtle/70 rounded-2xl p-6 sm:p-8 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-brand-gold/20 text-brand-terracotta flex items-center justify-center mb-1">
+                      <Upload className="w-6 h-6" />
+                    </div>
+                    <div className="font-bold text-xs sm:text-sm text-brand-espresso">
+                      Klik untuk memilih file CSV atau drag & drop ke sini
+                    </div>
+                    <div className="text-[11px] text-secondary max-w-sm">
+                      Mendukung file ekstensi <strong className="text-brand-espresso">.csv</strong> dari Microsoft Excel, Google Sheets, atau sistem gudang
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-surface-container border border-border-strong flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                        <FileSpreadsheet className="w-5 h-5 text-emerald-700" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-xs text-brand-espresso truncate max-w-xs sm:max-w-md">
+                          {importFile.name}
+                        </div>
+                        <div className="text-[10px] text-secondary font-mono mt-0.5">
+                          {(importFile.size / 1024).toFixed(1)} KB • Terdeteksi {parsedImportRows.length} Baris Data
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-3 py-1.5 rounded-lg border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-card transition-colors cursor-pointer"
+                    >
+                      Ganti File
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Mode Switcher */}
+              <div className="p-4 rounded-2xl bg-surface-container border border-border-subtle space-y-2">
+                <label className="text-[11px] font-bold uppercase tracking-wider text-secondary block">
+                  Metode Penanganan Data Duplikat:
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <label
+                    className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${
+                      importMode === 'UPSERT'
+                        ? 'border-brand-gold bg-brand-gold/15 text-brand-espresso font-bold'
+                        : 'border-border-subtle bg-surface-card text-secondary'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="importMode"
+                      value="UPSERT"
+                      checked={importMode === 'UPSERT'}
+                      onChange={() => setImportMode('UPSERT')}
+                      className="text-brand-terracotta"
+                    />
+                    <div>
+                      <div>Perbarui Menu Lama (Upsert)</div>
+                      <div className="text-[10px] text-secondary font-normal">
+                        Update harga jual & HPP jika nama menu sudah terdaftar
+                      </div>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`p-3 rounded-xl border flex items-center gap-2.5 cursor-pointer transition-all ${
+                      importMode === 'APPEND'
+                        ? 'border-brand-gold bg-brand-gold/15 text-brand-espresso font-bold'
+                        : 'border-border-subtle bg-surface-card text-secondary'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="importMode"
+                      value="APPEND"
+                      checked={importMode === 'APPEND'}
+                      onChange={() => setImportMode('APPEND')}
+                      className="text-brand-terracotta"
+                    />
+                    <div>
+                      <div>Hanya Tambah Baru (Append)</div>
+                      <div className="text-[10px] text-secondary font-normal">
+                        Menu dengan nama yang sama akan dilewati
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Realtime Parsed Preview Table */}
+              {parsedImportRows.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-brand-espresso">
+                      Pratinjau Data ({parsedImportRows.length} Menu)
+                    </span>
+                    <div className="flex items-center gap-2 text-[10px]">
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                        {parsedImportRows.filter((r) => r.isValid).length} Siap Impor
+                      </span>
+                      {parsedImportRows.some((r) => !r.isValid) && (
+                        <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-bold">
+                          {parsedImportRows.filter((r) => !r.isValid).length} Error
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="border border-border-subtle rounded-2xl overflow-hidden max-h-56 overflow-y-auto">
+                    <table className="w-full text-left text-xs min-w-[500px]">
+                      <thead className="bg-surface-container sticky top-0 border-b border-border-subtle text-[10px] font-bold uppercase tracking-wider text-secondary">
+                        <tr>
+                          <th className="py-2.5 px-3">Nama Dimsum</th>
+                          <th className="py-2.5 px-3">Kategori</th>
+                          <th className="py-2.5 px-3 text-right">Harga Jual</th>
+                          <th className="py-2.5 px-3 text-right">Modal HPP</th>
+                          <th className="py-2.5 px-3 text-right">Margin</th>
+                          <th className="py-2.5 px-3 text-right">Stok</th>
+                          <th className="py-2.5 px-3 text-center">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border-subtle">
+                        {parsedImportRows.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-surface-container-low transition-colors">
+                            <td className="py-2.5 px-3 font-bold text-brand-espresso">
+                              {item.name || <span className="text-red-500 italic">Kosong</span>}
+                            </td>
+                            <td className="py-2.5 px-3 text-secondary">{item.category}</td>
+                            <td className="py-2.5 px-3 text-right font-mono font-bold text-brand-espresso">
+                              Rp {item.price.toLocaleString('id-ID')}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono text-secondary">
+                              Rp {item.costPrice.toLocaleString('id-ID')}
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-bold text-emerald-700">
+                              {item.margin}%
+                            </td>
+                            <td className="py-2.5 px-3 text-right font-mono font-semibold text-brand-espresso">
+                              {item.stock}
+                            </td>
+                            <td className="py-2.5 px-3 text-center">
+                              {item.isValid ? (
+                                item.isWarning ? (
+                                  <span
+                                    className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200"
+                                    title={item.warningReason}
+                                  >
+                                    Peringatan
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    Valid
+                                  </span>
+                                )
+                              ) : (
+                                <span
+                                  className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-red-50 text-red-700 border border-red-200"
+                                  title={item.errorReason}
+                                >
+                                  {item.errorReason || 'Error'}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-surface-container-low border-t border-border-subtle flex items-center justify-between gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsImportModalOpen(false);
+                  setImportFile(null);
+                  setParsedImportRows([]);
+                }}
+                className="px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-card transition-colors cursor-pointer"
+              >
+                Batalkan
+              </button>
+
+              <button
+                type="button"
+                disabled={
+                  isProcessingImport ||
+                  parsedImportRows.filter((r) => r.isValid).length === 0
+                }
+                onClick={handleExecuteImport}
+                className="px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md active:scale-95 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                <Check className="w-4 h-4 text-brand-espresso" />
+                <span>
+                  {isProcessingImport
+                    ? 'Memproses Impor...'
+                    : `Impor ${parsedImportRows.filter((r) => r.isValid).length} Menu ke Sistem`}
+                </span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

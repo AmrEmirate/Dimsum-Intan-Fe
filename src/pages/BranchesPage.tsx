@@ -32,9 +32,11 @@ import {
   Lock,
   ExternalLink,
   Zap,
+  Download,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Outlet, UserRole } from '../types';
+import { exportToCsv } from '../utils/exportUtils';
 
 export const BranchesPage: React.FC = () => {
   const {
@@ -230,6 +232,24 @@ export const BranchesPage: React.FC = () => {
     await deleteOutlet(outlet.id);
   };
 
+  const handleExportBranches = () => {
+    if (outlets.length === 0) {
+      showNotification('Belum ada data cabang untuk diekspor', 'error');
+      return;
+    }
+    const headers = ['Kode Cabang', 'Nama Cabang', 'Kota', 'Alamat', 'No. WhatsApp', 'Target Harian (Rp)'];
+    const rows = outlets.map((o) => [
+      o.code,
+      o.name,
+      o.city,
+      o.address,
+      o.phone,
+      o.targetDailySales,
+    ]);
+    exportToCsv('Data_Cabang_Dimsum_Intan', headers, rows);
+    showNotification('Data cabang berhasil diekspor ke CSV', 'success');
+  };
+
   const handleSwitchToBranchPos = (outletId: string) => {
     setSelectedOutletId(outletId);
     setCurrentView('transaksi-kasir-pos');
@@ -317,6 +337,17 @@ export const BranchesPage: React.FC = () => {
                 <UserPlus className="w-4 h-4" />
                 <span>Buat Akun Kasir</span>
               </button>
+              {outlets.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleExportBranches}
+                  className="py-3 px-4 sm:px-5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm backdrop-blur-md border border-white/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                  title="Ekspor Data Cabang ke CSV / Excel"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Ekspor CSV</span>
+                </button>
+              )}
             </div>
           )}
         </div>
