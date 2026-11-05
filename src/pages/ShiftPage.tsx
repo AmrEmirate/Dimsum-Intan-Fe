@@ -17,6 +17,7 @@ import {
   X,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { RupiahInput } from '../components/common/RupiahInput';
 
 export const ShiftPage: React.FC = () => {
   const {
@@ -576,15 +577,11 @@ export const ShiftPage: React.FC = () => {
             </p>
 
             <div className="my-5 flex flex-col gap-1.5">
-              <label className="text-xs font-bold text-brand-espresso">
-                Modal Awal Laci (Rp)
-              </label>
-              <input
-                type="number"
+              <RupiahInput
+                label="Modal Awal Laci"
                 value={startCashInput}
                 onChange={(e) => setStartCashInput(e.target.value)}
-                className="w-full p-3 rounded-xl bg-surface-container text-base font-bold text-brand-espresso focus:outline-none"
-                placeholder="500000"
+                placeholder="Contoh: 500.000"
                 required
               />
               <span className="text-[11px] text-secondary">Standar modal kembalian: Rp 500.000</span>
@@ -633,19 +630,13 @@ export const ShiftPage: React.FC = () => {
             </div>
 
             <div className="space-y-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">
-                  Total Uang Fisik di Laci Kasir (Rp)
-                </label>
-                <input
-                  type="number"
-                  value={actualCashInput}
-                  onChange={(e) => setActualCashInput(e.target.value)}
-                  placeholder="Contoh: 2080000"
-                  className="w-full p-3 rounded-xl bg-surface-container text-base font-bold text-brand-espresso focus:outline-none"
-                  required
-                />
-              </div>
+              <RupiahInput
+                label="Total Uang Fisik di Laci Kasir"
+                value={actualCashInput}
+                onChange={(e) => setActualCashInput(e.target.value)}
+                placeholder="Contoh: 2.080.000"
+                required
+              />
 
               {actualCashInput && (
                 <div

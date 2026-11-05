@@ -27,6 +27,7 @@ import { MenuCategory, MenuItem, PaymentMethod, Order } from '../types';
 import { ReceiptModal } from '../components/common/ReceiptModal';
 import { ConfirmationModal } from '../components/common/ConfirmationModal';
 import { CloseShiftModal } from '../components/common/CloseShiftModal';
+import { RupiahInput } from '../components/common/RupiahInput';
 
 export const PosPage: React.FC = () => {
   const {
@@ -822,17 +823,12 @@ export const PosPage: React.FC = () => {
 
             {selectedPaymentMethod === 'CASH' ? (
               <div className="space-y-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-brand-espresso">
-                    Nominal Tunai Diterima (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    value={cashGiven}
-                    onChange={(e) => setCashGiven(e.target.value)}
-                    className="w-full p-3 rounded-xl bg-surface-container text-base font-bold text-brand-espresso focus:outline-none"
-                  />
-                </div>
+                <RupiahInput
+                  label="Nominal Tunai Diterima"
+                  value={cashGiven}
+                  onChange={(e) => setCashGiven(e.target.value)}
+                  placeholder="Contoh: 50.000"
+                />
 
                 {/* Quick Cash Buttons (Responsive 3 cols on mobile, 5 cols on sm+) */}
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">

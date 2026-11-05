@@ -36,6 +36,7 @@ import { useApp } from '../context/AppContext';
 import { WalletTransaction, WithdrawalRequest } from '../types';
 import { api } from '../services/apiClient';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { RupiahInput } from '../components/common/RupiahInput';
 
 export const WalletWithdrawalPage: React.FC = () => {
   const {
@@ -973,26 +974,14 @@ export const WalletWithdrawalPage: React.FC = () => {
 
             {/* Form Input Nominal */}
             <form onSubmit={handleSubmitCalcWithdraw} className="space-y-3.5">
-              <div>
-                <label className="text-xs font-bold text-brand-espresso block mb-1">
-                  Nominal Penarikan Dana (Rp) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-xs font-bold font-mono text-secondary">
-                    Rp
-                  </span>
-                  <input
-                    type="number"
-                    min="20000"
-                    max={currentBalance}
-                    placeholder="Minimal Rp 20.000"
-                    value={calcAmount}
-                    onChange={(e) => setCalcAmount(e.target.value)}
-                    className="w-full text-sm font-bold font-mono pl-10 pr-3 py-2 bg-surface-card border-2 border-brand-gold rounded-xl focus:outline-none focus:border-brand-gold-hover text-brand-espresso"
-                    required
-                  />
-                </div>
-              </div>
+              <RupiahInput
+                label="Nominal Penarikan Dana"
+                value={calcAmount}
+                onChange={(e) => setCalcAmount(e.target.value)}
+                placeholder="Minimal Rp 20.000"
+                required
+                className="border-2 border-brand-gold focus:border-brand-gold-hover font-mono"
+              />
 
               {/* Quick Preset Buttons */}
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -1160,24 +1149,14 @@ export const WalletWithdrawalPage: React.FC = () => {
 
               {/* Nominal Input */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-brand-espresso">
-                  Nominal Penarikan (Rp) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-xs font-mono font-bold text-secondary">
-                    Rp
-                  </span>
-                  <input
-                    type="number"
-                    min="20000"
-                    max={currentBalance}
-                    placeholder="Minimal Rp 20.000"
-                    value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-surface-card text-sm font-bold font-mono text-brand-espresso border border-border-strong focus:outline-none focus:ring-2 focus:ring-brand-gold"
-                    required
-                  />
-                </div>
+                <RupiahInput
+                  label="Nominal Penarikan"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  placeholder="Minimal Rp 20.000"
+                  required
+                  className="font-mono"
+                />
 
                 {/* Preset Chips */}
                 <div className="flex items-center gap-1.5 flex-wrap pt-1">

@@ -40,6 +40,7 @@ import { Outlet, UserRole } from '../types';
 import { exportToCsv } from '../utils/exportUtils';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { ConfirmationModal } from '../components/common/ConfirmationModal';
+import { RupiahInput } from '../components/common/RupiahInput';
 
 export const BranchesPage: React.FC = () => {
   const {
@@ -1725,18 +1726,12 @@ export const BranchesPage: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] font-bold text-secondary uppercase">
-                    Target Omset Harian (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    value={outletTarget}
-                    onChange={(e) => setOutletTarget(e.target.value)}
-                    placeholder="4500000"
-                    className="w-full p-2.5 rounded-xl bg-surface-container border border-border-subtle text-xs font-bold text-brand-espresso focus:outline-none focus:border-brand-gold"
-                  />
-                </div>
+                <RupiahInput
+                  label="Target Omset Harian"
+                  value={outletTarget}
+                  onChange={(e) => setOutletTarget(e.target.value)}
+                  placeholder="Contoh: 4.500.000"
+                />
               </div>
 
               {/* Action Buttons */}

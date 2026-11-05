@@ -14,6 +14,7 @@ import {
   Calculator,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { RupiahInput } from './RupiahInput';
 
 interface CloseShiftModalProps {
   isOpen: boolean;
@@ -144,21 +145,13 @@ export const CloseShiftModal: React.FC<CloseShiftModalProps> = ({
               </button>
             </div>
 
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-secondary">
-                Rp
-              </span>
-              <input
-                type="number"
-                min={0}
-                step={500}
-                required
-                value={actualCashInput}
-                onChange={(e) => setActualCashInput(e.target.value)}
-                placeholder={String(expectedCash)}
-                className="w-full pl-10 pr-4 py-2.5 rounded-2xl bg-surface-card border border-border-strong text-base font-black text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-gold/50"
-              />
-            </div>
+            <RupiahInput
+              value={actualCashInput}
+              onChange={(e) => setActualCashInput(e.target.value)}
+              placeholder={`Contoh: ${expectedCash.toLocaleString('id-ID')}`}
+              required
+              className="rounded-2xl bg-surface-card border-border-strong text-base font-black text-brand-espresso"
+            />
           </div>
 
           {/* Difference Calculation Banner */}

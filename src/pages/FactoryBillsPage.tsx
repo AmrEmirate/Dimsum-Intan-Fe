@@ -22,6 +22,7 @@ import { FactoryInvoice } from '../types';
 import { exportToCsv } from '../utils/exportUtils';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { ConfirmationModal } from '../components/common/ConfirmationModal';
+import { RupiahInput } from '../components/common/RupiahInput';
 
 export const FactoryBillsPage: React.FC = () => {
   const {
@@ -699,33 +700,43 @@ export const FactoryBillsPage: React.FC = () => {
                   <input
                     type="number"
                     value={formQty}
-                    onChange={(e) => setFormQty(e.target.value)}
+                    onChange={(e) => {
+                      const q = e.target.value;
+                      setFormQty(q);
+                      const cost = parseFloat(formUnitCost) || 0;
+                      const parsedQ = parseInt(q) || 0;
+                      if (parsedQ > 0 && cost > 0) {
+                        setFormTotalAmount((parsedQ * cost).toString());
+                      }
+                    }}
                     className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
                     required
                   />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-brand-espresso">Harga per Pouch (Rp)</label>
-                  <input
-                    type="number"
-                    value={formUnitCost}
-                    onChange={(e) => setFormUnitCost(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">Total Tagihan (Rp)</label>
-                <input
-                  type="number"
-                  value={formTotalAmount}
-                  onChange={(e) => setFormTotalAmount(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-base font-bold text-brand-espresso focus:outline-none"
+                <RupiahInput
+                  label="Harga per Pouch"
+                  value={formUnitCost}
+                  onChange={(e) => {
+                    const cost = e.target.value;
+                    setFormUnitCost(cost);
+                    const parsedCost = parseFloat(cost) || 0;
+                    const parsedQ = parseInt(formQty) || 0;
+                    if (parsedQ > 0 && parsedCost > 0) {
+                      setFormTotalAmount((parsedQ * parsedCost).toString());
+                    }
+                  }}
+                  placeholder="Contoh: 11.500"
                   required
                 />
               </div>
+
+              <RupiahInput
+                label="Total Tagihan"
+                value={formTotalAmount}
+                onChange={(e) => setFormTotalAmount(e.target.value)}
+                placeholder="Contoh: 1.150.000"
+                required
+              />
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
@@ -896,36 +907,30 @@ export const FactoryBillsPage: React.FC = () => {
                     required
                   />
                 </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-brand-espresso">Harga per Pouch (Rp)</label>
-                  <input
-                    type="number"
-                    value={editUnitCost}
-                    onChange={(e) => {
-                      const cost = e.target.value;
-                      setEditUnitCost(cost);
-                      const parsedCost = parseFloat(cost) || 0;
-                      const parsedQ = parseInt(editQty) || 0;
-                      if (parsedQ > 0 && parsedCost > 0) {
-                        setEditTotalAmount((parsedQ * parsedCost).toString());
-                      }
-                    }}
-                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">Total Tagihan (Rp)</label>
-                <input
-                  type="number"
-                  value={editTotalAmount}
-                  onChange={(e) => setEditTotalAmount(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-base font-bold text-brand-espresso focus:outline-none"
+                <RupiahInput
+                  label="Harga per Pouch"
+                  value={editUnitCost}
+                  onChange={(e) => {
+                    const cost = e.target.value;
+                    setEditUnitCost(cost);
+                    const parsedCost = parseFloat(cost) || 0;
+                    const parsedQ = parseInt(editQty) || 0;
+                    if (parsedQ > 0 && parsedCost > 0) {
+                      setEditTotalAmount((parsedQ * parsedCost).toString());
+                    }
+                  }}
+                  placeholder="Contoh: 11.500"
                   required
                 />
               </div>
+
+              <RupiahInput
+                label="Total Tagihan"
+                value={editTotalAmount}
+                onChange={(e) => setEditTotalAmount(e.target.value)}
+                placeholder="Contoh: 1.150.000"
+                required
+              />
             </div>
 
             <div className="mt-5 flex justify-end gap-2">

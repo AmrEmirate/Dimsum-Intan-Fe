@@ -15,6 +15,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { Outlet } from '../../types';
 import { ConfirmationModal } from '../common/ConfirmationModal';
+import { RupiahInput } from '../common/RupiahInput';
 
 interface OutletManagementModalProps {
   isOpen: boolean;
@@ -251,20 +252,14 @@ export const OutletManagementModal: React.FC<OutletManagementModalProps> = ({ is
                 </div>
 
                 {/* Target Penjualan Harian */}
-                <div className="flex flex-col gap-1 sm:col-span-2">
-                  <label className="text-[11px] font-bold text-secondary uppercase">
-                    Target Penjualan Harian (Rp)
-                  </label>
-                  <input
-                    type="number"
+                <div className="sm:col-span-2">
+                  <RupiahInput
+                    label="Target Penjualan Harian"
                     value={targetDailySales}
                     onChange={(e) => setTargetDailySales(e.target.value)}
-                    placeholder="4500000"
-                    className="w-full p-2.5 rounded-xl bg-surface-card border border-border-subtle text-xs font-bold text-brand-espresso focus:outline-none focus:border-brand-gold"
+                    placeholder="Contoh: 4.500.000"
+                    helperText="Digunakan untuk indikator target omset di dashboard kasir & laporan harian."
                   />
-                  <span className="text-[10px] text-secondary">
-                    Digunakan untuk indikator target omset di dashboard kasir & laporan harian.
-                  </span>
                 </div>
 
                 {/* Alamat Lengkap */}

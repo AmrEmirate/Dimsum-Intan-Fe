@@ -29,6 +29,7 @@ import { MenuItem, MenuCategory } from '../types';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { ConfirmationModal } from '../components/common/ConfirmationModal';
 import { ImageUpload } from '../components/common/ImageUpload';
+import { RupiahInput } from '../components/common/RupiahInput';
 import {
   exportToCsv,
   exportToJson,
@@ -922,33 +923,21 @@ export const MenuHppPage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-brand-espresso">
-                    Modal Beli Pabrik (HPP) (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    value={formCostPrice}
-                    onChange={(e) => setFormCostPrice(e.target.value)}
-                    placeholder="11500"
-                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                    required
-                  />
-                </div>
+                <RupiahInput
+                  label="Modal Beli Pabrik (HPP)"
+                  value={formCostPrice}
+                  onChange={(e) => setFormCostPrice(e.target.value)}
+                  placeholder="Contoh: 11.500"
+                  required
+                />
 
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-brand-espresso">
-                    Harga Jual Kasir (Rp)
-                  </label>
-                  <input
-                    type="number"
-                    value={formPrice}
-                    onChange={(e) => setFormPrice(e.target.value)}
-                    placeholder="25000"
-                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                    required
-                  />
-                </div>
+                <RupiahInput
+                  label="Harga Jual Kasir"
+                  value={formPrice}
+                  onChange={(e) => setFormPrice(e.target.value)}
+                  placeholder="Contoh: 25.000"
+                  required
+                />
               </div>
 
               {/* Calculated Margin Live Indicator */}

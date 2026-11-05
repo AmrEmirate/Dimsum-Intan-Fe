@@ -21,6 +21,7 @@ import { PettyCashCategory, PettyCashExpense } from '../types';
 import { PinAuthorizationModal } from '../components/common/PinAuthorizationModal';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { ImageUpload } from '../components/common/ImageUpload';
+import { RupiahInput } from '../components/common/RupiahInput';
 
 export const PettyCashPage: React.FC = () => {
   const {
@@ -637,20 +638,13 @@ export const PettyCashPage: React.FC = () => {
             </p>
 
             <div className="mt-4 space-y-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">
-                  Nominal Pengeluaran (Rp) - Maks Rp {maxLimitPerNote.toLocaleString('id-ID')}
-                </label>
-                <input
-                  type="number"
-                  value={formAmount}
-                  onChange={(e) => setFormAmount(e.target.value)}
-                  placeholder="Contoh: 35000"
-                  max={maxLimitPerNote}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-base font-bold text-brand-espresso focus:outline-none"
-                  required
-                />
-              </div>
+              <RupiahInput
+                label={`Nominal Pengeluaran - Maks Rp ${maxLimitPerNote.toLocaleString('id-ID')}`}
+                value={formAmount}
+                onChange={(e) => setFormAmount(e.target.value)}
+                placeholder="Contoh: 35.000"
+                required
+              />
 
               <div className="flex flex-col gap-1">
                 <CustomSelect<PettyCashCategory>
@@ -797,13 +791,12 @@ export const PettyCashPage: React.FC = () => {
             </p>
 
             <div className="mt-4 space-y-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">Nominal Pengeluaran (Rp)</label>
-                <input
-                  type="number"
+              <div>
+                <RupiahInput
+                  label="Nominal Pengeluaran"
                   value={editAmount}
                   onChange={(e) => setEditAmount(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-base font-bold text-brand-espresso focus:outline-none"
+                  placeholder="Contoh: 35.000"
                   required
                 />
                 <span className="text-[10px] text-secondary">
@@ -901,17 +894,12 @@ export const PettyCashPage: React.FC = () => {
             </div>
 
             <div className="mt-4 space-y-3.5">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">
-                  Batas Maksimal Pengeluaran per Nota (Rp)
-                </label>
-                <input
-                  type="number"
+              <div>
+                <RupiahInput
+                  label="Batas Maksimal Pengeluaran per Nota"
                   value={tempMaxLimit}
                   onChange={(e) => setTempMaxLimit(e.target.value)}
-                  placeholder="Contoh: 150000"
-                  min={1000}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-sm font-bold text-brand-espresso border border-transparent focus:border-brand-gold focus:outline-none"
+                  placeholder="Contoh: 150.000"
                   required
                 />
                 <span className="text-[10px] text-secondary">

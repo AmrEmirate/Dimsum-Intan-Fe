@@ -19,6 +19,7 @@ import { useApp } from '../context/AppContext';
 import { FixedExpense, FixedExpenseCategory } from '../types';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { ConfirmationModal } from '../components/common/ConfirmationModal';
+import { RupiahInput } from '../components/common/RupiahInput';
 
 
 export const FixedExpensesPage: React.FC = () => {
@@ -529,17 +530,13 @@ export const FixedExpensesPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">Nominal Beban (Rp)</label>
-                <input
-                  type="number"
-                  value={formAmount}
-                  onChange={(e) => setFormAmount(e.target.value)}
-                  placeholder="7500000"
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-base font-bold text-brand-espresso focus:outline-none"
-                  required
-                />
-              </div>
+              <RupiahInput
+                label="Nominal Beban"
+                value={formAmount}
+                onChange={(e) => setFormAmount(e.target.value)}
+                placeholder="Contoh: 7.500.000"
+                required
+              />
 
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-brand-espresso">Tanggal Jatuh Tempo</label>
@@ -622,16 +619,13 @@ export const FixedExpensesPage: React.FC = () => {
                 />
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">Nominal Beban (Rp)</label>
-                <input
-                  type="number"
-                  value={editAmount}
-                  onChange={(e) => setEditAmount(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-base font-bold text-brand-espresso focus:outline-none"
-                  required
-                />
-              </div>
+              <RupiahInput
+                label="Nominal Beban"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+                placeholder="Contoh: 7.500.000"
+                required
+              />
 
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-brand-espresso">Tanggal Jatuh Tempo</label>
