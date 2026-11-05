@@ -214,7 +214,7 @@ export const LoginPage: React.FC = () => {
               <span className="text-[10px] font-bold uppercase tracking-wider text-secondary block mb-2 text-center lg:text-left">
                 Akses Cepat Pengujian (1-Click Fill):
               </span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-xs">
                 <button
                   type="button"
                   onClick={() => {
@@ -274,6 +274,21 @@ export const LoginPage: React.FC = () => {
                     <span className="truncate">Supervisor</span>
                   </div>
                   <span className="text-[10px] text-secondary block truncate">spv / owner123</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUsername('superadmin');
+                    setPassword('superadmin123');
+                  }}
+                  className="p-2 sm:p-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 active:scale-[0.98] border border-amber-300 text-left transition-all cursor-pointer col-span-2 sm:col-span-1"
+                  title="Masuk sebagai Superadmin SaaS Platform"
+                >
+                  <div className="font-black text-amber-900 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-600 shrink-0"></span>
+                    <span className="truncate">Superadmin</span>
+                  </div>
+                  <span className="text-[10px] text-amber-700 block truncate">superadmin / 123</span>
                 </button>
               </div>
             </div>

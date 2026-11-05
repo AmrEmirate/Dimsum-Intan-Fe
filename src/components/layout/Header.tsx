@@ -125,11 +125,13 @@ export const Header: React.FC = () => {
             title={activeShift?.status === 'ACTIVE' ? 'Klik untuk rekonsiliasi kas & tutup shift' : 'Shift Kasir Sedang Tutup'}
           >
             <Timer className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary shrink-0" />
-            <span className="text-[10px] sm:text-xs font-bold text-brand-espresso tracking-tight whitespace-nowrap truncate max-w-[80px] sm:max-w-[120px] md:max-w-[150px] lg:max-w-none">
+            <span className="text-[10px] sm:text-xs font-bold text-brand-espresso tracking-tight whitespace-nowrap">
               {activeShift?.status === 'ACTIVE' ? (
                 <>
-                  <span>{activeShift.shiftName}</span>
-                  <span className="hidden sm:inline">: {currentTime} WIB</span>
+                  <span className="sm:hidden">Shift Aktif</span>
+                  <span className="hidden sm:inline">
+                    {activeShift.shiftName}: {currentTime} WIB
+                  </span>
                 </>
               ) : (
                 'Shift Tutup'

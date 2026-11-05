@@ -347,31 +347,31 @@ export const BranchesPage: React.FC = () => {
 
           {/* Quick Action Buttons for Owner */}
           {isOwner && (
-            <div className="flex flex-wrap sm:flex-nowrap gap-2.5 shrink-0">
+            <div className="flex flex-wrap gap-2.5 shrink-0">
               <button
                 type="button"
                 onClick={handleOpenAddOutlet}
-                className="py-3 px-4 sm:px-5 rounded-2xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso font-bold text-xs sm:text-sm shadow-lg hover:shadow-xl transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                className="py-2.5 sm:py-3 px-4 sm:px-5 rounded-2xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso font-bold text-xs sm:text-sm shadow-lg hover:shadow-xl transition-all flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
               >
-                <Plus className="w-4 h-4 stroke-[3]" />
+                <Plus className="w-4 h-4 stroke-[3] shrink-0" />
                 <span>{outlets.length === 0 ? 'Buka Cabang Baru' : 'Tambah Cabang Baru'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleOpenAddStaff()}
-                className="py-3 px-4 sm:px-5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm backdrop-blur-md border border-white/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                className="py-2.5 sm:py-3 px-4 sm:px-5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm backdrop-blur-md border border-white/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
               >
-                <UserPlus className="w-4 h-4" />
+                <UserPlus className="w-4 h-4 shrink-0" />
                 <span>Buat Akun Kasir</span>
               </button>
               {outlets.length > 0 && (
                 <button
                   type="button"
                   onClick={handleExportBranches}
-                  className="py-3 px-4 sm:px-5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm backdrop-blur-md border border-white/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                  className="py-2.5 sm:py-3 px-4 sm:px-5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm backdrop-blur-md border border-white/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95 shrink-0"
                   title="Ekspor Data Cabang ke CSV / Excel"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-4 h-4 shrink-0" />
                   <span>Ekspor CSV</span>
                 </button>
               )}

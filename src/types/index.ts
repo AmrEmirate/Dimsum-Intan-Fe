@@ -10,6 +10,11 @@ export interface TenantInfo {
   themeConfig?: any;
   plan: string;
   status: string;
+  licenseKey?: string;
+  pricePerOutlet?: number;
+  maxOutlets?: number;
+  dailyTxLimitPerOutlet?: number;
+  extraDailyTxLimit?: number;
   subscriptionExpiresAt?: string | null;
   counts?: {
     outlets: number;

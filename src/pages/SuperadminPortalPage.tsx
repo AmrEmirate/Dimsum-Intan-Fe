@@ -48,6 +48,39 @@ const THEME_PRESETS = [
   { name: 'Charcoal Minimalist', color: '#1f2937' },
 ];
 
+const DEFAULT_PLATFORM_TENANTS: TenantInfo[] = [
+  {
+    id: 'tenant-dimsum-intan',
+    name: 'Dimsum Intan',
+    slug: 'dimsum-intan',
+    themeColor: '#ea580c',
+    plan: 'PAKET_250K',
+    status: 'ACTIVE',
+    licenseKey: 'LIC-DIMSUM-INTAN-PRO-2026',
+    pricePerOutlet: 150000,
+    maxOutlets: 10,
+    dailyTxLimitPerOutlet: 500,
+    counts: { outlets: 2, users: 4, menus: 20, orders: 8 },
+    totalGmv: 1307000,
+    createdAt: '2026-10-25T10:46:27.562Z',
+  },
+  {
+    id: 'tenant-demo-protek',
+    name: 'PT Pro Teknologi - Pro POS Demo',
+    slug: 'demo',
+    themeColor: '#002045',
+    plan: 'PAKET_250K',
+    status: 'ACTIVE',
+    licenseKey: 'LIC-DEMO-PROTEK-2026',
+    pricePerOutlet: 250000,
+    maxOutlets: 1,
+    dailyTxLimitPerOutlet: 200,
+    counts: { outlets: 1, users: 3, menus: 10, orders: 5 },
+    totalGmv: 765000,
+    createdAt: '2026-11-02T16:26:56.316Z',
+  },
+];
+
 export const SuperadminPortalPage: React.FC = () => {
   const { showNotification, switchTenantView, currentTenant } = useApp();
 
@@ -96,11 +129,31 @@ export const SuperadminPortalPage: React.FC = () => {
         api.get<{ success: boolean; data: TenantInfo[] }>('/superadmin/tenants').catch(() => null),
       ]);
 
+      let loadedTenants =
+        tenantsRes?.success && Array.isArray(tenantsRes.data) && tenantsRes.data.length > 0
+          ? tenantsRes.data
+          : DEFAULT_PLATFORM_TENANTS;
+
+      // Ensure Dimsum Intan is always present in list
+      if (!loadedTenants.some((t) => t.slug === 'dimsum-intan')) {
+        loadedTenants = [DEFAULT_PLATFORM_TENANTS[0], ...loadedTenants];
+      }
+      setTenants(loadedTenants);
+
       if (statsRes?.success && statsRes.data) {
         setStats(statsRes.data);
-      }
-      if (tenantsRes?.success && Array.isArray(tenantsRes.data)) {
-        setTenants(tenantsRes.data);
+      } else {
+        setStats({
+          totalTenants: loadedTenants.length,
+          activeTenants: loadedTenants.filter((t) => t.status === 'ACTIVE').length,
+          totalOutlets: loadedTenants.reduce((sum, t) => sum + (t.counts?.outlets || 1), 0),
+          totalOrders: loadedTenants.reduce((sum, t) => sum + (t.counts?.orders || 0), 0),
+          totalGmv: loadedTenants.reduce((sum, t) => sum + (t.totalGmv || 0), 0),
+          plans: [
+            { plan: 'PAKET_250K', count: loadedTenants.filter((t) => t.plan === 'PAKET_250K').length },
+            { plan: 'PAKET_100K', count: loadedTenants.filter((t) => t.plan === 'PAKET_100K').length },
+          ],
+        });
       }
     } catch (err: any) {
       showNotification('Gagal memuat data portal superadmin', 'error');

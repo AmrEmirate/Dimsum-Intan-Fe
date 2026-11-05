@@ -121,7 +121,7 @@ export const PosPage: React.FC = () => {
     }
   };
 
-  const handleOpenCheckout = async (method: PaymentMethod) => {
+  const handleOpenCheckout = (method: PaymentMethod) => {
     if (cart.length === 0) {
       showNotification('Keranjang pesanan masih kosong!', 'warning');
       return;
@@ -130,12 +130,6 @@ export const PosPage: React.FC = () => {
     setCashGiven(finalTotal.toString());
     setIsMobileCartOpen(false);
     setIsCheckoutModalOpen(true);
-
-    if (method === 'DUITKU_QRIS') {
-      await generateDuitkuQr();
-    } else {
-      setDuitkuQrData(null);
-    }
   };
 
   const handleSwitchPaymentMethod = async (method: PaymentMethod) => {
@@ -251,9 +245,9 @@ export const PosPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Customer Meta Info */}
-          <div className="bg-surface-card rounded-2xl p-3 sm:p-4 border border-border-subtle shadow-xs grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
-            <div className="sm:col-span-8 flex flex-col gap-1">
+          {/* Customer Meta Info & Kitchen Batch Bar (Responsive, Anti-Collision) */}
+          <div className="bg-surface-card rounded-2xl p-3 sm:p-4 border border-border-subtle shadow-xs flex flex-col xl:flex-row xl:items-center justify-between gap-3">
+            <div className="flex-1 flex flex-col gap-1 min-w-0">
               <label className="text-[10px] font-bold uppercase tracking-wider text-secondary">
                 Nama Pelanggan / Catatan Pesanan
               </label>
@@ -266,10 +260,10 @@ export const PosPage: React.FC = () => {
               />
             </div>
 
-            <div className="sm:col-span-4 flex items-center justify-between sm:justify-end gap-2 pt-0.5 sm:pt-0">
-              <div className="flex flex-col text-left sm:text-right">
+            <div className="flex items-center justify-between xl:justify-end gap-3 pt-1.5 xl:pt-0 border-t xl:border-t-0 border-border-subtle/60 shrink-0">
+              <div className="flex flex-col text-left xl:text-right">
                 <span className="text-[10px] text-secondary font-semibold">Kitchen Batch</span>
-                <span className="text-xs font-bold text-status-lunas-text">
+                <span className="text-xs font-bold text-status-lunas-text whitespace-nowrap">
                   Kukus & Goreng Standby
                 </span>
               </div>
@@ -277,10 +271,10 @@ export const PosPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsCloseShiftModalOpen(true)}
-                  className="px-2.5 py-1 rounded-xl bg-surface-card hover:bg-amber-50 text-amber-900 border border-amber-300 text-[11px] font-bold shadow-xs transition-all active:scale-95 flex items-center gap-1 cursor-pointer shrink-0"
+                  className="min-h-[36px] px-3 py-1.5 rounded-xl bg-surface-card hover:bg-amber-50 text-amber-900 border border-amber-300 text-xs font-bold shadow-xs transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap"
                   title="Rekonsiliasi Kas Laci & Tutup Shift"
                 >
-                  <Timer className="w-3.5 h-3.5 text-brand-terracotta" />
+                  <Timer className="w-3.5 h-3.5 text-brand-terracotta shrink-0" />
                   <span>Tutup Shift</span>
                 </button>
               )}
@@ -354,8 +348,8 @@ export const PosPage: React.FC = () => {
                       </div>
                     )}
                     {inCartQty > 0 && (
-                      <div className="absolute top-1.5 right-1.5 px-2 py-0.5 rounded-full bg-brand-espresso text-brand-gold text-[10px] font-black border border-brand-gold/40 shadow-xs animate-in zoom-in-50 duration-150">
-                        {inCartQty}x di Nota
+                      <div className="absolute top-1.5 right-1.5 px-1.5 sm:px-2 py-0.5 rounded-full bg-brand-espresso text-brand-gold text-[9px] sm:text-[10px] font-black border border-brand-gold/40 shadow-xs animate-in zoom-in-50 duration-150">
+                        {inCartQty}x
                       </div>
                     )}
 
@@ -369,8 +363,8 @@ export const PosPage: React.FC = () => {
                       </div>
                     ) : isLowStock ? (
                       <div className="absolute bottom-1.5 right-1.5 px-2 py-0.5 rounded-full bg-amber-500 text-stone-950 text-[10px] font-black shadow-md flex items-center gap-1 animate-pulse">
-                        <AlertTriangle className="w-3 h-3" />
-                        <span>Sisa {menu.stock} pcs!</span>
+                        <AlertTriangle className="w-3 h-3 shrink-0" />
+                        <span>Sisa {menu.stock}</span>
                       </div>
                     ) : isWarningStock ? (
                       <div className="absolute bottom-1.5 right-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[9px] sm:text-[10px] font-bold shadow-xs">
@@ -383,14 +377,17 @@ export const PosPage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Menu info */}
+                  {/* Menu info: 2 lines to prevent cut off titles */}
                   <div className="flex flex-col">
-                    <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-secondary">
+                    <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-secondary truncate">
                       {menu.category.toUpperCase()}
                     </span>
-                    <h3 className={`font-serif-title font-bold text-xs sm:text-sm text-brand-espresso group-hover:text-primary transition-colors line-clamp-1 ${
-                      isOutOfStock ? 'line-through text-secondary' : ''
-                    }`}>
+                    <h3
+                      className={`font-serif-title font-bold text-xs sm:text-sm text-brand-espresso group-hover:text-primary transition-colors line-clamp-2 min-h-[2rem] sm:min-h-[2.5rem] leading-snug ${
+                        isOutOfStock ? 'line-through text-secondary' : ''
+                      }`}
+                      title={menu.name}
+                    >
                       {menu.name}
                     </h3>
                     <p className="hidden sm:block text-[11px] text-secondary mt-0.5 line-clamp-2 leading-relaxed">
@@ -398,9 +395,9 @@ export const PosPage: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Price & Add Action */}
-                  <div className="mt-2 pt-1.5 sm:pt-2 border-t border-border-subtle flex items-center justify-between">
-                    <span className="font-bold text-xs sm:text-sm text-brand-espresso tabular-nums">
+                  {/* Price & Add Action (Ergonomic Touch Targets) */}
+                  <div className="mt-2 pt-1.5 sm:pt-2 border-t border-border-subtle flex items-center justify-between gap-1">
+                    <span className="font-bold text-xs sm:text-sm text-brand-espresso tabular-nums truncate">
                       Rp {menu.price.toLocaleString('id-ID')}
                     </span>
                     <button
@@ -410,11 +407,12 @@ export const PosPage: React.FC = () => {
                         if (!isOutOfStock) addToCart(menu);
                       }}
                       disabled={isOutOfStock}
-                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold shadow-xs transition-colors active:scale-90 cursor-pointer ${
+                      className={`w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-xs transition-colors active:scale-90 cursor-pointer shrink-0 ${
                         isOutOfStock
                           ? 'bg-surface-muted text-secondary cursor-not-allowed'
                           : 'bg-brand-gold text-brand-espresso group-hover:bg-brand-espresso group-hover:text-brand-gold'
                       }`}
+                      title={isOutOfStock ? 'Stok Habis' : `Tambah ${menu.name} ke Nota`}
                     >
                       {isOutOfStock ? (
                         <Ban className="w-3.5 h-3.5" />
@@ -472,16 +470,16 @@ export const PosPage: React.FC = () => {
               ) : (
                 cart.map((item) => (
                   <div key={item.menuId} className="py-2.5 flex flex-col gap-1.5">
-                    <div className="flex justify-between items-start">
-                      <div className="flex flex-col pr-2">
-                        <span className="text-xs font-bold text-brand-espresso leading-snug">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-xs font-bold text-brand-espresso leading-snug break-words">
                           {item.name}
                         </span>
                         <span className="text-[11px] text-secondary">
                           Rp {item.price.toLocaleString('id-ID')} / porsi
                         </span>
                       </div>
-                      <span className="text-xs font-bold text-brand-espresso tabular-nums whitespace-nowrap">
+                      <span className="text-xs font-bold text-brand-espresso tabular-nums whitespace-nowrap shrink-0">
                         Rp {(item.price * item.quantity).toLocaleString('id-ID')}
                       </span>
                     </div>
@@ -570,35 +568,25 @@ export const PosPage: React.FC = () => {
               </div>
 
               {/* Payment Action Buttons */}
-              <div className="flex flex-col gap-2 pt-1">
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
-                  onClick={() => handleOpenCheckout('DUITKU_QRIS')}
+                  type="button"
+                  onClick={() => handleOpenCheckout('CASH')}
                   disabled={cart.length === 0}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-slate-950 text-xs font-black shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer"
+                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-brand-espresso hover:bg-[#2e211e] text-brand-gold text-xs font-bold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer min-h-[44px]"
                 >
-                  <QrCode className="w-4 h-4" />
-                  <span>QRIS Dinamis Duitku</span>
-                  <span className="text-[10px] bg-slate-950/20 text-slate-950 px-1.5 py-0.5 rounded-full font-bold">Masuk Saldo</span>
+                  <Banknote className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Bayar Tunai</span>
                 </button>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => handleOpenCheckout('CASH')}
-                    disabled={cart.length === 0}
-                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-brand-espresso hover:bg-brand-espresso-muted text-brand-gold text-xs font-bold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer"
-                  >
-                    <Banknote className="w-4 h-4" />
-                    <span>Bayar Tunai</span>
-                  </button>
-                  <button
-                    onClick={() => handleOpenCheckout('QRIS')}
-                    disabled={cart.length === 0}
-                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-surface-card hover:bg-surface-container text-secondary text-xs font-bold border border-border-subtle transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer"
-                  >
-                    <QrCode className="w-4 h-4" />
-                    <span>QRIS Statis</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenCheckout('QRIS')}
+                  disabled={cart.length === 0}
+                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-stone-950 text-xs font-black shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer min-h-[44px]"
+                >
+                  <QrCode className="w-4 h-4 shrink-0" />
+                  <span className="truncate">QRIS Toko</span>
+                </button>
               </div>
             </div>
           </div>
@@ -694,14 +682,14 @@ export const PosPage: React.FC = () => {
 
               {cart.map((item) => (
                 <div key={item.menuId} className="pt-3 flex flex-col gap-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="text-xs font-bold text-brand-espresso">{item.name}</h4>
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-xs font-bold text-brand-espresso leading-snug break-words">{item.name}</h4>
                       <span className="text-[11px] text-secondary">
                         Rp {item.price.toLocaleString('id-ID')} / porsi
                       </span>
                     </div>
-                    <span className="text-xs font-bold text-brand-espresso tabular-nums">
+                    <span className="text-xs font-bold text-brand-espresso tabular-nums whitespace-nowrap shrink-0">
                       Rp {(item.price * item.quantity).toLocaleString('id-ID')}
                     </span>
                   </div>
@@ -777,34 +765,23 @@ export const PosPage: React.FC = () => {
               </div>
 
               {/* Pay Tunai / QRIS buttons */}
-              <div className="flex flex-col gap-2 pt-1">
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
                 <button
                   type="button"
-                  onClick={() => handleOpenCheckout('DUITKU_QRIS')}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-500 text-slate-950 text-xs font-black shadow-md active:scale-95 transition-all cursor-pointer"
+                  onClick={() => handleOpenCheckout('CASH')}
+                  className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-brand-espresso text-brand-gold text-xs font-bold shadow-md active:scale-95 transition-all cursor-pointer min-h-[44px]"
                 >
-                  <QrCode className="w-4 h-4" />
-                  <span>QRIS Duitku Dinamis</span>
-                  <span className="text-[10px] bg-slate-950/20 text-slate-950 px-1.5 py-0.5 rounded-full font-bold">Masuk Saldo</span>
+                  <Banknote className="w-4 h-4 shrink-0" />
+                  <span>Bayar Tunai</span>
                 </button>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenCheckout('CASH')}
-                    className="flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-brand-espresso text-brand-gold text-xs font-bold shadow-md active:scale-95 transition-all"
-                  >
-                    <Banknote className="w-4 h-4" />
-                    <span>Bayar Tunai</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenCheckout('QRIS')}
-                    className="flex items-center justify-center gap-2 py-2.5 rounded-2xl bg-surface-card border border-border-subtle text-secondary text-xs font-bold shadow-sm active:scale-95 transition-all"
-                  >
-                    <QrCode className="w-4 h-4" />
-                    <span>QRIS Statis</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleOpenCheckout('QRIS')}
+                  className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 text-xs font-black shadow-md active:scale-95 transition-all cursor-pointer min-h-[44px]"
+                >
+                  <QrCode className="w-4 h-4 shrink-0" />
+                  <span>QRIS Toko</span>
+                </button>
               </div>
             </div>
           </div>
@@ -829,40 +806,31 @@ export const PosPage: React.FC = () => {
               Pilih metode transaksi pelanggan:
             </p>
 
-            {/* Payment Method Switcher Tabs */}
-            <div className="grid grid-cols-3 gap-1.5 my-3 p-1 rounded-2xl bg-surface-container-low border border-border-subtle">
+            {/* Payment Method Switcher Tabs: Tunai & QRIS Foto Toko */}
+            <div className="grid grid-cols-2 gap-2 my-3 p-1 rounded-2xl bg-surface-container-low border border-border-subtle">
               <button
                 type="button"
-                onClick={() => handleSwitchPaymentMethod('DUITKU_QRIS')}
-                className={`py-2 px-1 rounded-xl text-[11px] font-bold transition-all text-center ${
-                  selectedPaymentMethod === 'DUITKU_QRIS'
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'text-secondary hover:text-brand-espresso'
-                }`}
-              >
-                QRIS Duitku
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSwitchPaymentMethod('CASH')}
-                className={`py-2 px-1 rounded-xl text-[11px] font-bold transition-all text-center ${
+                onClick={() => setSelectedPaymentMethod('CASH')}
+                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all text-center cursor-pointer min-h-[44px] ${
                   selectedPaymentMethod === 'CASH'
                     ? 'bg-brand-espresso text-brand-gold shadow-sm'
                     : 'text-secondary hover:text-brand-espresso'
                 }`}
               >
-                Tunai (Cash)
+                <Banknote className="w-4 h-4 shrink-0" />
+                <span>Tunai (Cash)</span>
               </button>
               <button
                 type="button"
-                onClick={() => handleSwitchPaymentMethod('QRIS')}
-                className={`py-2 px-1 rounded-xl text-[11px] font-bold transition-all text-center ${
+                onClick={() => setSelectedPaymentMethod('QRIS')}
+                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all text-center cursor-pointer min-h-[44px] ${
                   selectedPaymentMethod === 'QRIS'
-                    ? 'bg-brand-gold text-brand-espresso shadow-sm'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-black shadow-sm'
                     : 'text-secondary hover:text-brand-espresso'
                 }`}
               >
-                QRIS Statis
+                <QrCode className="w-4 h-4 shrink-0" />
+                <span>QRIS Toko (Foto)</span>
               </button>
             </div>
 
@@ -887,14 +855,14 @@ export const PosPage: React.FC = () => {
                   />
                 </div>
 
-                {/* Quick Cash Buttons */}
-                <div className="grid grid-cols-5 gap-1.5">
+                {/* Quick Cash Buttons (Responsive 3 cols on mobile, 5 cols on sm+) */}
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
                   {[finalTotal, 20000, 50000, 100000, 200000].map((amt) => (
                     <button
                       key={amt}
                       type="button"
                       onClick={() => setCashGiven(amt.toString())}
-                      className="py-1.5 rounded-lg bg-surface-container hover:bg-brand-gold/20 text-[11px] font-bold text-brand-espresso transition-colors cursor-pointer border border-border-subtle text-center truncate"
+                      className="py-1.5 rounded-lg bg-surface-container hover:bg-brand-gold/20 text-[11px] font-bold text-brand-espresso transition-colors cursor-pointer border border-border-subtle text-center truncate min-h-[36px]"
                     >
                       {amt === finalTotal ? 'Uang Pas' : `Rp ${amt / 1000}k`}
                     </button>
@@ -909,112 +877,59 @@ export const PosPage: React.FC = () => {
                   </span>
                 </div>
               </div>
-            ) : selectedPaymentMethod === 'DUITKU_QRIS' ? (
-              /* Duitku Dynamic QRIS */
-              <div className="flex flex-col items-center py-2 space-y-3">
-                {duitkuQrData?.isLoading ? (
-                  <div className="py-12 flex flex-col items-center justify-center space-y-3">
-                    <RefreshCw className="w-8 h-8 text-amber-500 animate-spin" />
-                    <p className="text-xs text-secondary font-medium">Menyiapkan QRIS Duitku Dinamis...</p>
-                  </div>
-                ) : duitkuQrData?.qrString ? (
-                  <>
-                    <div className="p-3 bg-white rounded-2xl border-2 border-amber-500/80 shadow-md">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                          duitkuQrData.qrString
-                        )}`}
-                        alt="QRIS Dinamis Duitku"
-                        className="w-40 h-40 object-contain"
-                      />
-                    </div>
-
-                    <div className="flex flex-col items-center text-center px-2">
-                      <span className="text-xs font-bold text-orange-600">
-                        {duitkuQrData.providerName || 'QRIS Dinamis Toko'}
-                      </span>
-                      <span className="text-[11px] font-mono font-bold text-brand-espresso mt-0.5">
-                        Order Ref: {duitkuQrData.orderId}
-                      </span>
-                      <span className="text-[10px] text-secondary mt-0.5">
-                        Pindai via BCA, Mandiri, BRI, BNI, GoPay, OVO, ShopeePay, Dana
-                      </span>
-                    </div>
-
-                    <div className="w-full p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 text-[11px] text-center font-medium">
-                      💡 Dana penjualan langsung cair ke <strong>Rekening Gateway Toko Anda</strong>.
-                    </div>
-
-                    {/* Duitku actions */}
-                    <div className="w-full grid grid-cols-2 gap-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={handleCheckDuitkuPayment}
-                        disabled={isCheckingDuitku}
-                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-surface-container hover:bg-surface-container-high border border-border-subtle text-xs font-bold text-brand-espresso transition-all"
-                      >
-                        <RefreshCw className={`w-3.5 h-3.5 ${isCheckingDuitku ? 'animate-spin' : ''}`} />
-                        <span>Cek Status</span>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleSimulateDuitkuCustomerPayment}
-                        disabled={isSimulatingDuitku}
-                        className="flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white text-xs font-bold shadow-sm transition-all"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>{isSimulatingDuitku ? 'Memproses...' : 'Simulasi Bayar'}</span>
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="py-6 flex flex-col items-center gap-2">
-                    <p className="text-xs text-red-500 font-semibold">Gagal memuat QRIS Duitku.</p>
-                    <button
-                      type="button"
-                      onClick={generateDuitkuQr}
-                      className="px-3 py-1.5 rounded-xl bg-amber-500 text-slate-950 text-xs font-bold"
-                    >
-                      Coba Buat Ulang
-                    </button>
-                  </div>
-                )}
-              </div>
             ) : (
-              /* Static QRIS */
+              /* Real QRIS Image Display (Dimsum Intan Photo) */
               <div className="flex flex-col items-center py-2 space-y-3">
-                <div className="p-4 bg-white rounded-2xl border-2 border-brand-espresso shadow-xs">
+                <div className="p-3 bg-white rounded-3xl border-2 border-brand-espresso shadow-md max-w-[260px] overflow-hidden">
                   <img
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=00020101021226580016ID.CO.DIMSUMINTAN.POS015204581253033605802ID5912Dimsum+Intan6007Bandung62070703A0163046D5E"
+                    src="/qris.jpeg"
                     alt="QRIS Resmi Dimsum Intan"
-                    className="w-40 h-40 object-contain"
+                    className="w-full h-auto max-h-64 object-contain rounded-2xl"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020101021226580016ID.CO.DIMSUMINTAN.POS015204581253033605802ID5912Dimsum+Intan6007Bandung62070703A0163046D5E';
+                    }}
                   />
                 </div>
-                <span className="text-xs text-secondary text-center max-w-xs">
-                  Pindai QRIS menggunakan BCA, Mandiri, GoPay, OVO, atau ShopeePay
-                </span>
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-                  <CheckCircle className="w-3.5 h-3.5" /> Menunggu Scan Pelanggan
+                <div className="text-center px-2 space-y-1">
+                  <span className="text-xs font-bold text-brand-espresso block">
+                    Pindai QRIS Resmi Dimsum Intan
+                  </span>
+                  <p className="text-[11px] text-secondary max-w-xs leading-relaxed">
+                    Menerima seluruh m-Banking (BCA, Mandiri, BRI, BNI) & E-Wallet (GoPay, OVO, ShopeePay, Dana)
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-3 py-1 rounded-full animate-pulse">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Siap Scan Pelanggan • Total Rp {finalTotal.toLocaleString('id-ID')}</span>
                 </span>
               </div>
             )}
 
-            {/* Submit checkout */}
-            <div className="mt-6 flex justify-end gap-2">
+            {/* Submit checkout buttons */}
+            <div className="mt-6 pt-4 border-t border-border-subtle flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={() => setIsCheckoutModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-container"
+                className="w-full sm:w-auto min-h-[44px] px-5 rounded-xl border border-border-strong text-xs sm:text-sm font-bold text-brand-espresso hover:bg-surface-container transition-colors cursor-pointer text-center"
               >
                 Batal
               </button>
               <button
                 type="button"
                 onClick={handleConfirmPayment}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all active:scale-95"
+                className={`w-full sm:w-auto min-h-[44px] px-6 rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2 text-center ${
+                  selectedPaymentMethod === 'QRIS'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-stone-950 font-black'
+                    : 'bg-brand-espresso hover:bg-[#2e211e] text-brand-gold font-bold'
+                }`}
               >
-                Selesaikan Transaksi & Cetak Nota
+                <CheckCircle className="w-4 h-4 shrink-0" />
+                <span>
+                  {selectedPaymentMethod === 'QRIS'
+                    ? 'Konfirmasi QRIS Lunas & Cetak'
+                    : 'Konfirmasi Bayar Tunai & Cetak'}
+                </span>
               </button>
             </div>
           </div>

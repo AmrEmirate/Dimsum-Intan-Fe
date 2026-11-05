@@ -672,7 +672,7 @@ export const MenuHppPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
                   <button
                     onClick={() => toggleMenuAvailability(item.id)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
