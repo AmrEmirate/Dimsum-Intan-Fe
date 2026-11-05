@@ -25,6 +25,7 @@ import {
   Image as ImageIcon,
   Eye,
   Trash2,
+  Plus,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { SubscriptionInvoice } from '../types';
@@ -114,6 +115,8 @@ export const SubscriptionBillingPage: React.FC = () => {
     fetchBillingInvoices,
     createDuitkuSubscriptionCheckout,
     showNotification,
+    outlets,
+    setCurrentView,
   } = useApp();
 
   const [invoices, setInvoices] = useState<SubscriptionInvoice[]>([]);
@@ -177,7 +180,9 @@ export const SubscriptionBillingPage: React.FC = () => {
   const openCheckout = (type: 'CHANGE_PLAN' | 'RENEWAL' | 'ADD_OUTLET' | 'ADD_TX_QUOTA', defaultPlan?: string) => {
     setCheckoutType(type);
     const activePlan = billingStatus?.plan || 'PAKET_100K';
-    if (defaultPlan && defaultPlan !== activePlan) {
+    if (type === 'RENEWAL') {
+      setTargetPlanCode(defaultPlan || activePlan);
+    } else if (defaultPlan && defaultPlan !== activePlan) {
       setTargetPlanCode(defaultPlan);
     } else {
       const nextPlan = OFFICIAL_SAAS_PLANS.find((p) => p.code !== activePlan);
@@ -347,7 +352,12 @@ export const SubscriptionBillingPage: React.FC = () => {
   } else if (checkoutType === 'ADD_TX_QUOTA') {
     previewAmount = txQuotaOption <= 100 ? 15000 : txQuotaOption <= 250 ? 25000 : 45000;
   } else if (checkoutType === 'RENEWAL') {
-    previewAmount = pricePerOutlet * maxOutlets * renewalMonths;
+    const selectedPlanObj = OFFICIAL_SAAS_PLANS.find((p) => p.code === targetPlanCode) || OFFICIAL_SAAS_PLANS[0];
+    const planPrice = selectedPlanObj.price || pricePerOutlet;
+    const isSpecificOutlet = selectedOutletId !== 'all';
+    const totalOutletsCount = billingStatus?.outlets?.length || billingStatus?.currentOutletsCount || maxOutlets || 1;
+    const multiplier = isSpecificOutlet ? 1 : Math.max(1, totalOutletsCount);
+    previewAmount = planPrice * multiplier * renewalMonths;
   }
 
   const mdrFee = Math.round(previewAmount * 0.007); // 0.7% MDR QRIS Resmi BI
@@ -1051,10 +1061,22 @@ export const SubscriptionBillingPage: React.FC = () => {
 
                     {/* Dropdown Pasangkan ke Outlet / Cabang Mana */}
                     <div>
-                      <label className="text-xs font-bold text-brand-espresso block mb-1.5 flex items-center justify-between">
-                        <span>Pasangkan Paket ke Cabang / Outlet</span>
-                        <span className="text-[10px] text-secondary font-normal">Pilih gerai target</span>
-                      </label>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold text-brand-espresso">
+                          Pasangkan Paket ke Cabang / Outlet
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCheckoutModalOpen(false);
+                            setCurrentView('master-cabang-outlet');
+                          }}
+                          className="text-[11px] text-brand-terracotta hover:text-brand-espresso font-bold flex items-center gap-1 cursor-pointer"
+                        >
+                          <Plus className="w-3 h-3 text-brand-gold" />
+                          <span>+ Tambah Cabang Baru</span>
+                        </button>
+                      </div>
                       <select
                         value={selectedOutletId}
                         onChange={(e) => setSelectedOutletId(e.target.value)}
@@ -1092,26 +1114,143 @@ export const SubscriptionBillingPage: React.FC = () => {
                 )}
 
                 {checkoutType === 'RENEWAL' && (
-                  <div>
-                    <label className="text-xs font-bold text-brand-espresso block mb-2">Durasi Perpanjangan</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[1, 3, 12].map((m) => (
+                  <div className="space-y-4">
+                    {/* 1. Pilih Paket Langganan */}
+                    <div>
+                      <label className="text-xs font-bold text-brand-espresso block mb-2">
+                        1. Pilih Paket Langganan
+                      </label>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {OFFICIAL_SAAS_PLANS.map((p) => {
+                          const isSelected = targetPlanCode === p.code;
+                          const isCurrent = (billingStatus?.plan || 'PAKET_100K') === p.code;
+                          return (
+                            <button
+                              key={p.code}
+                              type="button"
+                              onClick={() => setTargetPlanCode(p.code)}
+                              className={`p-3 rounded-xl border text-left text-xs transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'border-brand-gold bg-brand-gold-subtle font-bold text-brand-espresso shadow-xs ring-2 ring-brand-gold/20'
+                                  : 'border-border-subtle bg-surface-card text-secondary hover:bg-surface-container-low'
+                              }`}
+                            >
+                              <div className="font-serif-title flex items-center justify-between">
+                                <span>{p.name}</span>
+                                {isCurrent && (
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-container text-secondary font-mono font-bold">
+                                    Aktif
+                                  </span>
+                                )}
+                              </div>
+                              <div className="font-mono text-primary font-bold mt-1">
+                                Rp {p.price.toLocaleString('id-ID')}/bln
+                              </div>
+                              <div className="text-[10px] text-secondary mt-0.5">
+                                {p.monthlyTxLimit ? `${p.monthlyTxLimit.toLocaleString('id-ID')} tx/bln` : 'Unlimited transaksi'}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* 2. Pilih Cabang / Outlet yang Diperpanjang */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-xs font-bold text-brand-espresso">
+                          2. Pilih Cabang / Outlet yang Diperpanjang
+                        </label>
                         <button
-                          key={m}
                           type="button"
-                          onClick={() => setRenewalMonths(m)}
-                          className={`p-3 rounded-xl border text-center text-xs transition-all ${
-                            renewalMonths === m
-                              ? 'border-brand-gold bg-brand-gold-subtle font-bold text-brand-espresso'
-                              : 'border-border-subtle bg-surface-card text-secondary hover:bg-surface-container-low'
-                          }`}
+                          onClick={() => {
+                            setIsCheckoutModalOpen(false);
+                            setCurrentView('master-cabang-outlet');
+                          }}
+                          className="text-[11px] text-brand-terracotta hover:text-brand-espresso font-bold flex items-center gap-1 cursor-pointer"
                         >
-                          <div className="font-bold">{m} Bulan</div>
-                          <div className="text-[10px] text-secondary mt-0.5">
-                            {m === 12 ? 'Diskon Hemat' : 'Reguler'}
-                          </div>
+                          <Plus className="w-3 h-3 text-brand-gold" />
+                          <span>+ Tambah Cabang Baru</span>
                         </button>
-                      ))}
+                      </div>
+
+                      {billingStatus?.outlets && billingStatus.outlets.length > 0 ? (
+                        <>
+                          <select
+                            value={selectedOutletId}
+                            onChange={(e) => setSelectedOutletId(e.target.value)}
+                            className="w-full p-2.5 rounded-xl border border-border-strong bg-surface-card text-xs font-medium text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-gold cursor-pointer"
+                          >
+                            <option value="all">Semua Cabang ({billingStatus.outlets.length} Cabang Terdaftar)</option>
+                            {billingStatus.outlets.map((o) => (
+                              <option key={o.id} value={o.id}>
+                                {o.name} ({o.code}) — Kuota: {o.isUnlimited ? 'Unlimited' : `${o.monthlyLimit?.toLocaleString('id-ID')} tx/bln`}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-[11px] text-secondary mt-1">
+                            {selectedOutletId === 'all'
+                              ? `Paket langganan akan diperpanjang untuk seluruh ${billingStatus.outlets.length} cabang aktif.`
+                              : `Paket langganan akan diperpanjang khusus untuk cabang ${billingStatus.outlets.find((o) => o.id === selectedOutletId)?.name || 'terpilih'}.`}
+                          </p>
+                        </>
+                      ) : (
+                        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-950 text-xs space-y-2">
+                          <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                            <Store className="w-4 h-4 text-amber-700 shrink-0" />
+                            <span>Belum Ada Gerai / Cabang Terdaftar</span>
+                          </div>
+                          <p className="text-[11px] text-amber-800 leading-relaxed">
+                            Tenant Anda saat ini belum memiliki cabang outlet yang terdaftar di sistem. Anda dapat menambahkan cabang baru agar lisensi langsung tertaut ke gerai Anda.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsCheckoutModalOpen(false);
+                              setCurrentView('master-cabang-outlet');
+                            }}
+                            className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso font-bold text-xs shadow-xs transition-all cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>+ Tambah Cabang Sekarang</span>
+                          </button>
+                          <div className="pt-1">
+                            <select
+                              value={selectedOutletId}
+                              onChange={(e) => setSelectedOutletId(e.target.value)}
+                              className="w-full p-2 rounded-lg border border-amber-300 bg-white text-[11px] font-medium text-brand-espresso"
+                            >
+                              <option value="all">Perpanjang Standar Lisensi Tenant (Cabang Utama)</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 3. Durasi Perpanjangan */}
+                    <div>
+                      <label className="text-xs font-bold text-brand-espresso block mb-2">
+                        3. Durasi Perpanjangan
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[1, 3, 12].map((m) => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setRenewalMonths(m)}
+                            className={`p-3 rounded-xl border text-center text-xs transition-all ${
+                              renewalMonths === m
+                                ? 'border-brand-gold bg-brand-gold-subtle font-bold text-brand-espresso'
+                                : 'border-border-subtle bg-surface-card text-secondary hover:bg-surface-container-low'
+                            }`}
+                          >
+                            <div className="font-bold">{m} Bulan</div>
+                            <div className="text-[10px] text-secondary mt-0.5">
+                              {m === 12 ? 'Diskon Hemat' : 'Reguler'}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1190,10 +1329,38 @@ export const SubscriptionBillingPage: React.FC = () => {
                       </div>
                     </>
                   )}
-                  {checkoutType !== 'CHANGE_PLAN' && (
+                  {checkoutType === 'RENEWAL' && (
+                    <>
+                      <div className="flex justify-between text-secondary">
+                        <span>Paket Diperpanjang</span>
+                        <span className="font-mono text-brand-espresso font-semibold">
+                          {OFFICIAL_SAAS_PLANS.find((p) => p.code === targetPlanCode)?.name || targetPlanCode} (Rp {(OFFICIAL_SAAS_PLANS.find((p) => p.code === targetPlanCode)?.price || pricePerOutlet).toLocaleString('id-ID')}/bln)
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-secondary">
+                        <span>Target Cabang</span>
+                        <span className="font-mono text-brand-espresso font-semibold">
+                          {selectedOutletId === 'all'
+                            ? `Semua Cabang (${Math.max(1, billingStatus?.outlets?.length || billingStatus?.currentOutletsCount || maxOutlets || 1)} Gerai)`
+                            : (billingStatus?.outlets?.find((o) => o.id === selectedOutletId)?.name || 'Cabang Terpilih')}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-secondary">
+                        <span>Durasi</span>
+                        <span className="font-mono text-brand-espresso font-semibold">
+                          {renewalMonths} Bulan
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-secondary">
+                        <span>Subtotal Biaya</span>
+                        <span className="font-mono text-brand-espresso font-bold">Rp {previewAmount.toLocaleString('id-ID')}</span>
+                      </div>
+                    </>
+                  )}
+                  {checkoutType !== 'CHANGE_PLAN' && checkoutType !== 'RENEWAL' && (
                     <div className="flex justify-between text-secondary">
                       <span>Subtotal Biaya</span>
-                      <span className="font-mono text-brand-espresso">Rp {previewAmount.toLocaleString('id-ID')}</span>
+                      <span className="font-mono text-brand-espresso font-bold">Rp {previewAmount.toLocaleString('id-ID')}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-secondary">

@@ -129,4 +129,51 @@ describe('Outlet Package Selection & Transaction Quotas (Black-Box & White-Box)'
     expect(testOutlet.dailyTxLimit).toBe(200);
     expect(testOutlet.currentMonthTxCount).toBe(150);
   });
+
+  it('menghitung perpanjangan langganan (RENEWAL) berdasarkan outlet terpilih dan paket terpilih', () => {
+    const calculateRenewalPrice = (
+      planCode: string,
+      targetOutletId: string,
+      months: number,
+      totalOutlets: number
+    ) => {
+      const plan = OUTLET_AVAILABLE_PLANS.find((p) => p.code === planCode) || OUTLET_AVAILABLE_PLANS[0];
+      const isSpecificOutlet = targetOutletId !== 'all';
+      const multiplier = isSpecificOutlet ? 1 : Math.max(1, totalOutlets);
+      const subtotal = plan.price * multiplier * months;
+      const mdr = Math.round(subtotal * 0.007);
+      return { subtotal, mdr, total: subtotal + mdr };
+    };
+
+    // 1. Perpanjangan 1 outlet tertentu (Outlet A) paket Pro 200K selama 1 bulan
+    const singleOutletRenewal = calculateRenewalPrice('PAKET_200K', 'outlet-123', 1, 3);
+    expect(singleOutletRenewal.subtotal).toBe(200000);
+    expect(singleOutletRenewal.mdr).toBe(1400);
+    expect(singleOutletRenewal.total).toBe(201400);
+
+    // 2. Perpanjangan seluruh outlet (3 outlet) paket 150K selama 3 bulan
+    const allOutletsRenewal = calculateRenewalPrice('PAKET_150K', 'all', 3, 3);
+    // 150,000 * 3 outlets * 3 months = 1,350,000
+    expect(allOutletsRenewal.subtotal).toBe(1350000);
+    expect(allOutletsRenewal.mdr).toBe(9450);
+    expect(allOutletsRenewal.total).toBe(1359450);
+
+    // 3. Perpanjangan saat belum ada outlet fisik (0 outlet -> fallback multiplier 1)
+    const zeroOutletRenewal = calculateRenewalPrice('PAKET_100K', 'all', 1, 0);
+    expect(zeroOutletRenewal.subtotal).toBe(100000);
+  });
+
+  it('memvalidasi alur navigasi tambah cabang saat gerai belum terdaftar', () => {
+    let currentNavView = 'langganan-billing';
+    let isModalOpen = true;
+
+    const handleAddOutletFromRenewal = () => {
+      isModalOpen = false;
+      currentNavView = 'master-cabang-outlet';
+    };
+
+    handleAddOutletFromRenewal();
+    expect(isModalOpen).toBe(false);
+    expect(currentNavView).toBe('master-cabang-outlet');
+  });
 });
