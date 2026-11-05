@@ -189,11 +189,12 @@ export const BranchesPage: React.FC = () => {
 
   // Handlers for Outlet
   const handleOpenAddOutlet = () => {
-    // When maxOutlets limit reached, require subscription license payment first
+    // When subscription inactive or maxOutlets limit reached, require subscription license payment first
+    const isSubActive = billingStatus?.isSubscriptionActive ?? false;
     const currentCount = outlets.length;
     const maxAllowed = billingStatus?.maxOutlets ?? 0;
 
-    if (currentCount >= maxAllowed || maxAllowed === 0) {
+    if (!isSubActive || currentCount >= maxAllowed || maxAllowed === 0) {
       setIsLicenseModalOpen(true);
       return;
     }

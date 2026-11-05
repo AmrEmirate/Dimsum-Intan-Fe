@@ -131,6 +131,7 @@ export const SubscriptionBillingPage: React.FC = () => {
   const [txQuotaOption, setTxQuotaOption] = useState<100 | 250 | 500>(250);
   const [renewalMonths, setRenewalMonths] = useState(1);
   const [selectedOutletId, setSelectedOutletId] = useState<string>('all');
+  const [selectedOutletIds, setSelectedOutletIds] = useState<string[]>([]);
   const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
   const [activePaymentInvoice, setActivePaymentInvoice] = useState<{
     invoice: SubscriptionInvoice;
@@ -155,6 +156,24 @@ export const SubscriptionBillingPage: React.FC = () => {
     amount?: number;
     submittedAt?: string;
   } | null>(null);
+
+  const registeredOutlets = (billingStatus?.outlets && billingStatus.outlets.length > 0)
+    ? billingStatus.outlets
+    : (outlets && outlets.length > 0 ? outlets : []);
+
+  const handleToggleOutlet = (outletId: string) => {
+    setSelectedOutletIds((prev) =>
+      prev.includes(outletId) ? prev.filter((id) => id !== outletId) : [...prev, outletId]
+    );
+  };
+
+  const handleSelectAllOutlets = () => {
+    setSelectedOutletIds(registeredOutlets.map((o) => o.id));
+  };
+
+  const handleDeselectAllOutlets = () => {
+    setSelectedOutletIds([]);
+  };
 
   // Load Invoices
   const loadInvoices = async () => {
@@ -182,6 +201,8 @@ export const SubscriptionBillingPage: React.FC = () => {
     const activePlan = billingStatus?.plan || 'PAKET_100K';
     if (type === 'RENEWAL') {
       setTargetPlanCode(defaultPlan || activePlan);
+      // Default to select all registered outlets
+      setSelectedOutletIds(registeredOutlets.map((o) => o.id));
     } else if (defaultPlan && defaultPlan !== activePlan) {
       setTargetPlanCode(defaultPlan);
     } else {
@@ -203,7 +224,8 @@ export const SubscriptionBillingPage: React.FC = () => {
         extraTxQuota: txQuotaOption,
         months: renewalMonths,
         targetPlan: targetPlanCode,
-        targetOutletId: selectedOutletId !== 'all' ? selectedOutletId : undefined,
+        targetOutletId: selectedOutletIds.length === 1 ? selectedOutletIds[0] : (selectedOutletId !== 'all' ? selectedOutletId : undefined),
+        targetOutletIds: selectedOutletIds.length > 0 ? selectedOutletIds : undefined,
       });
 
       if (res.success && res.data) {
@@ -354,9 +376,8 @@ export const SubscriptionBillingPage: React.FC = () => {
   } else if (checkoutType === 'RENEWAL') {
     const selectedPlanObj = OFFICIAL_SAAS_PLANS.find((p) => p.code === targetPlanCode) || OFFICIAL_SAAS_PLANS[0];
     const planPrice = selectedPlanObj.price || pricePerOutlet;
-    const isSpecificOutlet = selectedOutletId !== 'all';
-    const totalOutletsCount = billingStatus?.outlets?.length || billingStatus?.currentOutletsCount || maxOutlets || 1;
-    const multiplier = isSpecificOutlet ? 1 : Math.max(1, totalOutletsCount);
+    const hasRegisteredOutlets = registeredOutlets.length > 0;
+    const multiplier = hasRegisteredOutlets ? selectedOutletIds.length : 1;
     previewAmount = planPrice * multiplier * renewalMonths;
   }
 
@@ -1157,43 +1178,96 @@ export const SubscriptionBillingPage: React.FC = () => {
 
                     {/* 2. Pilih Cabang / Outlet yang Diperpanjang */}
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-bold text-brand-espresso">
-                          2. Pilih Cabang / Outlet yang Diperpanjang
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsCheckoutModalOpen(false);
-                            setCurrentView('master-cabang-outlet');
-                          }}
-                          className="text-[11px] text-brand-terracotta hover:text-brand-espresso font-bold flex items-center gap-1 cursor-pointer"
-                        >
-                          <Plus className="w-3 h-3 text-brand-gold" />
-                          <span>+ Tambah Cabang Baru</span>
-                        </button>
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <div>
+                          <label className="text-xs font-bold text-brand-espresso block">
+                            2. Pilih Cabang / Outlet yang Diperpanjang
+                          </label>
+                          <span className="text-[10px] text-secondary">
+                            Centang satu per satu atau gunakan tombol centang semua
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {registeredOutlets.length > 0 && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={handleSelectAllOutlets}
+                                className="text-[10px] text-primary hover:underline font-bold cursor-pointer"
+                              >
+                                Centang Semua
+                              </button>
+                              <span className="text-secondary/40 text-xs">•</span>
+                              <button
+                                type="button"
+                                onClick={handleDeselectAllOutlets}
+                                className="text-[10px] text-secondary hover:underline cursor-pointer"
+                              >
+                                Kosongkan
+                              </button>
+                              <span className="text-secondary/40 text-xs">•</span>
+                            </>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsCheckoutModalOpen(false);
+                              setCurrentView('master-cabang-outlet');
+                            }}
+                            className="text-[10px] text-brand-terracotta hover:text-brand-espresso font-bold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3 text-brand-gold" />
+                            <span>+ Cabang Baru</span>
+                          </button>
+                        </div>
                       </div>
 
-                      {billingStatus?.outlets && billingStatus.outlets.length > 0 ? (
-                        <>
-                          <select
-                            value={selectedOutletId}
-                            onChange={(e) => setSelectedOutletId(e.target.value)}
-                            className="w-full p-2.5 rounded-xl border border-border-strong bg-surface-card text-xs font-medium text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-gold cursor-pointer"
-                          >
-                            <option value="all">Semua Cabang ({billingStatus.outlets.length} Cabang Terdaftar)</option>
-                            {billingStatus.outlets.map((o) => (
-                              <option key={o.id} value={o.id}>
-                                {o.name} ({o.code}) — Kuota: {o.isUnlimited ? 'Unlimited' : `${o.monthlyLimit?.toLocaleString('id-ID')} tx/bln`}
-                              </option>
-                            ))}
-                          </select>
-                          <p className="text-[11px] text-secondary mt-1">
-                            {selectedOutletId === 'all'
-                              ? `Paket langganan akan diperpanjang untuk seluruh ${billingStatus.outlets.length} cabang aktif.`
-                              : `Paket langganan akan diperpanjang khusus untuk cabang ${billingStatus.outlets.find((o) => o.id === selectedOutletId)?.name || 'terpilih'}.`}
-                          </p>
-                        </>
+                      {registeredOutlets.length > 0 ? (
+                        <div className="space-y-2 max-h-56 overflow-y-auto p-1.5 rounded-2xl border border-border-subtle bg-surface-container-low">
+                          {registeredOutlets.map((o: any) => {
+                            const isChecked = selectedOutletIds.includes(o.id);
+                            const planPrice = OFFICIAL_SAAS_PLANS.find((p) => p.code === targetPlanCode)?.price || pricePerOutlet;
+                            return (
+                              <div
+                                key={o.id}
+                                onClick={() => handleToggleOutlet(o.id)}
+                                className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                                  isChecked
+                                    ? 'border-brand-gold bg-brand-gold-subtle shadow-xs'
+                                    : 'border-border-subtle bg-surface-card hover:bg-surface-container'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => handleToggleOutlet(o.id)}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="w-4 h-4 rounded text-brand-gold focus:ring-brand-gold accent-brand-gold cursor-pointer shrink-0"
+                                  />
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-xs text-brand-espresso truncate">
+                                        {o.name}
+                                      </span>
+                                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface-container text-secondary font-mono">
+                                        {o.code}
+                                      </span>
+                                    </div>
+                                    <div className="text-[10px] text-secondary mt-0.5">
+                                      {o.isUnlimited ? 'Unlimited Kuota' : `${(o.monthlyLimit || 6000).toLocaleString('id-ID')} Tx/bln`}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className={`text-[11px] font-mono font-bold ${isChecked ? 'text-primary' : 'text-secondary'}`}>
+                                    {isChecked ? `+Rp ${(planPrice * renewalMonths).toLocaleString('id-ID')}` : 'Tidak Dipilih'}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       ) : (
                         <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-950 text-xs space-y-2">
                           <div className="flex items-center gap-1.5 font-bold text-amber-900">
@@ -1214,15 +1288,30 @@ export const SubscriptionBillingPage: React.FC = () => {
                             <Plus className="w-3.5 h-3.5" />
                             <span>+ Tambah Cabang Sekarang</span>
                           </button>
-                          <div className="pt-1">
-                            <select
-                              value={selectedOutletId}
-                              onChange={(e) => setSelectedOutletId(e.target.value)}
-                              className="w-full p-2 rounded-lg border border-amber-300 bg-white text-[11px] font-medium text-brand-espresso"
-                            >
-                              <option value="all">Perpanjang Standar Lisensi Tenant (Cabang Utama)</option>
-                            </select>
+                          <div className="pt-1 flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={true}
+                              readOnly
+                              className="w-4 h-4 rounded text-brand-gold accent-brand-gold"
+                            />
+                            <span className="text-[11px] font-semibold text-brand-espresso">
+                              Perpanjang Standar Lisensi Akun Tenant (Cabang Utama #1)
+                            </span>
                           </div>
+                        </div>
+                      )}
+
+                      {registeredOutlets.length > 0 && (
+                        <div className="flex items-center justify-between text-[11px] text-secondary mt-1.5 px-1">
+                          <span>
+                            Terpilih: <strong className="text-brand-espresso">{selectedOutletIds.length}</strong> dari {registeredOutlets.length} Cabang
+                          </span>
+                          {selectedOutletIds.length === 0 && (
+                            <span className="text-red-500 font-bold">
+                              * Wajib centang minimal 1 cabang
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1340,9 +1429,9 @@ export const SubscriptionBillingPage: React.FC = () => {
                       <div className="flex justify-between text-secondary">
                         <span>Target Cabang</span>
                         <span className="font-mono text-brand-espresso font-semibold">
-                          {selectedOutletId === 'all'
-                            ? `Semua Cabang (${Math.max(1, billingStatus?.outlets?.length || billingStatus?.currentOutletsCount || maxOutlets || 1)} Gerai)`
-                            : (billingStatus?.outlets?.find((o) => o.id === selectedOutletId)?.name || 'Cabang Terpilih')}
+                          {registeredOutlets.length > 0
+                            ? `${selectedOutletIds.length} dari ${registeredOutlets.length} Cabang Terpilih`
+                            : 'Standar Lisensi Cabang Utama'}
                         </span>
                       </div>
                       <div className="flex justify-between text-secondary">
@@ -1387,7 +1476,11 @@ export const SubscriptionBillingPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleProceedPayment}
-                    disabled={isCreatingCheckout || (checkoutType === 'CHANGE_PLAN' && targetPlanCode === (billingStatus?.plan || 'PAKET_100K'))}
+                    disabled={
+                      isCreatingCheckout ||
+                      (checkoutType === 'CHANGE_PLAN' && targetPlanCode === (billingStatus?.plan || 'PAKET_100K')) ||
+                      (checkoutType === 'RENEWAL' && registeredOutlets.length > 0 && selectedOutletIds.length === 0)
+                    }
                     className="flex-1 min-h-[48px] rounded-xl bg-brand-gold hover:bg-brand-gold-hover disabled:opacity-50 disabled:cursor-not-allowed text-brand-espresso font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2"
                   >
                     <Zap className="w-4 h-4" />

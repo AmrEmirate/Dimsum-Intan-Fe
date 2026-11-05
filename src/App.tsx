@@ -21,9 +21,10 @@ import { PaymentGatewayPage } from './pages/PaymentGatewayPage';
 
 import { BottomNav } from './components/layout/BottomNav';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { SubscriptionPaywallGuard } from './components/common/SubscriptionPaywallGuard';
 
 export const AppContent: React.FC = () => {
-  const { currentView, isAuthenticated, currentUser } = useApp();
+  const { currentView, isAuthenticated, currentUser, billingStatus, setCurrentView } = useApp();
 
   if (!isAuthenticated) {
     return (
@@ -34,7 +35,41 @@ export const AppContent: React.FC = () => {
     );
   }
 
+  const isSuperadmin = currentUser.role === 'SUPERADMIN';
+  const isSubscriptionActive = billingStatus?.isSubscriptionActive ?? true;
+  const isOperationalLocked = !isSuperadmin && billingStatus !== null && !isSubscriptionActive;
+
   const renderCurrentView = () => {
+    if (isOperationalLocked) {
+      const lockedViews = [
+        'transaksi-kasir-pos',
+        'sesi-shift-kasir',
+        'master-menu-dimsum-hpp',
+        'kas-kecil-outlet',
+        'tagihan-suplai-pabrik',
+        'beban-operasional-tetap',
+        'laporan-laba-rugi-arus-kas',
+        'dompet-penarikan-saldo',
+      ];
+      if (lockedViews.includes(currentView)) {
+        return (
+          <SubscriptionPaywallGuard
+            featureName={
+              currentView === 'transaksi-kasir-pos'
+                ? 'Kasir POS'
+                : currentView === 'master-menu-dimsum-hpp'
+                ? 'Master Menu & HPP'
+                : currentView === 'sesi-shift-kasir'
+                ? 'Sesi Shift Kasir'
+                : currentView === 'dompet-penarikan-saldo'
+                ? 'Dompet & Penarikan Saldo'
+                : 'Fitur Operasional & Keuangan'
+            }
+          />
+        );
+      }
+    }
+
     switch (currentView) {
       case 'superadmin-portal':
         return <SuperadminPortalPage />;
@@ -77,8 +112,25 @@ export const AppContent: React.FC = () => {
         {/* Fixed Top Header */}
         <Header />
 
+        {/* Unpaid / Expired Subscription Paywall Alert Strip */}
+        {isOperationalLocked && (
+          <div className="mt-16 bg-amber-500 text-amber-950 px-4 py-2.5 text-xs font-bold flex flex-wrap items-center justify-between gap-2 shadow-xs border-b border-amber-600/30 z-30">
+            <div className="flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+              <span>Paket Langganan Belum Aktif / Telah Kadaluarsa. Seluruh fitur operasional kasir terkunci.</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCurrentView('langganan-billing')}
+              className="px-3 py-1 bg-brand-espresso text-white text-[11px] font-bold rounded-lg hover:bg-black transition-all cursor-pointer shadow-xs active:scale-95"
+            >
+              ⚡ Aktifkan Langganan Sekarang
+            </button>
+          </div>
+        )}
+
         {/* Dynamic Page Workspace */}
-        <main className="flex-1 pt-20 px-3 sm:px-6 pb-32 lg:pb-12 w-full max-w-[1600px] mx-auto">
+        <main className={`flex-1 ${isOperationalLocked ? 'pt-6' : 'pt-20'} px-3 sm:px-6 pb-32 lg:pb-12 w-full max-w-[1600px] mx-auto`}>
           <ErrorBoundary>
             {renderCurrentView()}
           </ErrorBoundary>

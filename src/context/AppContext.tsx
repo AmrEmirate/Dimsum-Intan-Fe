@@ -189,6 +189,7 @@ interface AppContextType {
     months?: number;
     targetPlan?: string;
     targetOutletId?: string;
+    targetOutletIds?: string[];
   }) => Promise<any>;
   submitManualPayment: (data: {
     invoiceId?: string;
@@ -198,6 +199,7 @@ interface AppContextType {
     months?: number;
     targetPlan?: string;
     targetOutletId?: string;
+    targetOutletIds?: string[];
     senderName: string;
     senderBank?: string;
     proofImage: string;
@@ -1394,6 +1396,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       months?: number;
       targetPlan?: string;
       targetOutletId?: string;
+      targetOutletIds?: string[];
     }) => {
       try {
         const res = await api.post<{ success: boolean; data: any; message: string }>(
@@ -1418,6 +1421,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       months?: number;
       targetPlan?: string;
       targetOutletId?: string;
+      targetOutletIds?: string[];
       senderName: string;
       senderBank?: string;
       proofImage: string;

@@ -176,4 +176,71 @@ describe('Outlet Package Selection & Transaction Quotas (Black-Box & White-Box)'
     expect(isModalOpen).toBe(false);
     expect(currentNavView).toBe('master-cabang-outlet');
   });
+
+  it('memvalidasi fitur multi-select checkbox gerai saat perpanjangan langganan', () => {
+    const mockOutlets = [
+      { id: 'out-1', name: 'Cabang Dipatiukur', code: 'DPU' },
+      { id: 'out-2', name: 'Cabang Riau', code: 'RIAU' },
+      { id: 'out-3', name: 'Cabang Dago', code: 'DGO' },
+    ];
+
+    let selectedOutletIds: string[] = mockOutlets.map((o) => o.id);
+    expect(selectedOutletIds).toHaveLength(3);
+
+    // Toggle uncheck Cabang Dago
+    selectedOutletIds = selectedOutletIds.filter((id) => id !== 'out-3');
+    expect(selectedOutletIds).toEqual(['out-1', 'out-2']);
+    expect(selectedOutletIds).toHaveLength(2);
+
+    // Hitung biaya untuk 2 cabang terpilih paket 150K durasi 1 bulan
+    const planPrice = 150000;
+    const months = 1;
+    const subtotal = planPrice * selectedOutletIds.length * months;
+    expect(subtotal).toBe(300000);
+
+    // Tombol Select All
+    selectedOutletIds = mockOutlets.map((o) => o.id);
+    expect(selectedOutletIds).toHaveLength(3);
+    expect(planPrice * selectedOutletIds.length * months).toBe(450000);
+
+    // Tombol Deselect All (Kosongkan)
+    selectedOutletIds = [];
+    expect(selectedOutletIds).toHaveLength(0);
+    const isProceedDisabled = selectedOutletIds.length === 0;
+    expect(isProceedDisabled).toBe(true);
+  });
+
+  it('memvalidasi proteksi paywall fitur operasional bagi tenant belum berbayar', () => {
+    const isSubscriptionActive = false;
+    const isSuperadmin = false;
+    const isOperationalLocked = !isSuperadmin && !isSubscriptionActive;
+
+    const checkViewAccess = (view: string) => {
+      const lockedViews = [
+        'transaksi-kasir-pos',
+        'sesi-shift-kasir',
+        'master-menu-dimsum-hpp',
+        'kas-kecil-outlet',
+        'tagihan-suplai-pabrik',
+        'beban-operasional-tetap',
+        'laporan-laba-rugi-arus-kas',
+        'dompet-penarikan-saldo',
+      ];
+      if (isOperationalLocked && lockedViews.includes(view)) {
+        return 'LOCKED_PAYWALL';
+      }
+      return 'ALLOWED';
+    };
+
+    // Fitur yang BISA diakses pengguna belum berbayar
+    expect(checkViewAccess('master-cabang-outlet')).toBe('ALLOWED');
+    expect(checkViewAccess('langganan-billing')).toBe('ALLOWED');
+    expect(checkViewAccess('dashboard-utama')).toBe('ALLOWED');
+
+    // Fitur operasional yang TERKUNCI sebelum bayar
+    expect(checkViewAccess('transaksi-kasir-pos')).toBe('LOCKED_PAYWALL');
+    expect(checkViewAccess('sesi-shift-kasir')).toBe('LOCKED_PAYWALL');
+    expect(checkViewAccess('master-menu-dimsum-hpp')).toBe('LOCKED_PAYWALL');
+    expect(checkViewAccess('laporan-laba-rugi-arus-kas')).toBe('LOCKED_PAYWALL');
+  });
 });
