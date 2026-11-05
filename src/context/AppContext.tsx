@@ -31,6 +31,11 @@ import {
   setActiveTenantId,
   clearActiveTenantId,
 } from '../services/apiClient';
+import {
+  parsePathToRoute,
+  buildCanonicalPath,
+  VIEW_TITLES,
+} from '../utils/routeUtils';
 
 export type AppView =
   | 'dashboard-utama'
@@ -244,7 +249,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   const [outlets, setOutlets] = useState<Outlet[]>([]);
-  const [currentView, setCurrentView] = useState<AppView>('dashboard-utama');
+  const [currentView, setCurrentViewState] = useState<AppView>(() => {
+    if (typeof window !== 'undefined') {
+      const parsed = parsePathToRoute(window.location.pathname, []);
+      return parsed.view || 'dashboard-utama';
+    }
+    return 'dashboard-utama';
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [notification, setNotification] = useState<NotificationState | null>(null);
 
@@ -591,13 +602,81 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [isAuthenticated, loadTenantMeta, refreshData, applyTenantTheme]);
 
 
-  const setSelectedOutletId = (id: string) => {
-    if (currentUser.role === 'KASIR' && currentUser.outletId && id !== currentUser.outletId) {
-      showNotification('Akun Kasir terkunci hanya untuk outlet yang ditugaskan!', 'warning');
-      return;
+  const setCurrentView = useCallback(
+    (view: AppView) => {
+      setCurrentViewState(view);
+      if (typeof window !== 'undefined') {
+        const newPath = buildCanonicalPath(view, selectedOutletId, outlets);
+        if (window.location.pathname !== newPath) {
+          window.history.pushState({ view, outletId: selectedOutletId }, '', newPath);
+        }
+        document.title = `Dimsum Intan - ${VIEW_TITLES[view] || 'Cloud POS'}`;
+      }
+    },
+    [selectedOutletId, outlets]
+  );
+
+  const setSelectedOutletId = useCallback(
+    (id: string) => {
+      if (currentUser.role === 'KASIR' && currentUser.outletId && id !== currentUser.outletId) {
+        showNotification('Akun Kasir terkunci hanya untuk outlet yang ditugaskan!', 'warning');
+        return;
+      }
+      setSelectedOutletIdState(id);
+      if (typeof window !== 'undefined') {
+        const newPath = buildCanonicalPath(currentView, id, outlets);
+        if (window.location.pathname !== newPath) {
+          window.history.pushState({ view: currentView, outletId: id }, '', newPath);
+        }
+      }
+    },
+    [currentUser, currentView, outlets, showNotification]
+  );
+
+  // Synchronize URL routing on Browser Back/Forward navigation
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handlePopState = () => {
+      const parsed = parsePathToRoute(window.location.pathname, outlets);
+      if (parsed.view) {
+        setCurrentViewState(parsed.view);
+        document.title = `Dimsum Intan - ${VIEW_TITLES[parsed.view] || 'Cloud POS'}`;
+      }
+      if (parsed.matchedOutletId && parsed.matchedOutletId !== selectedOutletId) {
+        setSelectedOutletIdState(parsed.matchedOutletId);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [outlets, selectedOutletId]);
+
+  // Synchronize outlet and initial path when outlets load
+  useEffect(() => {
+    if (typeof window === 'undefined' || outlets.length === 0) return;
+    const parsed = parsePathToRoute(window.location.pathname, outlets);
+    if (parsed.matchedOutletId && parsed.matchedOutletId !== selectedOutletId) {
+      setSelectedOutletIdState(parsed.matchedOutletId);
     }
-    setSelectedOutletIdState(id);
-  };
+    if (parsed.view && parsed.view !== currentView) {
+      setCurrentViewState(parsed.view);
+    }
+    if (window.location.pathname !== '/') {
+      const canonical = buildCanonicalPath(
+        parsed.view || currentView,
+        parsed.matchedOutletId || selectedOutletId,
+        outlets
+      );
+      if (window.location.pathname !== canonical) {
+        window.history.replaceState(
+          { view: parsed.view || currentView, outletId: parsed.matchedOutletId || selectedOutletId },
+          '',
+          canonical
+        );
+      }
+    }
+  }, [outlets]);
 
   const getActiveOutlet = (): Outlet | undefined => {
     if (outlets.length === 0) return undefined;
