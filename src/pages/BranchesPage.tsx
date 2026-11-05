@@ -60,6 +60,54 @@ export const BranchesPage: React.FC = () => {
 
   const isOwner = currentUser.role === 'OWNER';
 
+  // Available SaaS Plan Options for Outlets (Google Stitch Architecture)
+  const OUTLET_AVAILABLE_PLANS = [
+    {
+      code: 'PAKET_100K',
+      name: 'Paket 1: Hemat',
+      price: 100000,
+      dailyLimit: 200,
+      monthlyTx: 6000,
+      monthlyLimit: '6.000 Tx/bln',
+      desc: '200 transaksi/hari • Booth & Island',
+      badge: 'STARTER',
+      badgeClass: 'bg-surface-container text-secondary border border-border-subtle',
+    },
+    {
+      code: 'PAKET_150K',
+      name: 'Paket 2: Bisnis Pro',
+      price: 150000,
+      dailyLimit: 300,
+      monthlyTx: 9000,
+      monthlyLimit: '9.000 Tx/bln',
+      desc: '300 transaksi/hari • Cabang Reguler',
+      badge: 'POPULER',
+      badgeClass: 'bg-brand-gold text-brand-espresso font-bold',
+    },
+    {
+      code: 'PAKET_200K',
+      name: 'Paket 3: Pro Fleet',
+      price: 200000,
+      dailyLimit: 500,
+      monthlyTx: 15000,
+      monthlyLimit: '15.000 Tx/bln',
+      desc: '500 transaksi/hari • Cabang Ramai',
+      badge: 'PRO CABANG',
+      badgeClass: 'bg-brand-terracotta/10 text-brand-terracotta font-bold border border-brand-terracotta/30',
+    },
+    {
+      code: 'PAKET_250K',
+      name: 'Paket 4: Unlimited VIP',
+      price: 250000,
+      dailyLimit: 0,
+      monthlyTx: 0,
+      monthlyLimit: 'Unlimited Tx',
+      desc: 'Tanpa batas kuota transaksi • Resto Ramai',
+      badge: 'UNLIMITED',
+      badgeClass: 'bg-emerald-500/15 text-emerald-700 font-bold border border-emerald-500/30',
+    },
+  ];
+
   // Tabs: 'outlets' | 'staff' | 'guide'
   const [activeTab, setActiveTab] = useState<'outlets' | 'staff' | 'guide'>('outlets');
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,6 +121,7 @@ export const BranchesPage: React.FC = () => {
   const [outletAddress, setOutletAddress] = useState('');
   const [outletPhone, setOutletPhone] = useState('');
   const [outletTarget, setOutletTarget] = useState('4500000');
+  const [selectedPlan, setSelectedPlan] = useState<string>('PAKET_100K');
   const [outletError, setOutletError] = useState<string | null>(null);
   const [isSavingOutlet, setIsSavingOutlet] = useState(false);
 
@@ -151,6 +200,7 @@ export const BranchesPage: React.FC = () => {
     setOutletAddress('');
     setOutletPhone('');
     setOutletTarget('4500000');
+    setSelectedPlan(billingStatus?.plan || 'PAKET_100K');
     setOutletError(null);
     setIsOutletModalOpen(true);
   };
@@ -163,6 +213,7 @@ export const BranchesPage: React.FC = () => {
     setOutletAddress(outlet.address);
     setOutletPhone(outlet.phone);
     setOutletTarget(String(outlet.targetDailySales || 4000000));
+    setSelectedPlan(outlet.plan || billingStatus?.plan || 'PAKET_100K');
     setOutletError(null);
     setIsOutletModalOpen(true);
   };
@@ -193,6 +244,7 @@ export const BranchesPage: React.FC = () => {
       setOutletAddress('');
       setOutletPhone('');
       setOutletTarget('4500000');
+      setSelectedPlan(billingStatus?.plan || 'PAKET_100K');
       setOutletError(null);
       setIsOutletModalOpen(true);
     } catch (err: any) {
@@ -222,6 +274,7 @@ export const BranchesPage: React.FC = () => {
         address: outletAddress.trim(),
         phone: outletPhone.trim(),
         targetDailySales: parseFloat(outletTarget) || 0,
+        plan: selectedPlan,
       });
     } else {
       success = await createOutlet({
@@ -231,6 +284,7 @@ export const BranchesPage: React.FC = () => {
         address: outletAddress.trim(),
         phone: outletPhone.trim(),
         targetDailySales: parseFloat(outletTarget) || 0,
+        plan: selectedPlan,
       });
     }
 
@@ -931,6 +985,46 @@ export const BranchesPage: React.FC = () => {
                         </div>
                       </div>
 
+                      {/* Package Plan & Monthly Tx Limit Box */}
+                      <div className="p-3.5 rounded-2xl bg-surface-container border border-border-subtle space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-secondary font-semibold flex items-center gap-1.5">
+                            <Zap className="w-3.5 h-3.5 text-brand-gold" />
+                            Paket Lisensi
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-brand-gold-subtle text-brand-espresso text-[11px] font-black border border-brand-gold/30">
+                            {outlet.planName || (outlet.plan === 'PAKET_250K' ? 'Paket 4: Unlimited' : outlet.plan === 'PAKET_200K' ? 'Paket 3: Pro' : outlet.plan === 'PAKET_150K' ? 'Paket 2: Bisnis' : 'Paket 1: Hemat')}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs pt-1 border-t border-border-subtle/60">
+                          <span className="text-secondary font-semibold flex items-center gap-1.5">
+                            <Receipt className="w-3.5 h-3.5 text-primary" />
+                            Kuota Tx Bulan Ini
+                          </span>
+                          <span className="font-extrabold text-brand-espresso font-mono">
+                            {outlet.isUnlimited
+                              ? `${(outlet.currentMonthTxCount ?? 0).toLocaleString('id-ID')} Tx (Bebas / Unlimited)`
+                              : `${(outlet.currentMonthTxCount ?? 0).toLocaleString('id-ID')} / ${(outlet.monthlyTxLimit || 6000).toLocaleString('id-ID')} Tx`}
+                          </span>
+                        </div>
+                        {!outlet.isUnlimited && (
+                          <div className="w-full h-1.5 rounded-full bg-border-subtle overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                ((outlet.currentMonthTxCount ?? 0) / (outlet.monthlyTxLimit || 6000)) >= 0.9
+                                  ? 'bg-red-500'
+                                  : ((outlet.currentMonthTxCount ?? 0) / (outlet.monthlyTxLimit || 6000)) >= 0.7
+                                  ? 'bg-amber-500'
+                                  : 'bg-primary'
+                              }`}
+                              style={{
+                                width: `${Math.min(100, Math.round(((outlet.currentMonthTxCount ?? 0) / (outlet.monthlyTxLimit || 6000)) * 100))}%`,
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+
                       {/* Target Omset Box */}
                       <div className="p-3.5 rounded-2xl bg-surface-container border border-border-subtle">
                         <div className="flex items-center justify-between text-xs">
@@ -1376,28 +1470,35 @@ export const BranchesPage: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 1: TAMBAH / EDIT CABANG OUTLET                                      */}
+      {/* MODAL 1: TAMBAH / EDIT CABANG OUTLET & PILIH PAKET                        */}
       {/* ========================================================================= */}
       {isOutletModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-espresso/50 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-surface-card rounded-3xl border border-border-strong shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 border-b border-border-subtle bg-surface-container-low flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <Store className="w-5 h-5 text-primary" />
-                <h3 className="font-serif-title font-bold text-base text-brand-espresso">
-                  {editingOutlet ? 'Edit Data Cabang' : 'Pendaftaran Cabang Baru'}
-                </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-brand-espresso/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-surface-card rounded-3xl border border-border-strong shadow-2xl w-full max-w-xl max-h-[92vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="px-5 sm:px-6 py-4 border-b border-border-subtle bg-surface-container-low flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-brand-gold/20 flex items-center justify-center text-brand-espresso font-bold">
+                  <Store className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-serif-title font-bold text-sm sm:text-base text-brand-espresso">
+                    {editingOutlet ? 'Edit Data Cabang & Paket' : 'Pendaftaran Cabang Baru'}
+                  </h3>
+                  <p className="text-[11px] text-secondary">
+                    {editingOutlet ? 'Perbarui identitas cabang atau ubah tier paket transaksi' : 'Daftarkan outlet baru dan tentukan paket kuota transaksi kasirnya'}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsOutletModalOpen(false)}
-                className="p-1 rounded-lg text-secondary hover:text-brand-espresso transition-colors cursor-pointer"
+                className="p-1.5 rounded-xl text-secondary hover:text-brand-espresso hover:bg-surface-container transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveOutlet} className="p-6 space-y-4">
+            <form onSubmit={handleSaveOutlet} className="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
               {outletError && (
                 <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
@@ -1405,7 +1506,88 @@ export const BranchesPage: React.FC = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* SECTION: Package Selection */}
+              <div className="flex flex-col gap-2 p-3 sm:p-3.5 rounded-2xl bg-surface-container/50 border border-border-subtle">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-brand-gold" />
+                    Pilihan Paket Kuota Transaksi Cabang *
+                  </label>
+                  <span className="text-[10px] text-secondary font-medium">
+                    Kuota kasir per cabang
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {OUTLET_AVAILABLE_PLANS.map((planItem) => {
+                    const isSelected = selectedPlan === planItem.code;
+                    return (
+                      <button
+                        key={planItem.code}
+                        type="button"
+                        onClick={() => setSelectedPlan(planItem.code)}
+                        className={`p-3 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer min-h-[92px] ${
+                          isSelected
+                            ? 'border-brand-gold bg-brand-gold-subtle ring-2 ring-brand-gold/30 shadow-sm'
+                            : 'border-border-subtle bg-surface-container hover:border-brand-gold/40 hover:bg-surface-container-high'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-1 w-full">
+                          <div>
+                            <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider mb-1 ${planItem.badgeClass}`}>
+                              {planItem.badge}
+                            </span>
+                            <div className="font-bold text-xs text-brand-espresso">
+                              {planItem.name}
+                            </div>
+                          </div>
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all ${
+                            isSelected
+                              ? 'bg-brand-gold text-brand-espresso shadow-xs'
+                              : 'border border-border-strong text-transparent'
+                          }`}>
+                            <Check className="w-3 h-3 stroke-[3]" />
+                          </div>
+                        </div>
+
+                        <div className="mt-2 pt-2 border-t border-border-subtle/60 flex items-end justify-between w-full">
+                          <div>
+                            <div className="text-[10px] text-secondary leading-tight line-clamp-1">
+                              {planItem.desc}
+                            </div>
+                            <div className="font-extrabold text-xs text-brand-espresso mt-0.5">
+                              {planItem.monthlyLimit}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-[11px] font-black text-brand-terracotta">
+                              Rp {(planItem.price / 1000).toLocaleString('id-ID')}k
+                            </span>
+                            <span className="text-[9px] text-secondary block">/bulan</span>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Selected Plan Summary Banner */}
+                {(() => {
+                  const currentPlanInfo = OUTLET_AVAILABLE_PLANS.find((p) => p.code === selectedPlan) || OUTLET_AVAILABLE_PLANS[0];
+                  return (
+                    <div className="p-2.5 rounded-xl bg-surface-card border border-border-subtle flex items-center gap-2 text-xs text-brand-espresso mt-1">
+                      <Sparkles className="w-4 h-4 text-brand-gold shrink-0" />
+                      <span>
+                        Cabang ini dialokasikan <strong>{currentPlanInfo.name}</strong> dengan kapasitas transaksi{' '}
+                        <strong>{currentPlanInfo.monthlyLimit}</strong> ({currentPlanInfo.dailyLimit > 0 ? `~${currentPlanInfo.dailyLimit} tx/hari` : 'Bebas sepuasnya tanpa batas'}).
+                      </span>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Branch Code & City */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-secondary uppercase">
                     Kode Cabang *
@@ -1443,7 +1625,7 @@ export const BranchesPage: React.FC = () => {
                   type="text"
                   value={outletName}
                   onChange={(e) => setOutletName(e.target.value)}
-                  placeholder="Contoh: Outlet Dipatiukur"
+                  placeholder="Contoh: Dimsum Intan Dipatiukur"
                   className="w-full p-2.5 rounded-xl bg-surface-container border border-border-subtle text-xs font-bold text-brand-espresso focus:outline-none focus:border-brand-gold"
                   required
                 />
@@ -1463,7 +1645,7 @@ export const BranchesPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-secondary uppercase">
                     No. Telepon / WhatsApp *
@@ -1492,20 +1674,30 @@ export const BranchesPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2.5 pt-4 border-t border-border-subtle">
+              {/* Action Buttons */}
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-4 border-t border-border-subtle">
                 <button
                   type="button"
                   onClick={() => setIsOutletModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-container transition-all cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-container transition-all cursor-pointer min-h-[44px]"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingOutlet}
-                  className="px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all disabled:opacity-50 cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all disabled:opacity-50 cursor-pointer min-h-[44px] flex items-center justify-center gap-1.5"
                 >
-                  {isSavingOutlet ? 'Menyimpan...' : editingOutlet ? 'Perbarui Cabang' : 'Simpan & Buka Cabang'}
+                  {isSavingOutlet ? (
+                    'Menyimpan...'
+                  ) : editingOutlet ? (
+                    'Perbarui Cabang'
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      <span>Simpan & Buka Cabang</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>

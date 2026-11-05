@@ -48,6 +48,12 @@ export interface Outlet {
   manager?: string;
   phone: string;
   targetDailySales: number;
+  plan?: string;
+  planName?: string;
+  dailyTxLimit?: number;
+  monthlyTxLimit?: number;
+  isUnlimited?: boolean;
+  currentMonthTxCount?: number;
 }
 
 export type MenuCategory = string;

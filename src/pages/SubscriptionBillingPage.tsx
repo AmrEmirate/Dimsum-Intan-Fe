@@ -159,10 +159,12 @@ export const SubscriptionBillingPage: React.FC = () => {
   // Open Checkout Modal for specific action
   const openCheckout = (type: 'CHANGE_PLAN' | 'RENEWAL' | 'ADD_OUTLET' | 'ADD_TX_QUOTA', defaultPlan?: string) => {
     setCheckoutType(type);
-    if (defaultPlan) {
+    const activePlan = billingStatus?.plan || 'PAKET_100K';
+    if (defaultPlan && defaultPlan !== activePlan) {
       setTargetPlanCode(defaultPlan);
-    } else if (billingStatus?.plan) {
-      setTargetPlanCode(billingStatus.plan);
+    } else {
+      const nextPlan = OFFICIAL_SAAS_PLANS.find((p) => p.code !== activePlan);
+      setTargetPlanCode(nextPlan?.code || 'PAKET_150K');
     }
     setSelectedOutletId('all');
     setActivePaymentInvoice(null);
@@ -810,26 +812,35 @@ export const SubscriptionBillingPage: React.FC = () => {
                             <button
                               key={p.code}
                               type="button"
-                              onClick={() => setTargetPlanCode(p.code)}
+                              disabled={isCurrent}
+                              onClick={() => !isCurrent && setTargetPlanCode(p.code)}
                               className={`p-3 rounded-xl border text-left text-xs transition-all ${
-                                targetPlanCode === p.code
-                                  ? 'border-brand-gold bg-brand-gold-subtle font-bold text-brand-espresso shadow-xs'
-                                  : 'border-border-subtle bg-surface-card text-secondary hover:bg-surface-container-low'
+                                isCurrent
+                                  ? 'border-border-subtle bg-surface-container/50 opacity-50 cursor-not-allowed select-none text-secondary'
+                                  : targetPlanCode === p.code
+                                  ? 'border-brand-gold bg-brand-gold-subtle font-bold text-brand-espresso shadow-xs cursor-pointer ring-2 ring-brand-gold/20'
+                                  : 'border-border-subtle bg-surface-card text-secondary hover:bg-surface-container-low cursor-pointer'
                               }`}
                             >
                               <div className="font-serif-title flex items-center justify-between">
-                                <span>{p.name}</span>
+                                <span className={isCurrent ? 'line-through text-secondary' : ''}>{p.name}</span>
                                 {isCurrent && (
-                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-secondary font-mono">
-                                    Saat Ini
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface-container text-secondary font-mono font-bold">
+                                    Sedang Dipakai
                                   </span>
                                 )}
                               </div>
                               <div className="font-mono text-primary font-bold mt-1">
                                 Rp {p.price.toLocaleString('id-ID')}/bln
                               </div>
-                              <div className="text-[10px] text-brand-terracotta font-bold mt-0.5">
-                                {isCurrent ? '● Paket Berjalan' : diff > 0 ? `+Rp ${diff.toLocaleString('id-ID')} (Biaya Selisih)` : 'Rp 0'}
+                              <div className="text-[10px] mt-0.5">
+                                {isCurrent ? (
+                                  <span className="text-secondary italic">Paket Aktif (Tidak Dapat Dipilih)</span>
+                                ) : diff > 0 ? (
+                                  <span className="text-brand-terracotta font-bold">+Rp {diff.toLocaleString('id-ID')} (Biaya Selisih)</span>
+                                ) : (
+                                  <span className="text-secondary">Rp 0</span>
+                                )}
                               </div>
                             </button>
                           );
@@ -1008,8 +1019,8 @@ export const SubscriptionBillingPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleProceedPayment}
-                    disabled={isCreatingCheckout}
-                    className="flex-1 min-h-[48px] rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2"
+                    disabled={isCreatingCheckout || (checkoutType === 'CHANGE_PLAN' && targetPlanCode === (billingStatus?.plan || 'PAKET_100K'))}
+                    className="flex-1 min-h-[48px] rounded-xl bg-brand-gold hover:bg-brand-gold-hover disabled:opacity-50 disabled:cursor-not-allowed text-brand-espresso font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center justify-center gap-2"
                   >
                     <Zap className="w-4 h-4" />
                     <span>{isCreatingCheckout ? 'Membuat Tagihan...' : 'Lanjut ke QRIS / VA'}</span>
