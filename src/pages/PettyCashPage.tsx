@@ -20,6 +20,7 @@ import { useApp } from '../context/AppContext';
 import { PettyCashCategory, PettyCashExpense } from '../types';
 import { PinAuthorizationModal } from '../components/common/PinAuthorizationModal';
 import { CustomSelect } from '../components/common/CustomSelect';
+import { ImageUpload } from '../components/common/ImageUpload';
 
 export const PettyCashPage: React.FC = () => {
   const {
@@ -160,7 +161,7 @@ export const PettyCashPage: React.FC = () => {
       amount,
       formCategory,
       formDescription,
-      selectedFile || formReceiptUrl || 'https://images.unsplash.com/photo-1554415707-9e49017aed81?w=500&auto=format&fit=crop&q=80'
+      formReceiptUrl || selectedFile || 'https://images.unsplash.com/photo-1554415707-9e49017aed81?w=500&auto=format&fit=crop&q=80'
     );
 
     if (ok) {
@@ -702,62 +703,16 @@ export const PettyCashPage: React.FC = () => {
                 />
               </div>
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-brand-espresso">
-                  Foto Struk / Bukti Nota Fisik
-                </label>
-                
-                {filePreview ? (
-                  <div className="relative rounded-2xl overflow-hidden border border-border-strong bg-surface-container p-2 flex items-center gap-3">
-                    <img
-                      src={filePreview}
-                      alt="Pratinjau Nota"
-                      className="w-16 h-16 object-cover rounded-xl border border-border-subtle"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-brand-espresso truncate">
-                        {selectedFile?.name || 'Foto Nota Kamera'}
-                      </p>
-                      <p className="text-[10px] text-secondary">
-                        {selectedFile ? `${(selectedFile.size / 1024).toFixed(1)} KB` : 'Siap diunggah'}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={handleRemoveFile}
-                        className="mt-1 text-[11px] font-bold text-red-600 hover:text-red-700 underline"
-                      >
-                        Ganti Foto
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="border-2 border-dashed border-border-strong rounded-2xl p-4 text-center bg-surface-container-low flex flex-col items-center gap-2">
-                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso font-bold text-xs rounded-xl shadow-xs transition-all active:scale-95">
-                      <Camera className="w-4 h-4" />
-                      <span>Ambil Foto Nota (Kamera / File)</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        onChange={handleFileChange}
-                      />
-                    </label>
-                    <span className="text-[10px] text-secondary">
-                      Bisa langsung jepret via kamera smartphone atau pilih dari galeri
-                    </span>
-                    <div className="w-full pt-2 border-t border-border-subtle/80">
-                      <input
-                        type="text"
-                        value={formReceiptUrl}
-                        onChange={(e) => setFormReceiptUrl(e.target.value)}
-                        placeholder="Atau tempel URL gambar jika ada..."
-                        className="w-full p-2 rounded-xl bg-surface-card text-[11px] border border-border-subtle text-brand-espresso placeholder:text-secondary/70 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+              <ImageUpload
+                value={formReceiptUrl}
+                onChange={(url) => {
+                  setFormReceiptUrl(url);
+                  setFilePreview(url);
+                }}
+                label="Foto Struk / Bukti Nota Fisik (Upload dari Laptop / HP)"
+                placeholder="Pilih foto nota dari laptop atau ambil foto..."
+                helperText="Upload foto struk belanja darurat outlet. Otomatis disimpan ke Cloudinary CDN."
+              />
             </div>
 
             <div className="mt-5 flex justify-end gap-2">

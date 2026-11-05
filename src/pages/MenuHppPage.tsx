@@ -28,6 +28,7 @@ import { useApp } from '../context/AppContext';
 import { MenuItem, MenuCategory } from '../types';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { ConfirmationModal } from '../components/common/ConfirmationModal';
+import { ImageUpload } from '../components/common/ImageUpload';
 import {
   exportToCsv,
   exportToJson,
@@ -150,9 +151,7 @@ export const MenuHppPage: React.FC = () => {
     setFormCostPrice('11500');
     setFormStock('30');
     setFormDescription('');
-    setFormImage(
-      'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=500&auto=format&fit=crop&q=80'
-    );
+    setFormImage('');
     setIsModalOpen(true);
   };
 
@@ -981,16 +980,13 @@ export const MenuHppPage: React.FC = () => {
                 />
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">URL Foto Menu</label>
-                <input
-                  type="text"
-                  value={formImage}
-                  onChange={(e) => setFormImage(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                />
-              </div>
+              <ImageUpload
+                value={formImage}
+                onChange={(url) => setFormImage(url)}
+                label="Foto Menu Dimsum (Upload dari Laptop)"
+                placeholder="Pilih file foto menu dari laptop Anda..."
+                helperText="Pilih foto langsung dari laptop / galeri HP. Foto otomatis diunggah dan disimpan aman ke Cloudinary CDN."
+              />
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
