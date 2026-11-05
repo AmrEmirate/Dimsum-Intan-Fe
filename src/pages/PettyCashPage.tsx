@@ -358,34 +358,11 @@ export const PettyCashPage: React.FC = () => {
           }`}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
-                Batas Maks per Nota
-              </span>
-              {isSupervisorOrOwner && (
-                <span className="text-[9px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded-md border border-amber-200">
-                  Bisa Diedit
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5">
-              {isSupervisorOrOwner && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenEditLimit();
-                  }}
-                  title="Klik untuk Edit Batas Maksimal"
-                  className="px-2.5 py-1 rounded-lg bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso flex items-center gap-1 text-[11px] font-bold transition-all cursor-pointer shadow-xs"
-                >
-                  <Pencil className="w-3 h-3 text-brand-espresso" />
-                  <span>Edit</span>
-                </button>
-              )}
-              <div className="w-8 h-8 rounded-xl bg-red-100 flex items-center justify-center text-red-700">
-                <AlertTriangle className="w-4 h-4" />
-              </div>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
+              Batas Maks per Nota
+            </span>
+            <div className="w-8 h-8 rounded-xl bg-red-100 flex items-center justify-center text-red-700">
+              <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3">
@@ -397,7 +374,7 @@ export const PettyCashPage: React.FC = () => {
                 {sopNote}
               </span>
               {isSupervisorOrOwner && (
-                <span className="text-[10px] font-bold text-amber-700 hover:text-amber-800 underline ml-2 whitespace-nowrap">
+                <span className="text-[10px] font-bold text-amber-700 group-hover:text-amber-800 underline ml-2 whitespace-nowrap">
                   Klik untuk ubah →
                 </span>
               )}
