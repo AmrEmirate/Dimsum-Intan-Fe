@@ -25,6 +25,7 @@ export interface CustomSelectProps<T = string> {
   size?: 'sm' | 'md' | 'lg';
   searchable?: boolean;
   id?: string;
+  menuPlacement?: 'auto' | 'bottom' | 'top';
 }
 
 export function CustomSelect<T extends string | number>({
@@ -42,11 +43,15 @@ export function CustomSelect<T extends string | number>({
   size = 'md',
   searchable = false,
   id: customId,
+  menuPlacement = 'auto',
 }: CustomSelectProps<T>) {
   const autoId = useId();
   const selectId = customId || autoId;
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [actualPlacement, setActualPlacement] = useState<'bottom' | 'top'>(
+    menuPlacement === 'top' ? 'top' : 'bottom'
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -90,6 +95,53 @@ export function CustomSelect<T extends string | number>({
       setSearchQuery('');
     }
   }, [isOpen, searchable]);
+
+  // Dynamic placement detection (Auto flip to dropup when space below is limited)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (menuPlacement === 'top') {
+      setActualPlacement('top');
+      return;
+    }
+    if (menuPlacement === 'bottom') {
+      setActualPlacement('bottom');
+      return;
+    }
+
+    const checkPlacement = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+
+      // Check if inside modal/card or scrollable container
+      const parentCard = containerRef.current.closest(
+        '.overflow-hidden, .overflow-y-auto, [role="dialog"], form'
+      );
+      let effectiveSpaceBelow = spaceBelow;
+      if (parentCard) {
+        const parentRect = parentCard.getBoundingClientRect();
+        effectiveSpaceBelow = Math.min(spaceBelow, parentRect.bottom - rect.bottom);
+      }
+
+      // If space below is limited (< 240px) and there's adequate space above (> 160px), flip to top
+      if (effectiveSpaceBelow < 240 && spaceAbove > 160) {
+        setActualPlacement('top');
+      } else {
+        setActualPlacement('bottom');
+      }
+    };
+
+    checkPlacement();
+    window.addEventListener('resize', checkPlacement);
+    window.addEventListener('scroll', checkPlacement, true);
+    return () => {
+      window.removeEventListener('resize', checkPlacement);
+      window.removeEventListener('scroll', checkPlacement, true);
+    };
+  }, [isOpen, menuPlacement]);
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -139,7 +191,7 @@ export function CustomSelect<T extends string | number>({
   };
 
   return (
-    <div ref={containerRef} className={`relative w-full ${className}`}>
+    <div ref={containerRef} className={`w-full ${className}`}>
       {/* Label */}
       {label && (
         <label
@@ -150,56 +202,160 @@ export function CustomSelect<T extends string | number>({
         </label>
       )}
 
-      {/* Trigger Button */}
-      <button
-        id={selectId}
-        type="button"
-        disabled={disabled}
-        onClick={() => !disabled && setIsOpen((prev) => !prev)}
-        onKeyDown={handleKeyDown}
-        aria-haspopup="listbox"
-        aria-expanded={isOpen}
-        className={`w-full flex items-center justify-between gap-2.5 rounded-2xl bg-surface-card border transition-all text-left cursor-pointer active:scale-[0.99] ${
-          sizeClasses[size]
-        } ${
-          error
-            ? 'border-red-400 ring-2 ring-red-100 bg-red-50/20'
-            : isOpen
-            ? 'border-brand-terracotta ring-3 ring-brand-terracotta/15 shadow-sm'
-            : 'border-border-subtle hover:border-border-strong hover:bg-surface-container-low shadow-xs'
-        } ${disabled ? 'opacity-50 cursor-not-allowed bg-surface-muted' : ''}`}
-      >
-        {/* Left Side: Icon & Selected Label */}
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          {icon && <span className="text-secondary shrink-0">{icon}</span>}
-          {selectedOption?.icon && (
-            <span className="text-brand-terracotta shrink-0">{selectedOption.icon}</span>
-          )}
-          <div className="truncate flex-1">
-            {selectedOption ? (
-              <span className="font-bold text-brand-espresso block truncate">
-                {selectedOption.label}
-              </span>
-            ) : (
-              <span className="text-secondary/70 font-normal">{placeholder}</span>
+      {/* Button & Dropdown Relative Wrapper */}
+      <div className={`relative ${isOpen ? 'z-40' : 'z-10'}`}>
+        {/* Trigger Button */}
+        <button
+          id={selectId}
+          type="button"
+          disabled={disabled}
+          onClick={() => !disabled && setIsOpen((prev) => !prev)}
+          onKeyDown={handleKeyDown}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          className={`w-full flex items-center justify-between gap-2.5 rounded-2xl bg-surface-card border transition-all text-left cursor-pointer active:scale-[0.99] ${
+            sizeClasses[size]
+          } ${
+            error
+              ? 'border-red-400 ring-2 ring-red-100 bg-red-50/20'
+              : isOpen
+              ? 'border-brand-terracotta ring-3 ring-brand-terracotta/15 shadow-sm'
+              : 'border-border-subtle hover:border-border-strong hover:bg-surface-container-low shadow-xs'
+          } ${disabled ? 'opacity-50 cursor-not-allowed bg-surface-muted' : ''}`}
+        >
+          {/* Left Side: Icon & Selected Label */}
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            {icon && <span className="text-secondary shrink-0">{icon}</span>}
+            {selectedOption?.icon && (
+              <span className="text-brand-terracotta shrink-0">{selectedOption.icon}</span>
             )}
+            <div className="truncate flex-1">
+              {selectedOption ? (
+                <span className="font-bold text-brand-espresso block truncate">
+                  {selectedOption.label}
+                </span>
+              ) : (
+                <span className="text-secondary/70 font-normal">{placeholder}</span>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Right Side: Badge & Custom Chevron */}
-        <div className="flex items-center gap-2 shrink-0">
-          {selectedOption?.badge && (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-gold/20 text-brand-espresso border border-brand-gold/40">
-              {selectedOption.badge}
-            </span>
-          )}
-          <ChevronDown
-            className={`w-4 h-4 text-secondary transition-transform duration-200 stroke-[2.5] ${
-              isOpen ? 'rotate-180 text-brand-terracotta' : ''
-            }`}
-          />
-        </div>
-      </button>
+          {/* Right Side: Badge & Custom Chevron */}
+          <div className="flex items-center gap-2 shrink-0">
+            {selectedOption?.badge && (
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-brand-gold/20 text-brand-espresso border border-brand-gold/40">
+                {selectedOption.badge}
+              </span>
+            )}
+            <ChevronDown
+              className={`w-4 h-4 text-secondary transition-transform duration-200 stroke-[2.5] ${
+                isOpen ? 'rotate-180 text-brand-terracotta' : ''
+              }`}
+            />
+          </div>
+        </button>
+
+        {/* Floating Animated Dropdown Menu */}
+        {isOpen && (
+          <div
+            role="listbox"
+            tabIndex={-1}
+            className={`absolute left-0 right-0 ${
+              actualPlacement === 'top'
+                ? 'bottom-full mb-1.5 origin-bottom'
+                : 'top-full mt-1.5 origin-top'
+            } z-50 rounded-2xl bg-surface-card border border-border-subtle shadow-2xl overflow-hidden backdrop-blur-xl animate-in fade-in-0 zoom-in-95 duration-150 ${menuClassName}`}
+            style={{ maxHeight: '280px' }}
+          >
+            {/* Internal Instant Search if enabled */}
+            {searchable && (
+              <div className="p-2 border-b border-border-subtle bg-surface-container-low/50 sticky top-0 z-10 backdrop-blur-md">
+                <div className="relative flex items-center">
+                  <Search className="w-3.5 h-3.5 text-secondary absolute left-2.5 pointer-events-none" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Cari opsi..."
+                    className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-surface text-xs text-brand-espresso placeholder:text-secondary/60 border border-border-subtle focus:outline-none focus:border-brand-terracotta"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Options List */}
+            <div className="p-1.5 overflow-y-auto max-h-[220px] space-y-0.5 no-scrollbar">
+              {filteredOptions.length === 0 ? (
+                <div className="py-4 text-center text-xs text-secondary">
+                  Tidak ada opsi yang cocok
+                </div>
+              ) : (
+                filteredOptions.map((opt) => {
+                  const isSelected = opt.value === value;
+                  return (
+                    <button
+                      key={String(opt.value)}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      disabled={opt.disabled}
+                      onClick={() => handleSelectOption(opt)}
+                      className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all text-xs sm:text-sm cursor-pointer select-none active:scale-[0.99] ${
+                        isSelected
+                          ? 'bg-brand-gold/15 text-brand-espresso font-bold'
+                          : opt.disabled
+                          ? 'opacity-40 cursor-not-allowed text-secondary'
+                          : 'text-brand-espresso hover:bg-surface-container font-medium'
+                      }`}
+                    >
+                      {/* Option Icon & Text */}
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        {opt.icon && (
+                          <span
+                            className={`shrink-0 ${
+                              isSelected ? 'text-brand-terracotta' : 'text-secondary'
+                            }`}
+                          >
+                            {opt.icon}
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <span className="block truncate">{opt.label}</span>
+                          {opt.sublabel && (
+                            <span className="block text-[10px] text-secondary font-normal truncate">
+                              {opt.sublabel}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Option Badge & Active Checkmark */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {opt.badge && (
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                              isSelected
+                                ? 'bg-brand-gold text-brand-espresso'
+                                : 'bg-surface-container text-secondary'
+                            }`}
+                          >
+                            {opt.badge}
+                          </span>
+                        )}
+                        {isSelected && (
+                          <Check className="w-4 h-4 text-brand-terracotta stroke-[3] shrink-0" />
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Error or Helper Message */}
       {error ? (
@@ -210,103 +366,6 @@ export function CustomSelect<T extends string | number>({
       ) : helperText ? (
         <span className="block text-[11px] text-secondary mt-1">{helperText}</span>
       ) : null}
-
-      {/* Floating Animated Dropdown Menu */}
-      {isOpen && (
-        <div
-          role="listbox"
-          tabIndex={-1}
-          className={`absolute left-0 right-0 mt-1.5 z-50 rounded-2xl bg-surface-card border border-border-subtle shadow-2xl overflow-hidden backdrop-blur-xl animate-in fade-in-0 zoom-in-95 duration-150 ${menuClassName}`}
-          style={{ maxHeight: '280px' }}
-        >
-          {/* Internal Instant Search if enabled */}
-          {searchable && (
-            <div className="p-2 border-b border-border-subtle bg-surface-container-low/50 sticky top-0 z-10 backdrop-blur-md">
-              <div className="relative flex items-center">
-                <Search className="w-3.5 h-3.5 text-secondary absolute left-2.5 pointer-events-none" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari opsi..."
-                  className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-surface text-xs text-brand-espresso placeholder:text-secondary/60 border border-border-subtle focus:outline-none focus:border-brand-terracotta"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Options List */}
-          <div className="p-1.5 overflow-y-auto max-h-[220px] space-y-0.5 no-scrollbar">
-            {filteredOptions.length === 0 ? (
-              <div className="py-4 text-center text-xs text-secondary">
-                Tidak ada opsi yang cocok
-              </div>
-            ) : (
-              filteredOptions.map((opt) => {
-                const isSelected = opt.value === value;
-                return (
-                  <button
-                    key={String(opt.value)}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    disabled={opt.disabled}
-                    onClick={() => handleSelectOption(opt)}
-                    className={`w-full flex items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl text-left transition-all text-xs sm:text-sm cursor-pointer select-none active:scale-[0.99] ${
-                      isSelected
-                        ? 'bg-brand-gold/15 text-brand-espresso font-bold'
-                        : opt.disabled
-                        ? 'opacity-40 cursor-not-allowed text-secondary'
-                        : 'text-brand-espresso hover:bg-surface-container font-medium'
-                    }`}
-                  >
-                    {/* Option Icon & Text */}
-                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      {opt.icon && (
-                        <span
-                          className={`shrink-0 ${
-                            isSelected ? 'text-brand-terracotta' : 'text-secondary'
-                          }`}
-                        >
-                          {opt.icon}
-                        </span>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <span className="block truncate">{opt.label}</span>
-                        {opt.sublabel && (
-                          <span className="block text-[10px] text-secondary font-normal truncate">
-                            {opt.sublabel}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Option Badge & Active Checkmark */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      {opt.badge && (
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                            isSelected
-                              ? 'bg-brand-gold text-brand-espresso'
-                              : 'bg-surface-container text-secondary'
-                          }`}
-                        >
-                          {opt.badge}
-                        </span>
-                      )}
-                      {isSelected && (
-                        <Check className="w-4 h-4 text-brand-terracotta stroke-[3] shrink-0" />
-                      )}
-                    </div>
-                  </button>
-                );
-              })
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

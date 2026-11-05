@@ -69,4 +69,31 @@ describe('White Box Testing: CustomSelect logic & option filtering', () => {
     const found = numericOptions.find((o) => o.value === 200);
     expect(found?.label).toBe('200 porsi');
   });
+
+  it('should determine correct placement (dropup vs dropdown) based on space constraints', () => {
+    const calculatePlacement = (
+      placement: 'auto' | 'top' | 'bottom' = 'auto',
+      spaceBelow: number,
+      spaceAbove: number
+    ): 'top' | 'bottom' => {
+      if (placement === 'top') return 'top';
+      if (placement === 'bottom') return 'bottom';
+      if (spaceBelow < 240 && spaceAbove > 160) {
+        return 'top';
+      }
+      return 'bottom';
+    };
+
+    // When space below is tight (e.g. inside modal near bottom), flip to 'top' (dropup)
+    expect(calculatePlacement('auto', 80, 320)).toBe('top');
+
+    // When space below is ample, default to 'bottom'
+    expect(calculatePlacement('auto', 450, 100)).toBe('bottom');
+
+    // When explicitly instructed 'top'
+    expect(calculatePlacement('top', 500, 500)).toBe('top');
+
+    // When explicitly instructed 'bottom'
+    expect(calculatePlacement('bottom', 50, 500)).toBe('bottom');
+  });
 });

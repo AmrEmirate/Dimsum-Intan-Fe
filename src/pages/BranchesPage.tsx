@@ -1774,9 +1774,9 @@ export const BranchesPage: React.FC = () => {
       {/* MODAL 2: BUAT AKUN KASIR / STAF BARU                                      */}
       {/* ========================================================================= */}
       {isStaffModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-espresso/50 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-surface-card rounded-3xl border border-border-strong shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 border-b border-border-subtle bg-surface-container-low flex justify-between items-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-brand-espresso/50 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-surface-card rounded-3xl border border-border-strong shadow-2xl w-full max-w-md overflow-visible relative animate-in zoom-in-95 duration-150 my-auto">
+            <div className="px-6 py-4 border-b border-border-subtle bg-surface-container-low rounded-t-3xl flex justify-between items-center">
               <div className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-primary" />
                 <h3 className="font-serif-title font-bold text-base text-brand-espresso">
@@ -1792,7 +1792,7 @@ export const BranchesPage: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSaveStaff} className="p-6 space-y-4">
+            <form onSubmit={handleSaveStaff} className="p-6 space-y-4 rounded-b-3xl bg-surface-card">
               {staffError && (
                 <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
@@ -1871,6 +1871,8 @@ export const BranchesPage: React.FC = () => {
                     <CustomSelect
                       label="Cabang Penugasan Kasir *"
                       size="sm"
+                      menuPlacement="top"
+                      searchable={outlets.length > 3}
                       value={staffOutletId}
                       onChange={(val) => setStaffOutletId(val)}
                       placeholder="Pilih cabang kasir..."
@@ -1911,18 +1913,18 @@ export const BranchesPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex justify-end gap-2.5 pt-4 border-t border-border-subtle">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2.5 pt-4 border-t border-border-subtle">
                 <button
                   type="button"
                   onClick={() => setIsStaffModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-container transition-all cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-container transition-all cursor-pointer min-h-[44px]"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingStaff}
-                  className="px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all disabled:opacity-50 cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all disabled:opacity-50 cursor-pointer min-h-[44px] flex items-center justify-center gap-1.5"
                 >
                   {isSavingStaff ? 'Mendaftarkan...' : 'Buat Akun'}
                 </button>
