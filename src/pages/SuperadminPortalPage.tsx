@@ -27,6 +27,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { TenantInfo } from '../types';
 import { api } from '../services/apiClient';
+import { CustomSelect } from '../components/common/CustomSelect';
 
 interface PlatformStats {
   totalTenants: number;
@@ -358,17 +359,19 @@ export const SuperadminPortalPage: React.FC = () => {
               />
             </div>
 
-            <select
+            <CustomSelect
+              size="sm"
+              className="w-full sm:w-56"
               value={selectedPlanFilter}
-              onChange={(e) => setSelectedPlanFilter(e.target.value)}
-              className="px-3 py-2.5 rounded-xl bg-surface-container text-xs font-bold text-brand-espresso focus:outline-none border border-border-subtle cursor-pointer"
-            >
-              <option value="ALL">Semua Paket</option>
-              <option value="PAKET_100K">Paket 1: 100K (200 Tx/hr)</option>
-              <option value="PAKET_150K">Paket 2: 150K (300 Tx/hr)</option>
-              <option value="PAKET_200K">Paket 3: 200K (500 Tx/hr)</option>
-              <option value="PAKET_250K">Paket 4: 250K (Unlimited)</option>
-            </select>
+              onChange={(val) => setSelectedPlanFilter(val)}
+              options={[
+                { value: 'ALL', label: 'Semua Paket Langganan' },
+                { value: 'PAKET_100K', label: 'Paket 1: 100K (200 Tx/hr)', badge: 'Starter' },
+                { value: 'PAKET_150K', label: 'Paket 2: 150K (300 Tx/hr)', badge: 'Basic' },
+                { value: 'PAKET_200K', label: 'Paket 3: 200K (500 Tx/hr)', badge: 'Pro' },
+                { value: 'PAKET_250K', label: 'Paket 4: 250K (Unlimited)', badge: 'Enterprise' },
+              ]}
+            />
           </div>
 
           <div className="text-xs text-secondary font-medium">
@@ -624,17 +627,18 @@ export const SuperadminPortalPage: React.FC = () => {
               {/* Plan & Theme Color */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-brand-espresso">Paket Langganan SaaS</label>
-                  <select
+                  <CustomSelect
+                    label="Paket Langganan SaaS"
+                    size="sm"
                     value={formPlan}
-                    onChange={(e) => setFormPlan(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs font-bold text-brand-espresso border border-border-subtle focus:outline-none cursor-pointer"
-                  >
-                    <option value="PAKET_100K">Paket 1: Rp 100.000 / bln (Kuota 6.000 Tx/Bulan)</option>
-                    <option value="PAKET_150K">Paket 2: Rp 150.000 / bln (Kuota 9.000 Tx/Bulan)</option>
-                    <option value="PAKET_200K">Paket 3: Rp 200.000 / bln (Kuota 15.000 Tx/Bulan)</option>
-                    <option value="PAKET_250K">Paket 4: Rp 250.000 / bln (Unlimited Transaksi / Bulan)</option>
-                  </select>
+                    onChange={(val) => setFormPlan(val)}
+                    options={[
+                      { value: 'PAKET_100K', label: 'Paket 1: Rp 100.000 / bln', sublabel: 'Kuota 6.000 Tx/Bulan (200/hr)', badge: 'Starter' },
+                      { value: 'PAKET_150K', label: 'Paket 2: Rp 150.000 / bln', sublabel: 'Kuota 9.000 Tx/Bulan (300/hr)', badge: 'Basic' },
+                      { value: 'PAKET_200K', label: 'Paket 3: Rp 200.000 / bln', sublabel: 'Kuota 15.000 Tx/Bulan (500/hr)', badge: 'Pro' },
+                      { value: 'PAKET_250K', label: 'Paket 4: Rp 250.000 / bln', sublabel: 'Unlimited Transaksi / Bulan', badge: 'Enterprise' },
+                    ]}
+                  />
                 </div>
 
                 <div className="space-y-1">
@@ -910,31 +914,33 @@ export const SuperadminPortalPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-brand-espresso">Paket Layanan</label>
-                  <select
+                  <CustomSelect
+                    label="Paket Layanan"
+                    size="sm"
                     value={editingTenant.plan}
-                    onChange={(e) => setEditingTenant({ ...editingTenant, plan: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs font-bold text-brand-espresso border border-border-subtle focus:outline-none cursor-pointer"
-                  >
-                    <option value="PAKET_100K">Paket 1: Rp 100.000 / bln (Kuota 6.000 Tx/Bulan)</option>
-                    <option value="PAKET_150K">Paket 2: Rp 150.000 / bln (Kuota 9.000 Tx/Bulan)</option>
-                    <option value="PAKET_200K">Paket 3: Rp 200.000 / bln (Kuota 15.000 Tx/Bulan)</option>
-                    <option value="PAKET_250K">Paket 4: Rp 250.000 / bln (Unlimited Transaksi / Bulan)</option>
-                  </select>
+                    onChange={(val) => setEditingTenant({ ...editingTenant, plan: val })}
+                    options={[
+                      { value: 'PAKET_100K', label: 'Paket 1: 100K', sublabel: '6.000 Tx/bln', badge: 'Starter' },
+                      { value: 'PAKET_150K', label: 'Paket 2: 150K', sublabel: '9.000 Tx/bln', badge: 'Basic' },
+                      { value: 'PAKET_200K', label: 'Paket 3: 200K', sublabel: '15.000 Tx/bln', badge: 'Pro' },
+                      { value: 'PAKET_250K', label: 'Paket 4: 250K', sublabel: 'Unlimited', badge: 'Enterprise' },
+                    ]}
+                  />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-brand-espresso">Status Lisensi</label>
-                  <select
+                  <CustomSelect
+                    label="Status Lisensi"
+                    size="sm"
                     value={editingTenant.status}
-                    onChange={(e) => setEditingTenant({ ...editingTenant, status: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs font-bold text-brand-espresso border border-border-subtle focus:outline-none cursor-pointer"
-                  >
-                    <option value="ACTIVE">ACTIVE (Aktif)</option>
-                    <option value="SUSPENDED">SUSPENDED (Disuspensi)</option>
-                  </select>
+                    onChange={(val) => setEditingTenant({ ...editingTenant, status: val })}
+                    options={[
+                      { value: 'ACTIVE', label: 'ACTIVE (Aktif)', badge: 'Normal' },
+                      { value: 'SUSPENDED', label: 'SUSPENDED (Disuspensi)', badge: 'Terkunci' },
+                    ]}
+                  />
                 </div>
               </div>
 

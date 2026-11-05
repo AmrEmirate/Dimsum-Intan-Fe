@@ -35,6 +35,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { WalletTransaction, WithdrawalRequest } from '../types';
 import { api } from '../services/apiClient';
+import { CustomSelect } from '../components/common/CustomSelect';
 
 export const WalletWithdrawalPage: React.FC = () => {
   const {
@@ -648,18 +649,20 @@ export const WalletWithdrawalPage: React.FC = () => {
 
                 {/* Outlet & Search Filter */}
                 <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                  <select
+                  <CustomSelect
+                    size="sm"
+                    className="w-auto min-w-[200px]"
                     value={selectedOutletFilter}
-                    onChange={(e) => setSelectedOutletFilter(e.target.value)}
-                    className="min-h-[36px] text-xs bg-surface-card border border-border-strong rounded-lg px-2.5 py-1.5 text-brand-espresso font-semibold focus:ring-1 focus:ring-brand-gold cursor-pointer"
-                  >
-                    <option value="ALL">Semua Cabang (Konsolidasi)</option>
-                    {outlets.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.name} ({o.code})
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setSelectedOutletFilter(val)}
+                    options={[
+                      { value: 'ALL', label: 'Semua Cabang (Konsolidasi)' },
+                      ...outlets.map((o) => ({
+                        value: o.id,
+                        label: o.name,
+                        badge: o.code,
+                      })),
+                    ]}
+                  />
 
                   <div className="relative w-full sm:w-44">
                     <input
@@ -1307,24 +1310,25 @@ export const WalletWithdrawalPage: React.FC = () => {
 
             <form onSubmit={handleSubmitBank} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-brand-espresso">Nama Bank *</label>
-                <select
+                <CustomSelect
+                  label="Nama Bank *"
+                  size="md"
+                  searchable
                   value={formBankName}
-                  onChange={(e) => setFormBankName(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-surface-card text-xs font-bold text-brand-espresso border border-border-strong focus:outline-none cursor-pointer"
-                  required
-                >
-                  <option value="BCA">BCA (Bank Central Asia)</option>
-                  <option value="Bank Mandiri">Bank Mandiri</option>
-                  <option value="BRI">BRI (Bank Rakyat Indonesia)</option>
-                  <option value="BNI">BNI (Bank Negara Indonesia)</option>
-                  <option value="Bank Syariah Indonesia">BSI (Bank Syariah Indonesia)</option>
-                  <option value="CIMB Niaga">CIMB Niaga</option>
-                  <option value="Permata Bank">Permata Bank</option>
-                  <option value="Bank Jago">Bank Jago</option>
-                  <option value="SeaBank">SeaBank</option>
-                  <option value="Bank Lainnya">Bank Lainnya</option>
-                </select>
+                  onChange={(val) => setFormBankName(val)}
+                  options={[
+                    { value: 'BCA', label: 'BCA (Bank Central Asia)', badge: 'Rekomendasi' },
+                    { value: 'Bank Mandiri', label: 'Bank Mandiri', badge: 'BUMN' },
+                    { value: 'BRI', label: 'BRI (Bank Rakyat Indonesia)', badge: 'BUMN' },
+                    { value: 'BNI', label: 'BNI (Bank Negara Indonesia)', badge: 'BUMN' },
+                    { value: 'Bank Syariah Indonesia', label: 'BSI (Bank Syariah Indonesia)', badge: 'Syariah' },
+                    { value: 'CIMB Niaga', label: 'CIMB Niaga' },
+                    { value: 'Permata Bank', label: 'Permata Bank' },
+                    { value: 'Bank Jago', label: 'Bank Jago', badge: 'Digital' },
+                    { value: 'SeaBank', label: 'SeaBank', badge: 'Digital' },
+                    { value: 'Bank Lainnya', label: 'Bank Lainnya' },
+                  ]}
+                />
               </div>
 
               <div className="space-y-1">

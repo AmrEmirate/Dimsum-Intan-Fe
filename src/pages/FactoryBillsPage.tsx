@@ -20,6 +20,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { FactoryInvoice } from '../types';
 import { exportToCsv } from '../utils/exportUtils';
+import { CustomSelect } from '../components/common/CustomSelect';
 
 export const FactoryBillsPage: React.FC = () => {
   const {
@@ -649,18 +650,18 @@ export const FactoryBillsPage: React.FC = () => {
 
             <div className="mt-4 space-y-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">Outlet Tujuan Kiriman</label>
-                <select
+                <CustomSelect
+                  label="Outlet Tujuan Kiriman"
+                  size="sm"
                   value={formOutletId}
-                  onChange={(e) => setFormOutletId(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                >
-                  {outlets.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setFormOutletId(val)}
+                  options={outlets.map((o) => ({
+                    value: o.id,
+                    label: o.name,
+                    badge: o.code,
+                    sublabel: o.city,
+                  }))}
+                />
               </div>
 
               <div className="flex flex-col gap-1">
@@ -818,42 +819,43 @@ export const FactoryBillsPage: React.FC = () => {
 
             <div className="mt-4 space-y-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">Outlet Tujuan Kiriman</label>
-                <select
+                <CustomSelect
+                  label="Outlet Tujuan Kiriman"
+                  size="sm"
                   value={editOutletId}
-                  onChange={(e) => setEditOutletId(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                >
-                  {outlets.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setEditOutletId(val)}
+                  options={outlets.map((o) => ({
+                    value: o.id,
+                    label: o.name,
+                    badge: o.code,
+                    sublabel: o.city,
+                  }))}
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-brand-espresso">Jatuh Tempo</label>
+                  <label className="text-[11px] font-bold text-secondary uppercase">Jatuh Tempo</label>
                   <input
                     type="date"
                     value={editDueDate}
                     onChange={(e) => setEditDueDate(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
+                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none border border-border-subtle"
                     required
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-brand-espresso">Status Faktur</label>
-                  <select
+                  <CustomSelect
+                    label="Status Faktur"
+                    size="sm"
                     value={editStatus}
-                    onChange={(e) => setEditStatus(e.target.value as any)}
-                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs font-bold text-brand-espresso focus:outline-none"
-                  >
-                    <option value="BELUM_LUNAS">BELUM LUNAS</option>
-                    <option value="LUNAS">LUNAS</option>
-                    <option value="JATUH_TEMPO">JATUH TEMPO</option>
-                  </select>
+                    onChange={(val) => setEditStatus(val as any)}
+                    options={[
+                      { value: 'BELUM_LUNAS', label: 'BELUM LUNAS', badge: 'Hutang' },
+                      { value: 'LUNAS', label: 'LUNAS', badge: 'Selesai' },
+                      { value: 'JATUH_TEMPO', label: 'JATUH TEMPO', badge: 'Perhatian' },
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -998,19 +1000,18 @@ export const FactoryBillsPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">
-                  Status Suplai Pabrik
-                </label>
-                <select
+                <CustomSelect
+                  label="Status Suplai Pabrik"
+                  size="sm"
                   value={tempSupplierStatus}
-                  onChange={(e) => setTempSupplierStatus(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso border border-transparent focus:border-brand-gold focus:outline-none cursor-pointer"
-                >
-                  <option value="Lancar">Lancar</option>
-                  <option value="Restok Menipis">Restok Menipis</option>
-                  <option value="Menunggu Pengiriman">Menunggu Pengiriman</option>
-                  <option value="Tertunda Sementara">Tertunda Sementara</option>
-                </select>
+                  onChange={(val) => setTempSupplierStatus(val)}
+                  options={[
+                    { value: 'Lancar', label: 'Lancar', badge: 'Normal' },
+                    { value: 'Restok Menipis', label: 'Restok Menipis', badge: 'Peringatan' },
+                    { value: 'Menunggu Pengiriman', label: 'Menunggu Pengiriman', badge: 'Proses' },
+                    { value: 'Tertunda Sementara', label: 'Tertunda Sementara', badge: 'Tunda' },
+                  ]}
+                />
               </div>
             </div>
 

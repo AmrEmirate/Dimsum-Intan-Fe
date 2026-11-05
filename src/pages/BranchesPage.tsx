@@ -37,6 +37,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { Outlet, UserRole } from '../types';
 import { exportToCsv } from '../utils/exportUtils';
+import { CustomSelect } from '../components/common/CustomSelect';
 
 export const BranchesPage: React.FC = () => {
   const {
@@ -1560,40 +1561,53 @@ export const BranchesPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-[11px] font-bold text-secondary uppercase">
-                    Peran Pengguna (Role) *
-                  </label>
-                  <select
+                  <CustomSelect<UserRole>
+                    label="Peran Pengguna (Role) *"
+                    size="sm"
                     value={staffRole}
-                    onChange={(e) => setStaffRole(e.target.value as UserRole)}
-                    className="w-full p-2.5 rounded-xl bg-surface-container border border-border-subtle text-xs font-bold text-brand-espresso focus:outline-none focus:border-brand-gold"
-                  >
-                    <option value="KASIR">KASIR (Hanya Akses POS & Shift di Cabang)</option>
-                    <option value="SUPERVISOR">SUPERVISOR (Akses Verifikasi & Void)</option>
-                  </select>
+                    onChange={(val) => setStaffRole(val)}
+                    options={[
+                      {
+                        value: 'KASIR',
+                        label: 'KASIR',
+                        sublabel: 'Hanya akses modul kasir POS dan shift di cabang terkait',
+                        badge: 'Kasir',
+                      },
+                      {
+                        value: 'SUPERVISOR',
+                        label: 'SUPERVISOR',
+                        sublabel: 'Akses pembatalan void pesanan, kas kecil & operasional',
+                        badge: 'Otorisasi',
+                      },
+                    ]}
+                  />
                 </div>
 
                 {staffRole === 'KASIR' && (
                   <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-bold text-secondary uppercase">
-                      Cabang Penugasan Kasir *
-                    </label>
-                    <select
+                    <CustomSelect
+                      label="Cabang Penugasan Kasir *"
+                      size="sm"
                       value={staffOutletId}
-                      onChange={(e) => setStaffOutletId(e.target.value)}
-                      className="w-full p-2.5 rounded-xl bg-surface-container border border-border-subtle text-xs font-bold text-brand-espresso focus:outline-none focus:border-brand-gold"
-                      required={outlets.length > 0}
-                    >
-                      {outlets.length === 0 ? (
-                        <option value="">Semua Outlet (Pusat Konsolider)</option>
-                      ) : (
-                        outlets.map((o) => (
-                          <option key={o.id} value={o.id}>
-                            {o.name} ({o.code})
-                          </option>
-                        ))
-                      )}
-                    </select>
+                      onChange={(val) => setStaffOutletId(val)}
+                      placeholder="Pilih cabang kasir..."
+                      options={
+                        outlets.length === 0
+                          ? [
+                              {
+                                value: '',
+                                label: 'Semua Outlet (Pusat Konsolidasi)',
+                                sublabel: 'Belum ada cabang fisik aktif',
+                              },
+                            ]
+                          : outlets.map((o) => ({
+                              value: o.id,
+                              label: o.name,
+                              badge: o.code,
+                              sublabel: `${o.city} • Target: Rp ${Number(o.targetDailySales).toLocaleString('id-ID')}/hari`,
+                            }))
+                      }
+                    />
                   </div>
                 )}
 

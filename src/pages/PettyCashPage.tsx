@@ -19,6 +19,7 @@ import {
 import { useApp } from '../context/AppContext';
 import { PettyCashCategory, PettyCashExpense } from '../types';
 import { PinAuthorizationModal } from '../components/common/PinAuthorizationModal';
+import { CustomSelect } from '../components/common/CustomSelect';
 
 export const PettyCashPage: React.FC = () => {
   const {
@@ -674,18 +675,19 @@ export const PettyCashPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">Kategori Kebutuhan</label>
-                <select
+                <CustomSelect<PettyCashCategory>
+                  label="Kategori Kebutuhan"
+                  size="sm"
                   value={formCategory}
-                  onChange={(e) => setFormCategory(e.target.value as any)}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                >
-                  <option value="ES_BATU">Es Batu Kristal</option>
-                  <option value="GALON_AIR">Galon Air Mineral</option>
-                  <option value="PLASTIK_KEMASAN">Plastik & Kresek HD Takeaway</option>
-                  <option value="KEBERSIHAN">Sabun Cuci & Kebersihan</option>
-                  <option value="LAINNYA">Lain-lain Darurat</option>
-                </select>
+                  onChange={(val) => setFormCategory(val)}
+                  options={[
+                    { value: 'ES_BATU', label: 'Es Batu Kristal', sublabel: 'Pendingin minuman & chiller' },
+                    { value: 'GALON_AIR', label: 'Galon Air Mineral', sublabel: 'Air minum & seduhan teh' },
+                    { value: 'PLASTIK_KEMASAN', label: 'Plastik & Kresek HD Takeaway', sublabel: 'Kemasan bungkus bawa pulang' },
+                    { value: 'KEBERSIHAN', label: 'Sabun Cuci & Kebersihan', sublabel: 'Pembersih klakat bambu & dapur' },
+                    { value: 'LAINNYA', label: 'Lain-lain Darurat', sublabel: 'Gas LPG, baterai timbangan, dsb.' },
+                  ]}
+                />
               </div>
 
               <div className="flex flex-col gap-1">
@@ -878,18 +880,19 @@ export const PettyCashPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">Kategori Kebutuhan</label>
-                <select
+                <CustomSelect<PettyCashCategory>
+                  label="Kategori Kebutuhan"
+                  size="sm"
                   value={editCategory}
-                  onChange={(e) => setEditCategory(e.target.value as PettyCashCategory)}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                >
-                  <option value="ES_BATU">Es Batu Kristal</option>
-                  <option value="GALON_AIR">Galon Air Mineral</option>
-                  <option value="PLASTIK_KEMASAN">Kantong Plastik / Kresek</option>
-                  <option value="KEBERSIHAN">Sabun Cuci / Tisu / Kebersihan</option>
-                  <option value="LAINNYA">Kebutuhan Operasional Darurat Lainnya</option>
-                </select>
+                  onChange={(val) => setEditCategory(val)}
+                  options={[
+                    { value: 'ES_BATU', label: 'Es Batu Kristal', sublabel: 'Pendingin minuman & chiller' },
+                    { value: 'GALON_AIR', label: 'Galon Air Mineral', sublabel: 'Air minum & seduhan teh' },
+                    { value: 'PLASTIK_KEMASAN', label: 'Kantong Plastik / Kresek', sublabel: 'Kemasan bungkus bawa pulang' },
+                    { value: 'KEBERSIHAN', label: 'Sabun Cuci / Tisu / Kebersihan', sublabel: 'Pembersih klakat bambu & dapur' },
+                    { value: 'LAINNYA', label: 'Lain-lain Darurat', sublabel: 'Gas LPG, baterai timbangan, dsb.' },
+                  ]}
+                />
               </div>
 
               <div className="flex flex-col gap-1">

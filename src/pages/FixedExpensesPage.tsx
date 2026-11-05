@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { FixedExpense, FixedExpenseCategory } from '../types';
+import { CustomSelect } from '../components/common/CustomSelect';
 
 
 export const FixedExpensesPage: React.FC = () => {
@@ -474,36 +475,38 @@ export const FixedExpensesPage: React.FC = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-brand-espresso">Kategori</label>
-                  <select
+                  <CustomSelect<FixedExpenseCategory>
+                    label="Kategori Beban"
+                    size="sm"
                     value={formCategory}
-                    onChange={(e) => setFormCategory(e.target.value as any)}
-                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                  >
-                    <option value="SEWA_LAPAK">Sewa Lapak</option>
-                    <option value="PAYROLL_GAJI">Payroll Gaji</option>
-                    <option value="LISTRIK">Listrik PLN</option>
-                    <option value="AIR">Air PDAM</option>
-                    <option value="INTERNET_POS">Internet & CCTV</option>
-                  </select>
+                    onChange={(val) => setFormCategory(val)}
+                    options={[
+                      { value: 'SEWA_LAPAK', label: 'Sewa Lapak Cabang' },
+                      { value: 'PAYROLL_GAJI', label: 'Payroll Gaji Karyawan' },
+                      { value: 'LISTRIK', label: 'Listrik PLN' },
+                      { value: 'AIR', label: 'Air PDAM' },
+                      { value: 'INTERNET_POS', label: 'Internet POS & CCTV' },
+                    ]}
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="text-xs font-bold text-brand-espresso">Cabang</label>
-                  <select
+                  <CustomSelect
+                    label="Cabang Pembebanan"
+                    size="sm"
                     value={formOutletId}
-                    onChange={(e) => setFormOutletId(e.target.value)}
-                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                  >
-                    <option value="all">Konsolidasi 3 Outlet</option>
-                    {outlets.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setFormOutletId(val)}
+                    options={[
+                      { value: 'all', label: 'Konsolidasi Seluruh Outlet' },
+                      ...outlets.map((o) => ({
+                        value: o.id,
+                        label: o.name,
+                        badge: o.code,
+                      })),
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -585,18 +588,19 @@ export const FixedExpensesPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">Kategori Pos Beban</label>
-                <select
+                <CustomSelect<FixedExpenseCategory>
+                  label="Kategori Pos Beban"
+                  size="sm"
                   value={editCategory}
-                  onChange={(e) => setEditCategory(e.target.value as FixedExpenseCategory)}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                >
-                  <option value="SEWA_LAPAK">Sewa Lapak Cabang</option>
-                  <option value="PAYROLL_GAJI">Payroll Gaji Karyawan</option>
-                  <option value="LISTRIK">Tagihan Listrik PLN</option>
-                  <option value="AIR">Tagihan Air PDAM</option>
-                  <option value="INTERNET_POS">Internet & Sistem POS</option>
-                </select>
+                  onChange={(val) => setEditCategory(val)}
+                  options={[
+                    { value: 'SEWA_LAPAK', label: 'Sewa Lapak Cabang' },
+                    { value: 'PAYROLL_GAJI', label: 'Payroll Gaji Karyawan' },
+                    { value: 'LISTRIK', label: 'Tagihan Listrik PLN' },
+                    { value: 'AIR', label: 'Tagihan Air PDAM' },
+                    { value: 'INTERNET_POS', label: 'Internet & Sistem POS' },
+                  ]}
+                />
               </div>
 
               <div className="flex flex-col gap-1">

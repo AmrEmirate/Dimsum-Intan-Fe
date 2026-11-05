@@ -20,6 +20,7 @@ import {
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
 import { OutletManagementModal } from '../outlet/OutletManagementModal';
+import { OutletDropdown } from '../common/OutletDropdown';
 
 export const Header: React.FC = () => {
   const {
@@ -138,8 +139,11 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Right items: Notifications & Interactive Role Switcher */}
+        {/* Right items: Outlet Switcher, Notifications & Interactive Role Switcher */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          {/* Quick Outlet Selector on Desktop/Tablet Topbar */}
+          <OutletDropdown variant="compact" className="hidden md:block" />
+
           {/* Quick Activate Branch CTA for Owner when 0 outlets */}
           {currentUser.role === 'OWNER' && outlets.length === 0 && (
             <button

@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { MenuItem, MenuCategory } from '../types';
+import { CustomSelect } from '../components/common/CustomSelect';
 import {
   exportToCsv,
   exportToJson,
@@ -879,25 +880,29 @@ export const MenuHppPage: React.FC = () => {
                       required
                     />
                   ) : (
-                    <select
+                    <CustomSelect
+                      size="sm"
                       value={formCategory}
-                      onChange={(e) => {
-                        if (e.target.value === '__NEW__') {
+                      onChange={(val) => {
+                        if (val === '__NEW__') {
                           setIsCustomCategory(true);
                           setCustomCategoryText('');
                         } else {
-                          setFormCategory(e.target.value);
+                          setFormCategory(val);
                         }
                       }}
-                      className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none cursor-pointer"
-                    >
-                      {existingCategories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                      <option value="__NEW__">+ Tambah Kategori Baru...</option>
-                    </select>
+                      options={[
+                        ...existingCategories.map((cat) => ({
+                          value: cat,
+                          label: cat,
+                          badge: `${menuItems.filter((m) => m.category === cat).length} menu`,
+                        })),
+                        {
+                          value: '__NEW__',
+                          label: '+ Tambah Kategori Baru...',
+                        },
+                      ]}
+                    />
                   )}
                 </div>
 
@@ -1030,19 +1035,19 @@ export const MenuHppPage: React.FC = () => {
 
             <div className="mt-4 space-y-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">Pilih Produk Dimsum</label>
-                <select
+                <CustomSelect
+                  label="Pilih Produk Dimsum"
+                  size="sm"
+                  searchable={menuItems.length > 5}
                   value={wasteMenuId}
-                  onChange={(e) => setWasteMenuId(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                  required
-                >
-                  {menuItems.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} (Stok: {m.stock} porsi)
-                    </option>
-                  ))}
-                </select>
+                  onChange={(val) => setWasteMenuId(val)}
+                  options={menuItems.map((m) => ({
+                    value: m.id,
+                    label: m.name,
+                    badge: `Stok: ${m.stock} pcs`,
+                    sublabel: `Kategori: ${m.category} • HPP: Rp ${Number(m.costPrice).toLocaleString('id-ID')}`,
+                  }))}
+                />
               </div>
 
               <div className="flex flex-col gap-1">
@@ -1058,18 +1063,19 @@ export const MenuHppPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">Alasan Kerusakan / Waste</label>
-                <select
+                <CustomSelect
+                  label="Alasan Kerusakan / Waste"
+                  size="sm"
                   value={wasteReason}
-                  onChange={(e) => setWasteReason(e.target.value)}
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                >
-                  <option value="Kukusan gosong / terlalu lama">Kukusan gosong / terlalu lama</option>
-                  <option value="Basi / bau asam (Melebihi jam pajang)">Basi / bau asam (Melebihi jam pajang)</option>
-                  <option value="Kulit dimsum sobek / rusak saat handling">Kulit dimsum sobek / rusak saat handling</option>
-                  <option value="Jatuh ke lantai saat penyajian">Jatuh ke lantai saat penyajian</option>
-                  <option value="Kualitas dari pabrik tidak standar">Kualitas dari pabrik tidak standar</option>
-                </select>
+                  onChange={(val) => setWasteReason(val)}
+                  options={[
+                    { value: 'Kukusan gosong / terlalu lama', label: 'Kukusan gosong / terlalu lama' },
+                    { value: 'Basi / bau asam (Melebihi jam pajang)', label: 'Basi / bau asam (Melebihi jam pajang)' },
+                    { value: 'Kulit dimsum sobek / rusak saat handling', label: 'Kulit dimsum sobek / rusak saat handling' },
+                    { value: 'Jatuh ke lantai saat penyajian', label: 'Jatuh ke lantai saat penyajian' },
+                    { value: 'Kualitas dari pabrik tidak standar', label: 'Kualitas dari pabrik tidak standar' },
+                  ]}
+                />
               </div>
             </div>
 
