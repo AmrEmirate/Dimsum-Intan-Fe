@@ -123,6 +123,7 @@ export const SubscriptionBillingPage: React.FC = () => {
   const [outletQuantity, setOutletQuantity] = useState(1);
   const [txQuotaOption, setTxQuotaOption] = useState<100 | 250 | 500>(250);
   const [renewalMonths, setRenewalMonths] = useState(1);
+  const [selectedOutletId, setSelectedOutletId] = useState<string>('all');
   const [isCreatingCheckout, setIsCreatingCheckout] = useState(false);
   const [activePaymentInvoice, setActivePaymentInvoice] = useState<{
     invoice: SubscriptionInvoice;
@@ -163,6 +164,7 @@ export const SubscriptionBillingPage: React.FC = () => {
     } else if (billingStatus?.plan) {
       setTargetPlanCode(billingStatus.plan);
     }
+    setSelectedOutletId('all');
     setActivePaymentInvoice(null);
     setIsCheckoutModalOpen(true);
   };
@@ -177,6 +179,7 @@ export const SubscriptionBillingPage: React.FC = () => {
         extraTxQuota: txQuotaOption,
         months: renewalMonths,
         targetPlan: targetPlanCode,
+        targetOutletId: selectedOutletId !== 'all' ? selectedOutletId : undefined,
       });
 
       if (res.success && res.data) {
@@ -247,12 +250,12 @@ export const SubscriptionBillingPage: React.FC = () => {
   const isUnlimited = billingStatus?.isUnlimited || billingStatus?.dailyTxLimitPerOutlet === 0;
   const currentPlan = OFFICIAL_SAAS_PLANS.find(
     (p) => p.code === billingStatus?.plan || p.code === billingStatus?.planDetails?.code
-  ) || OFFICIAL_SAAS_PLANS[1];
+  ) || OFFICIAL_SAAS_PLANS[0];
 
-  const pricePerOutlet = billingStatus?.pricePerOutlet || currentPlan.price;
-  const currentOutlets = billingStatus?.currentOutletsCount || 1;
-  const maxOutlets = billingStatus?.maxOutlets || 1;
-  const dailyTxLimit = isUnlimited ? 0 : (billingStatus?.effectiveDailyTxLimit ?? billingStatus?.dailyTxLimitPerOutlet ?? 300);
+  const pricePerOutlet = billingStatus?.pricePerOutlet || currentPlan.price || 100000;
+  const currentOutlets = billingStatus?.currentOutletsCount ?? 0;
+  const maxOutlets = billingStatus?.maxOutlets ?? 1;
+  const dailyTxLimit = isUnlimited ? 0 : (billingStatus?.effectiveDailyTxLimit ?? billingStatus?.dailyTxLimitPerOutlet ?? 200);
   const monthlyTxLimit = isUnlimited ? 0 : (billingStatus?.effectiveMonthlyTxLimit ?? (dailyTxLimit * 30));
   const todayTxCount = billingStatus?.todayOrdersCount || 0;
   const monthTxCount = billingStatus?.monthOrdersCount || 0;
@@ -265,9 +268,12 @@ export const SubscriptionBillingPage: React.FC = () => {
 
   // Compute calculated amounts for preview
   let previewAmount = pricePerOutlet;
+  let priceDifference = 0;
   if (checkoutType === 'CHANGE_PLAN') {
     const selectedPlanObj = OFFICIAL_SAAS_PLANS.find((p) => p.code === targetPlanCode) || OFFICIAL_SAAS_PLANS[0];
-    previewAmount = selectedPlanObj.price * maxOutlets;
+    const currentPrice = billingStatus?.pricePerOutlet || currentPlan.price || 100000;
+    priceDifference = Math.max(0, selectedPlanObj.price - currentPrice);
+    previewAmount = priceDifference;
   } else if (checkoutType === 'ADD_OUTLET') {
     previewAmount = pricePerOutlet * outletQuantity;
   } else if (checkoutType === 'ADD_TX_QUOTA') {
@@ -395,11 +401,13 @@ export const SubscriptionBillingPage: React.FC = () => {
             </div>
             <div className="space-y-1">
               <div className="text-2xl font-bold text-brand-espresso font-serif-title flex items-baseline gap-2">
-                <span>{maxOutlets}</span>
+                <span>{currentOutlets} / {maxOutlets}</span>
                 <span className="text-sm font-normal text-secondary">Slot Lisensi Kasir</span>
               </div>
               <p className="text-xs text-secondary">
-                Dimsum Intan terhubung dengan {currentOutlets} terminal outlet operasional.
+                {currentOutlets === 0
+                  ? `Belum ada cabang terdaftar (Tersedia ${maxOutlets} slot lisensi siap pakai).`
+                  : `Dimsum Intan terhubung dengan ${currentOutlets} terminal outlet operasional.`}
               </p>
             </div>
           </div>
@@ -408,11 +416,11 @@ export const SubscriptionBillingPage: React.FC = () => {
             <div className="w-full bg-surface-container-high h-2 rounded-full overflow-hidden mb-1.5">
               <div
                 className="bg-brand-gold h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, (currentOutlets / maxOutlets) * 100)}%` }}
+                style={{ width: `${maxOutlets > 0 ? Math.min(100, (currentOutlets / maxOutlets) * 100) : 0}%` }}
               />
             </div>
             <div className="flex justify-between text-[11px] text-secondary">
-              <span>Terpakai: {currentOutlets} Cabang</span>
+              <span>Terpakai: {currentOutlets} Cabang ({Math.max(0, maxOutlets - currentOutlets)} Slot Tersedia)</span>
               <button
                 onClick={() => openCheckout('ADD_OUTLET')}
                 className="font-bold text-primary hover:underline"
@@ -790,26 +798,83 @@ export const SubscriptionBillingPage: React.FC = () => {
               <div className="space-y-5">
                 {/* Form Selection */}
                 {checkoutType === 'CHANGE_PLAN' && (
-                  <div>
-                    <label className="text-xs font-bold text-brand-espresso block mb-2">Pilih Paket Tujuan</label>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {OFFICIAL_SAAS_PLANS.map((p) => (
-                        <button
-                          key={p.code}
-                          type="button"
-                          onClick={() => setTargetPlanCode(p.code)}
-                          className={`p-3 rounded-xl border text-left text-xs transition-all ${
-                            targetPlanCode === p.code
-                              ? 'border-brand-gold bg-brand-gold-subtle font-bold text-brand-espresso shadow-xs'
-                              : 'border-border-subtle bg-surface-card text-secondary hover:bg-surface-container-low'
-                          }`}
-                        >
-                          <div className="font-serif-title">{p.name}</div>
-                          <div className="font-mono text-primary font-bold mt-1">
-                            Rp {p.price.toLocaleString('id-ID')}
-                          </div>
-                        </button>
-                      ))}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs font-bold text-brand-espresso block mb-2">Pilih Paket Tujuan</label>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {OFFICIAL_SAAS_PLANS.map((p) => {
+                          const isCurrent = (billingStatus?.plan || 'PAKET_100K') === p.code;
+                          const currentPrice = billingStatus?.pricePerOutlet || currentPlan.price || 100000;
+                          const diff = Math.max(0, p.price - currentPrice);
+                          return (
+                            <button
+                              key={p.code}
+                              type="button"
+                              onClick={() => setTargetPlanCode(p.code)}
+                              className={`p-3 rounded-xl border text-left text-xs transition-all ${
+                                targetPlanCode === p.code
+                                  ? 'border-brand-gold bg-brand-gold-subtle font-bold text-brand-espresso shadow-xs'
+                                  : 'border-border-subtle bg-surface-card text-secondary hover:bg-surface-container-low'
+                              }`}
+                            >
+                              <div className="font-serif-title flex items-center justify-between">
+                                <span>{p.name}</span>
+                                {isCurrent && (
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-surface-container text-secondary font-mono">
+                                    Saat Ini
+                                  </span>
+                                )}
+                              </div>
+                              <div className="font-mono text-primary font-bold mt-1">
+                                Rp {p.price.toLocaleString('id-ID')}/bln
+                              </div>
+                              <div className="text-[10px] text-brand-terracotta font-bold mt-0.5">
+                                {isCurrent ? '● Paket Berjalan' : diff > 0 ? `+Rp ${diff.toLocaleString('id-ID')} (Biaya Selisih)` : 'Rp 0'}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Dropdown Pasangkan ke Outlet / Cabang Mana */}
+                    <div>
+                      <label className="text-xs font-bold text-brand-espresso block mb-1.5 flex items-center justify-between">
+                        <span>Pasangkan Paket ke Cabang / Outlet</span>
+                        <span className="text-[10px] text-secondary font-normal">Pilih gerai target</span>
+                      </label>
+                      <select
+                        value={selectedOutletId}
+                        onChange={(e) => setSelectedOutletId(e.target.value)}
+                        className="w-full p-2.5 rounded-xl border border-border-strong bg-surface-card text-xs font-medium text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-gold cursor-pointer"
+                      >
+                        <option value="all">Semua Cabang (Standar Tenant &amp; Cabang Baru)</option>
+                        {billingStatus?.outlets && billingStatus.outlets.length > 0 ? (
+                          billingStatus.outlets.map((o) => (
+                            <option key={o.id} value={o.id}>
+                              {o.name} ({o.code}) — Kuota: {o.isUnlimited ? 'Unlimited' : `${o.monthlyLimit?.toLocaleString('id-ID')} tx/bln`}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="new_primary">
+                            Cabang Utama #1 (Belum ada gerai fisik terdaftar — otomatis dipasangkan saat cabang dibuat)
+                          </option>
+                        )}
+                      </select>
+                      <p className="text-[11px] text-secondary mt-1">
+                        Paket baru dan batas kuota transaksi akan otomatis dipasangkan ke cabang yang Anda pilih.
+                      </p>
+                    </div>
+
+                    {/* Banner Masa Aktif Tetap (Risiko Outlet) */}
+                    <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-950 text-xs space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                        <Clock className="w-4 h-4 text-amber-700 shrink-0" />
+                        <span>Masa Aktif Berjalan Tetap (Tidak Diperpanjang)</span>
+                      </div>
+                      <p className="text-[11px] text-amber-800 leading-relaxed">
+                        Anda hanya membayar biaya selisih upgrade sebesar <strong className="text-amber-950">+Rp {priceDifference.toLocaleString('id-ID')}</strong>. Masa aktif paket tidak diperpanjang dan tetap mengikuti periode berjalan (aktif hingga <strong className="text-amber-950">{billingStatus?.subscriptionExpiresAt ? new Date(billingStatus.subscriptionExpiresAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '60 Hari'}</strong>).
+                      </p>
                     </div>
                   </div>
                 )}
@@ -891,10 +956,34 @@ export const SubscriptionBillingPage: React.FC = () => {
 
                 {/* Price Breakdown Calculation */}
                 <div className="bg-surface-container-low border border-border-subtle p-4 rounded-2xl space-y-2 text-xs">
-                  <div className="flex justify-between text-secondary">
-                    <span>Subtotal Biaya</span>
-                    <span className="font-mono text-brand-espresso">Rp {previewAmount.toLocaleString('id-ID')}</span>
-                  </div>
+                  {checkoutType === 'CHANGE_PLAN' && (
+                    <>
+                      <div className="flex justify-between text-secondary">
+                        <span>Paket Berjalan Saat Ini</span>
+                        <span className="font-mono text-brand-espresso">
+                          {currentPlan.name} (Rp {(billingStatus?.pricePerOutlet || currentPlan.price || 100000).toLocaleString('id-ID')})
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-secondary">
+                        <span>Paket Tujuan Baru</span>
+                        <span className="font-mono text-brand-espresso">
+                          {OFFICIAL_SAAS_PLANS.find((p) => p.code === targetPlanCode)?.name || targetPlanCode} (Rp {(OFFICIAL_SAAS_PLANS.find((p) => p.code === targetPlanCode)?.price || 100000).toLocaleString('id-ID')})
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-brand-espresso font-semibold">
+                        <span>Biaya Selisih Upgrade</span>
+                        <span className="font-mono text-brand-terracotta font-bold">
+                          +Rp {priceDifference.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  {checkoutType !== 'CHANGE_PLAN' && (
+                    <div className="flex justify-between text-secondary">
+                      <span>Subtotal Biaya</span>
+                      <span className="font-mono text-brand-espresso">Rp {previewAmount.toLocaleString('id-ID')}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-secondary">
                     <span>MDR QRIS / Pajak (0.7%)</span>
                     <span className="font-mono text-brand-espresso">Rp {mdrFee.toLocaleString('id-ID')}</span>

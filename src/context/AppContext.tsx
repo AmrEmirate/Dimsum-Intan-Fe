@@ -188,6 +188,7 @@ interface AppContextType {
     extraTxQuota?: number;
     months?: number;
     targetPlan?: string;
+    targetOutletId?: string;
   }) => Promise<any>;
   simulatePayInvoice: (invoiceId: string) => Promise<boolean>;
   fetchBillingInvoices: () => Promise<SubscriptionInvoice[]>;
@@ -1381,6 +1382,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       extraTxQuota?: number;
       months?: number;
       targetPlan?: string;
+      targetOutletId?: string;
     }) => {
       try {
         const res = await api.post<{ success: boolean; data: any; message: string }>(
