@@ -135,11 +135,11 @@ export const BranchesPage: React.FC = () => {
 
   // Handlers for Outlet
   const handleOpenAddOutlet = () => {
-    // When no outlets exist or maxOutlets limit reached, require subscription license payment first
+    // When maxOutlets limit reached, require subscription license payment first
     const currentCount = outlets.length;
     const maxAllowed = billingStatus?.maxOutlets ?? 0;
 
-    if (currentCount >= maxAllowed || maxAllowed === 0 || outlets.length === 0) {
+    if (currentCount >= maxAllowed || maxAllowed === 0) {
       setIsLicenseModalOpen(true);
       return;
     }
@@ -552,11 +552,11 @@ export const BranchesPage: React.FC = () => {
                   <div className="flex items-center gap-3 w-full md:w-auto justify-end shrink-0">
                     <button
                       type="button"
-                      onClick={() => setIsLicenseModalOpen(true)}
+                      onClick={handleOpenAddOutlet}
                       className="w-full sm:w-auto px-4 py-2.5 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso rounded-xl font-bold text-xs shadow-md active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <Plus className="w-4 h-4 stroke-[3]" />
-                      <span>Aktivasi Cabang Fisik</span>
+                      <span>{outlets.length < (billingStatus?.maxOutlets ?? 0) ? 'Buka Cabang Baru' : 'Aktivasi Cabang Fisik'}</span>
                     </button>
                   </div>
                 </div>
@@ -858,10 +858,10 @@ export const BranchesPage: React.FC = () => {
                   </p>
                   <button
                     type="button"
-                    onClick={() => setIsLicenseModalOpen(true)}
+                    onClick={handleOpenAddOutlet}
                     className="text-xs font-bold text-brand-terracotta hover:underline inline-flex items-center gap-1 cursor-pointer"
                   >
-                    <span>Beli Lisensi Cabang #1 Sekarang</span>
+                    <span>{outlets.length < (billingStatus?.maxOutlets ?? 0) ? `Buka Cabang #1 Sekarang (Sisa Kuota: ${(billingStatus?.maxOutlets ?? 0) - outlets.length})` : 'Beli Lisensi Cabang #1 Sekarang'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
