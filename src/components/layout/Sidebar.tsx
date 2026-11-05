@@ -272,7 +272,7 @@ export const Sidebar: React.FC = () => {
                     className="w-full bg-transparent text-xs font-bold text-brand-espresso focus:outline-none cursor-pointer py-1"
                   >
                     <option value="all">
-                      Semua Outlet {outlets.length > 0 ? `(${outlets.length} Cabang)` : ''}
+                      {outlets.length > 0 ? `Semua Outlet (${outlets.length} Cabang)` : 'Semua Outlet (Pusat)'}
                     </option>
                     {outlets.map((o) => (
                       <option key={o.id} value={o.id}>
@@ -280,6 +280,12 @@ export const Sidebar: React.FC = () => {
                       </option>
                     ))}
                   </select>
+                )}
+                {outlets.length === 0 && !isKasir && (
+                  <div className="mt-1.5 px-2 py-1 rounded-lg bg-amber-50 border border-amber-200/80 text-[10px] text-amber-800 font-medium flex items-center justify-between">
+                    <span>0 Cabang Fisik Aktif</span>
+                    <span className="font-bold text-[9px] uppercase tracking-wider text-brand-terracotta">Perlu Langganan</span>
+                  </div>
                 )}
               </div>
 

@@ -208,6 +208,45 @@ export const LoginPage: React.FC = () => {
                 </button>
               </div>
             </form>
+
+            {/* Quick 1-Click Autofill Accounts (Mandatory RULE 7.4 AGENTS.md) */}
+            <div className="mt-4 pt-3 border-t border-border-subtle">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-secondary block mb-2 text-center lg:text-left">
+                Akses Cepat Pengujian (1-Click Fill):
+              </span>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUsername('owner');
+                    setPassword('owner123');
+                  }}
+                  className="p-2.5 rounded-xl bg-surface-container hover:bg-brand-gold/20 active:scale-[0.98] border border-border-subtle text-left transition-all cursor-pointer"
+                  title="Masuk sebagai Owner Dimsum Intan"
+                >
+                  <div className="font-bold text-brand-espresso flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-brand-gold"></span>
+                    <span>Owner Dimsum</span>
+                  </div>
+                  <span className="text-[10px] text-secondary">owner / owner123</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUsername('superadmin');
+                    setPassword('superadmin123');
+                  }}
+                  className="p-2.5 rounded-xl bg-surface-container hover:bg-amber-100 active:scale-[0.98] border border-border-subtle text-left transition-all cursor-pointer"
+                  title="Masuk sebagai Superadmin Platform"
+                >
+                  <div className="font-bold text-brand-espresso flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                    <span>Superadmin SaaS</span>
+                  </div>
+                  <span className="text-[10px] text-secondary">superadmin / superadmin123</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Security Notice Footer */}

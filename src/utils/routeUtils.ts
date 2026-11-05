@@ -51,26 +51,35 @@ export const SLUG_TO_VIEW: Record<string, AppView> = {
 
   // Kas Kecil
   'kas-kecil': 'kas-kecil-outlet',
+  kaskecil: 'kas-kecil-outlet',
   'petty-cash': 'kas-kecil-outlet',
+  pettycash: 'kas-kecil-outlet',
 
   // Tagihan Suplai Pabrik
   'tagihan-pabrik': 'tagihan-suplai-pabrik',
   pabrik: 'tagihan-suplai-pabrik',
   factory: 'tagihan-suplai-pabrik',
+  tagihan: 'tagihan-suplai-pabrik',
 
   // Beban Operasional Tetap
   'beban-operasional': 'beban-operasional-tetap',
   beban: 'beban-operasional-tetap',
+  operasional: 'beban-operasional-tetap',
   expenses: 'beban-operasional-tetap',
 
   // Laba Rugi
   'laba-rugi': 'laporan-laba-rugi-arus-kas',
+  labarugi: 'laporan-laba-rugi-arus-kas',
   'arus-kas': 'laporan-laba-rugi-arus-kas',
   'profit-loss': 'laporan-laba-rugi-arus-kas',
+  laporan: 'laporan-laba-rugi-arus-kas',
+  pl: 'laporan-laba-rugi-arus-kas',
 
   // Payment Gateway
   'payment-gateway': 'pengaturan-payment-gateway',
   gateway: 'pengaturan-payment-gateway',
+  payment: 'pengaturan-payment-gateway',
+  qris: 'pengaturan-payment-gateway',
 
   // Dashboard
   dashboard: 'dashboard-utama',
@@ -82,6 +91,7 @@ export const SLUG_TO_VIEW: Record<string, AppView> = {
   outlets: 'master-cabang-outlet',
   langganan: 'langganan-billing',
   billing: 'langganan-billing',
+  subscription: 'langganan-billing',
   superadmin: 'superadmin-portal',
 };
 
@@ -109,11 +119,12 @@ export const GLOBAL_VIEWS: AppView[] = [
 ];
 
 /**
- * Returns canonical outlet slug (e.g. otlate1, otlate2, otlate3) based on outletId and available outlets.
+ * Returns canonical outlet slug (e.g. semua, otlate1, otlate2) based on outletId and available outlets.
+ * When there are 0 outlets or 'all' is selected, returns 'semua'.
  */
 export const getOutletSlug = (outletId: string, outlets: Outlet[]): string => {
-  if (!outletId || outletId === 'all') {
-    return 'otlate1';
+  if (!outletId || outletId === 'all' || outlets.length === 0) {
+    return 'semua';
   }
 
   const idx = outlets.findIndex((o) => o.id === outletId);
@@ -127,15 +138,26 @@ export const getOutletSlug = (outletId: string, outlets: Outlet[]): string => {
     return outlet.code.toLowerCase().replace(/[^a-z0-9]/g, '');
   }
 
-  return 'otlate1';
+  return 'semua';
 };
 
 /**
- * Resolves an outlet slug (e.g. otlate1, outlet1, dpu, gi-01) to an outlet ID.
+ * Resolves an outlet slug (e.g. semua, all, pusat, otlate1, outlet1, dpu, gi-01) to an outlet ID.
+ * When outlets is empty or slug is a 'semua' alias, returns 'all'.
  */
 export const resolveOutletIdFromSlug = (slug: string, outlets: Outlet[]): string | undefined => {
-  if (!slug || outlets.length === 0) return undefined;
+  if (!slug) return undefined;
   const s = slug.toLowerCase().trim();
+
+  // Virtual / All Outlets representations
+  if (s === 'semua' || s === 'all' || s === 'pusat' || s === 'semua-outlet' || s === 'hq' || s === 'global') {
+    return 'all';
+  }
+
+  // If there are no outlets registered yet, any branch slug gracefully falls back to 'all'
+  if (outlets.length === 0) {
+    return 'all';
+  }
 
   // Match otlate1, otlate2, outlet1, outlet-1, etc.
   const otlateMatch = s.match(/^(?:otlate|outlet)-?(\d+)$/i);
@@ -145,7 +167,7 @@ export const resolveOutletIdFromSlug = (slug: string, outlets: Outlet[]): string
     if (targetIdx >= 0 && targetIdx < outlets.length) {
       return outlets[targetIdx].id;
     }
-    return outlets[0]?.id;
+    return outlets[0]?.id || 'all';
   }
 
   // Match by code
@@ -160,16 +182,15 @@ export const resolveOutletIdFromSlug = (slug: string, outlets: Outlet[]): string
   const byName = outlets.find((o) => o.name.toLowerCase().replace(/\s+/g, '-') === s);
   if (byName) return byName.id;
 
-  return undefined;
+  return 'all';
 };
 
 /**
  * Parses pathname into view and outletId.
  * Supports patterns:
- * - /otlate1/barang -> view: master-menu-dimsum-hpp, outlet: outlet 1
- * - /otlate1/pos -> view: transaksi-kasir-pos, outlet: outlet 1
- * - /barang -> view: master-menu-dimsum-hpp
- * - /dompet -> view: dompet-penarikan-saldo
+ * - /semua/barang -> view: master-menu-dimsum-hpp, outlet: 'all'
+ * - /otlate1/barang -> view: master-menu-dimsum-hpp, outlet: outlet 1 (or 'all' if 0 outlets)
+ * - /barang -> view: master-menu-dimsum-hpp, outlet: 'all' (or outlet 1 if outlets exist)
  * - /cabang -> view: master-cabang-outlet
  */
 export const parsePathToRoute = (
@@ -178,21 +199,27 @@ export const parsePathToRoute = (
 ): RouteState => {
   const cleanPath = pathname.replace(/^\/+|\/+$/g, '');
   if (!cleanPath) {
-    return { view: 'dashboard-utama' };
+    return {
+      view: 'dashboard-utama',
+      matchedOutletId: outlets.length > 0 ? outlets[0].id : 'all',
+    };
   }
 
   const segments = cleanPath.split('/').filter(Boolean);
 
-  // Single segment e.g. /barang or /cabang or /otlate1
+  // Single segment e.g. /barang or /cabang or /semua or /otlate1
   if (segments.length === 1) {
     const seg = segments[0].toLowerCase();
     
     // Check if it's a known page slug
     if (SLUG_TO_VIEW[seg]) {
-      return { view: SLUG_TO_VIEW[seg] };
+      return {
+        view: SLUG_TO_VIEW[seg],
+        matchedOutletId: outlets.length > 0 ? outlets[0].id : 'all',
+      };
     }
 
-    // Check if it's an outlet slug (e.g. /otlate1) -> default to dashboard
+    // Check if it's an outlet slug (e.g. /otlate1 or /semua) -> default to dashboard
     const matchedOutlet = resolveOutletIdFromSlug(seg, outlets);
     if (matchedOutlet) {
       return {
@@ -202,10 +229,13 @@ export const parsePathToRoute = (
       };
     }
 
-    return { view: 'dashboard-utama' };
+    return {
+      view: 'dashboard-utama',
+      matchedOutletId: outlets.length > 0 ? outlets[0].id : 'all',
+    };
   }
 
-  // Two segments e.g. /otlate1/barang
+  // Two segments e.g. /semua/barang or /otlate1/barang
   if (segments.length >= 2) {
     const [first, second] = segments;
     const matchedOutlet = resolveOutletIdFromSlug(first, outlets);
@@ -215,30 +245,34 @@ export const parsePathToRoute = (
       return {
         view: viewFromSecond,
         outletSlug: first,
-        matchedOutletId: matchedOutlet || (outlets[0]?.id ?? undefined),
+        matchedOutletId: matchedOutlet || (outlets.length > 0 ? outlets[0].id : 'all'),
       };
     }
 
-    // Inverted check in case user typed /barang/otlate1
+    // Inverted check in case user typed /barang/semua or /barang/otlate1
     const viewFromFirst = SLUG_TO_VIEW[first.toLowerCase()];
     const matchedOutletFromSecond = resolveOutletIdFromSlug(second, outlets);
     if (viewFromFirst) {
       return {
         view: viewFromFirst,
         outletSlug: second,
-        matchedOutletId: matchedOutletFromSecond || (outlets[0]?.id ?? undefined),
+        matchedOutletId: matchedOutletFromSecond || (outlets.length > 0 ? outlets[0].id : 'all'),
       };
     }
   }
 
-  return { view: 'dashboard-utama' };
+  return {
+    view: 'dashboard-utama',
+    matchedOutletId: outlets.length > 0 ? outlets[0].id : 'all',
+  };
 };
 
 /**
  * Builds canonical URL string.
  * Example:
- * view: 'master-menu-dimsum-hpp', outlet: 'outlet-1' -> '/otlate1/barang'
- * view: 'master-cabang-outlet' -> '/cabang'
+ * - With 0 outlets or 'all' selected: '/semua/barang'
+ * - With outlets created and outlet 1 selected: '/otlate1/barang'
+ * - Global views: '/cabang', '/langganan', '/superadmin'
  */
 export const buildCanonicalPath = (
   view: AppView,
@@ -251,7 +285,12 @@ export const buildCanonicalPath = (
   }
 
   const pageSlug = VIEW_TO_SLUG[view] || 'dashboard';
-  const outletSlug = getOutletSlug(outletId, outlets);
 
+  // If there are no outlets yet (0 outlet) or 'all' is selected:
+  if (outlets.length === 0 || !outletId || outletId === 'all') {
+    return `/semua/${pageSlug}`;
+  }
+
+  const outletSlug = getOutletSlug(outletId, outlets);
   return `/${outletSlug}/${pageSlug}`;
 };

@@ -679,8 +679,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [outlets]);
 
   const getActiveOutlet = (): Outlet | undefined => {
-    if (outlets.length === 0) return undefined;
-    return outlets.find((o) => o.id === selectedOutletId) || outlets[0];
+    if (outlets.length === 0 || selectedOutletId === 'all') return undefined;
+    return outlets.find((o) => o.id === selectedOutletId);
   };
 
   const createOutlet = async (data: Omit<Outlet, 'id'>): Promise<boolean> => {

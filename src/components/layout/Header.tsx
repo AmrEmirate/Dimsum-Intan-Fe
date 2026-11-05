@@ -140,6 +140,19 @@ export const Header: React.FC = () => {
 
         {/* Right items: Notifications & Interactive Role Switcher */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          {/* Quick Activate Branch CTA for Owner when 0 outlets */}
+          {currentUser.role === 'OWNER' && outlets.length === 0 && (
+            <button
+              type="button"
+              onClick={() => setCurrentView('master-cabang-outlet')}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
+              title="Aktivasi Kuota Cabang Baru"
+            >
+              <Store className="w-3.5 h-3.5" />
+              <span>Aktivasi Cabang</span>
+            </button>
+          )}
+
           {/* Notification Bell */}
           <button
             className="relative p-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-brand-espresso transition-colors cursor-pointer shrink-0"
@@ -179,7 +192,7 @@ export const Header: React.FC = () => {
                   {currentUser.role === 'SUPERADMIN'
                     ? (currentTenant ? `Tenant: ${currentTenant.name}` : 'Platform Global')
                     : currentUser.role === 'OWNER'
-                    ? `${outlets.length} Cabang & Pusat`
+                    ? (outlets.length > 0 ? `${outlets.length} Cabang & Pusat` : 'Pusat (0 Cabang Fisik)')
                     : activeOutletObj?.name || 'Cabang Kasir'}
                 </span>
               </div>

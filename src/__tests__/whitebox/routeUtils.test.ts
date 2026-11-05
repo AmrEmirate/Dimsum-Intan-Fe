@@ -108,5 +108,35 @@ describe('White-Box Testing: Route Utils & URL Synchronization', () => {
       const id = resolveOutletIdFromSlug('gi-01', mockOutlets);
       expect(id).toBe('outlet-demo-mall-gi');
     });
+
+    it('should resolve "semua" and "pusat" to "all"', () => {
+      expect(resolveOutletIdFromSlug('semua', mockOutlets)).toBe('all');
+      expect(resolveOutletIdFromSlug('pusat', mockOutlets)).toBe('all');
+      expect(resolveOutletIdFromSlug('all', mockOutlets)).toBe('all');
+    });
+  });
+
+  describe('Zero-Outlet State (Dimsum Intan with 0 registered branches)', () => {
+    it('should build /semua/barang when no outlets exist', () => {
+      const url = buildCanonicalPath('master-menu-dimsum-hpp', 'all', []);
+      expect(url).toBe('/semua/barang');
+    });
+
+    it('should build /semua/pos when no outlets exist', () => {
+      const url = buildCanonicalPath('transaksi-kasir-pos', 'all', []);
+      expect(url).toBe('/semua/pos');
+    });
+
+    it('should parse /semua/barang into master-menu-dimsum-hpp and "all"', () => {
+      const route = parsePathToRoute('/semua/barang', []);
+      expect(route.view).toBe('master-menu-dimsum-hpp');
+      expect(route.matchedOutletId).toBe('all');
+    });
+
+    it('should gracefully resolve /otlate1/barang to "all" when 0 outlets exist', () => {
+      const route = parsePathToRoute('/otlate1/barang', []);
+      expect(route.view).toBe('master-menu-dimsum-hpp');
+      expect(route.matchedOutletId).toBe('all');
+    });
   });
 });
