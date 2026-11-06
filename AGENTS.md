@@ -53,3 +53,16 @@ docker run --rm -v "$(pwd)":/app -w /app node:22-alpine npm test -- <path_file_t
    - Jika ada website, repositori, sub-aplikasi, atau kontainer yang berstatus mati (*exited*, *stopped*, atau sengaja dinonaktifkan/ditidurkan oleh USER):
      - **Dilarang keras menyentuh, mengubah file/kode, mengubah rute proxy/DNS, mencoba menghidupkan, atau mengotak-atiknya.**
      - Biarkan layanan tersebut tetap dalam kondisi tidur/non-aktif (*leave sleeping services untouched*), kecuali jika USER secara eksplisit dan tertulis memberikan perintah untuk mengaktifkan kembali layanan tersebut.
+
+---
+
+## 5. Standar Isolasi Ketat Database Multi-Tenant & Perlindungan Hapus Data (Anti-Hapus Silang Tenant)
+1. **Prinsip Isolasi Mutlak Database per Tenant (Zero Cross-Database Interference):**
+   - Server memiliki banyak database terisolasi untuk masing-masing tenant (`dimsum_db`, `akasia_db`, `barakahfood_db`, `proship_db`, `otgbracket_db`, `tauheednews_db`, `proteksales_db`, dsb.).
+   - Frontend tenant ini beroperasi khusus untuk tenant Dimsum Intan dan berkomunikasi dengan `dimsum_db`.
+   - **Dilarang Keras menyentuh, membaca, mengubah, memigrasi, atau menghapus database lain yang tidak bersangkutan.**
+2. **Prosedur Pengamanan Ketat Permintaan Hapus Seluruh Data (Data Wipe Guardrail):**
+   - Jika USER meminta untuk *"hapus seluruh data"*, *"reset database"*, atau *"kosongkan data"*:
+     - **Wajib Validasi Database Target**: Agent WAJIB secara eksplisit mengunci koneksi hanya ke database target yang diminta. Dilarang keras menjalankan perintah database tanpa nama database yang spesifik.
+     - **Larangan Hapus Silang Tenant**: Operasi pembersihan data (`TRUNCATE` / `DELETE`) HANYA boleh dieksekusi pada tabel-tabel di dalam database tenant yang dimaksud. Dilarang keras menyentuh database tenant lain.
+     - **Verifikasi Integritas**: Sebelum dan sesudah operasi penghapusan, agent wajib memverifikasi bahwa database tenant lain tetap utuh 100% tanpa ada data yang terhapus atau berubah.
