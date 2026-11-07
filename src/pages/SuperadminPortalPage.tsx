@@ -422,10 +422,11 @@ export const SuperadminPortalPage: React.FC = () => {
               onChange={(val) => setSelectedPlanFilter(val)}
               options={[
                 { value: 'ALL', label: 'Semua Paket Langganan' },
-                { value: 'PAKET_100K', label: 'Paket 1: 100K (200 Tx/hr)', badge: 'Starter' },
-                { value: 'PAKET_150K', label: 'Paket 2: 150K (300 Tx/hr)', badge: 'Basic' },
-                { value: 'PAKET_200K', label: 'Paket 3: 200K (500 Tx/hr)', badge: 'Pro' },
-                { value: 'PAKET_250K', label: 'Paket 4: 250K (Unlimited)', badge: 'Enterprise' },
+                { value: 'PAKET_50K', label: 'Paket 1: 50K (100 Tx/hr)', badge: 'Starter' },
+                { value: 'PAKET_100K', label: 'Paket 2: 100K (200 Tx/hr)', badge: 'Hemat' },
+                { value: 'PAKET_150K', label: 'Paket 3: 150K (300 Tx/hr)', badge: 'Bisnis' },
+                { value: 'PAKET_200K', label: 'Paket 4: 200K (500 Tx/hr)', badge: 'Pro' },
+                { value: 'PAKET_CUSTOM', label: 'Paket 5: Custom (Hubungi Kami)', badge: 'Custom' },
               ]}
             />
           </div>

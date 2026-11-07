@@ -4,8 +4,16 @@ import { Outlet } from '../../types';
 describe('Outlet Package Selection & Transaction Quotas (Black-Box & White-Box)', () => {
   const OUTLET_AVAILABLE_PLANS = [
     {
+      code: 'PAKET_50K',
+      name: 'Paket 1: Starter',
+      price: 50000,
+      dailyLimit: 100,
+      monthlyTx: 3000,
+      monthlyLimit: '3.000 Tx/bln',
+    },
+    {
       code: 'PAKET_100K',
-      name: 'Paket 1: Hemat',
+      name: 'Paket 2: Dasar',
       price: 100000,
       dailyLimit: 200,
       monthlyTx: 6000,
@@ -13,7 +21,7 @@ describe('Outlet Package Selection & Transaction Quotas (Black-Box & White-Box)'
     },
     {
       code: 'PAKET_150K',
-      name: 'Paket 2: Bisnis Pro',
+      name: 'Paket 3: Bisnis Pro',
       price: 150000,
       dailyLimit: 300,
       monthlyTx: 9000,
@@ -21,24 +29,29 @@ describe('Outlet Package Selection & Transaction Quotas (Black-Box & White-Box)'
     },
     {
       code: 'PAKET_200K',
-      name: 'Paket 3: Pro Fleet',
+      name: 'Paket 4: Pro Fleet',
       price: 200000,
       dailyLimit: 500,
       monthlyTx: 15000,
       monthlyLimit: '15.000 Tx/bln',
     },
     {
-      code: 'PAKET_250K',
-      name: 'Paket 4: Unlimited VIP',
-      price: 250000,
+      code: 'PAKET_CUSTOM',
+      name: 'Paket 5: Custom',
+      price: 0,
       dailyLimit: 0,
       monthlyTx: 0,
-      monthlyLimit: 'Unlimited Tx',
+      monthlyLimit: 'Custom / Hubungi Kami',
     },
   ];
 
-  it('memiliki 4 tier paket resmi dengan kuota dan harga yang akurat', () => {
-    expect(OUTLET_AVAILABLE_PLANS).toHaveLength(4);
+  it('memiliki 5 tier paket resmi dengan kuota dan harga yang akurat', () => {
+    expect(OUTLET_AVAILABLE_PLANS).toHaveLength(5);
+
+    const paket50k = OUTLET_AVAILABLE_PLANS.find((p) => p.code === 'PAKET_50K');
+    expect(paket50k?.price).toBe(50000);
+    expect(paket50k?.dailyLimit).toBe(100);
+    expect(paket50k?.monthlyTx).toBe(3000);
 
     const paket100k = OUTLET_AVAILABLE_PLANS.find((p) => p.code === 'PAKET_100K');
     expect(paket100k?.price).toBe(100000);
@@ -55,10 +68,10 @@ describe('Outlet Package Selection & Transaction Quotas (Black-Box & White-Box)'
     expect(paket200k?.dailyLimit).toBe(500);
     expect(paket200k?.monthlyTx).toBe(15000);
 
-    const paket250k = OUTLET_AVAILABLE_PLANS.find((p) => p.code === 'PAKET_250K');
-    expect(paket250k?.price).toBe(250000);
-    expect(paket250k?.dailyLimit).toBe(0);
-    expect(paket250k?.monthlyTx).toBe(0);
+    const paketCustom = OUTLET_AVAILABLE_PLANS.find((p) => p.code === 'PAKET_CUSTOM');
+    expect(paketCustom?.price).toBe(0);
+    expect(paketCustom?.dailyLimit).toBe(0);
+    expect(paketCustom?.monthlyTx).toBe(0);
   });
 
   it('memvalidasi pembentukan payload pembuatan outlet dengan paket terpilih', () => {
