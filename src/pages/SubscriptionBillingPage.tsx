@@ -349,7 +349,9 @@ export const SubscriptionBillingPage: React.FC = () => {
 
   const pricePerOutlet = billingStatus?.pricePerOutlet || currentPlan.price || 100000;
   const currentOutlets = billingStatus?.currentOutletsCount ?? 0;
-  const maxOutlets = billingStatus?.maxOutlets ?? 1;
+  const maxOutlets = billingStatus?.maxOutlets ?? 4;
+  const activeOperationalOutlets = Math.max(1, currentOutlets || maxOutlets);
+  const totalMonthlyBill = pricePerOutlet * activeOperationalOutlets;
   const dailyTxLimit = isUnlimited ? 0 : (billingStatus?.effectiveDailyTxLimit ?? billingStatus?.dailyTxLimitPerOutlet ?? 200);
   const monthlyTxLimit = isUnlimited ? 0 : (billingStatus?.effectiveMonthlyTxLimit ?? (dailyTxLimit * 30));
   const todayTxCount = billingStatus?.todayOrdersCount || 0;
@@ -480,9 +482,14 @@ export const SubscriptionBillingPage: React.FC = () => {
           </div>
 
           <div className="pt-4 mt-4 border-t border-border-subtle flex items-center justify-between">
-            <span className="text-xs text-secondary">Tarif Aktif Bulanan</span>
+            <div className="flex flex-col">
+              <span className="text-xs text-secondary">Total Tagihan Bulanan</span>
+              <span className="text-[10px] text-secondary/80">
+                {activeOperationalOutlets} Cabang × Rp {pricePerOutlet.toLocaleString('id-ID')} (+1 Semua Cabang)
+              </span>
+            </div>
             <span className="text-sm font-bold text-primary font-mono">
-              Rp {pricePerOutlet.toLocaleString('id-ID')} / bln
+              Rp {totalMonthlyBill.toLocaleString('id-ID')} / bln
             </span>
           </div>
         </div>
@@ -495,18 +502,18 @@ export const SubscriptionBillingPage: React.FC = () => {
                 2. Kuota Outlet (Cabang)
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand-gold-subtle text-primary border border-brand-gold/30">
-                {currentOutlets} / {maxOutlets} Cabang
+                {currentOutlets} / {maxOutlets} Cabang (+1 Semua)
               </span>
             </div>
             <div className="space-y-1">
               <div className="text-2xl font-bold text-brand-espresso font-serif-title flex items-baseline gap-2">
                 <span>{currentOutlets} / {maxOutlets}</span>
-                <span className="text-sm font-normal text-secondary">Slot Lisensi Kasir</span>
+                <span className="text-sm font-normal text-secondary">Cabang (+1 Akses Semua Cabang)</span>
               </div>
               <p className="text-xs text-secondary">
                 {currentOutlets === 0
                   ? `Belum ada cabang terdaftar (Tersedia ${maxOutlets} slot lisensi siap pakai).`
-                  : `Dimsum Intan terhubung dengan ${currentOutlets} terminal outlet operasional.`}
+                  : `${currentOutlets} cabang operasional aktif + 1 akses untuk melihat semua kondisi cabang.`}
               </p>
             </div>
           </div>
