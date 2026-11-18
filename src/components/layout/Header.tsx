@@ -144,25 +144,7 @@ export const Header: React.FC = () => {
         });
     }
 
-    // 3. Unpaid factory supplier invoices
-    if (factoryInvoices && factoryInvoices.length > 0) {
-      factoryInvoices
-        .filter((f) => f.status === 'BELUM_LUNAS' || f.status === 'JATUH_TEMPO')
-        .forEach((f) => {
-          const itemSummary = f.items && f.items.length > 0 ? f.items[0].itemName : 'Suplai Dimsum';
-          list.push({
-            id: `inv-${f.id}`,
-            category: 'tagihan',
-            urgency: f.status === 'JATUH_TEMPO' ? 'high' : 'medium',
-            title: `Tagihan Pabrik: ${f.invoiceNumber}`,
-            description: `Faktur ${itemSummary} senilai Rp ${f.totalAmount.toLocaleString('id-ID')} belum lunas.`,
-            badge: f.dueDate ? `Tempo ${f.dueDate}` : 'Belum Lunas',
-            view: 'tagihan-suplai-pabrik',
-          });
-        });
-    }
-
-    // 4. Unpaid fixed OPEX
+    // 3. Unpaid fixed OPEX
     if (fixedExpenses && fixedExpenses.length > 0) {
       fixedExpenses
         .filter((e) => e.status === 'TERJADWAL')
@@ -193,7 +175,7 @@ export const Header: React.FC = () => {
     }
 
     return list;
-  }, [pettyCashList, menuItems, factoryInvoices, fixedExpenses, currentUser.role, activeShift]);
+  }, [pettyCashList, menuItems, fixedExpenses, currentUser.role, activeShift]);
 
   const unreadNotifs = useMemo(() => {
     return operationalNotifs.filter((n) => !readNotifIds.includes(n.id));

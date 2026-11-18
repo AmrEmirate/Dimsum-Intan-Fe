@@ -48,7 +48,6 @@ export type AppView =
   | 'sesi-shift-kasir'
   | 'master-menu-dimsum-hpp'
   | 'kas-kecil-outlet'
-  | 'tagihan-suplai-pabrik'
   | 'beban-operasional-tetap'
   | 'laporan-laba-rugi-arus-kas'
   | 'dompet-penarikan-saldo'

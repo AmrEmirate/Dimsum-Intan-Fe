@@ -118,13 +118,6 @@ export const Sidebar: React.FC = () => {
       allowedRoles: ['SUPERADMIN', 'OWNER', 'SUPERVISOR', 'KASIR'],
     },
     {
-      id: 'tagihan-suplai-pabrik',
-      label: 'Tagihan Supplier & Bahan',
-      section: 'akuntansi',
-      icon: Factory,
-      allowedRoles: ['SUPERADMIN', 'OWNER'],
-    },
-    {
       id: 'beban-operasional-tetap',
       label: 'Beban Operasional Tetap',
       section: 'akuntansi',

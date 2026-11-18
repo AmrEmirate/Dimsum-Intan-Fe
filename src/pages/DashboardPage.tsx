@@ -233,7 +233,7 @@ export const DashboardPage: React.FC = () => {
         <div className="relative overflow-hidden bg-surface-card rounded-2xl p-5 border border-border-subtle shadow-xs hover:shadow-md transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
-              Kas Kecil & Suplai Pabrik
+              Kas Kecil Operasional
             </span>
             <div className="w-8 h-8 rounded-xl bg-surface-container-low flex items-center justify-center text-brand-terracotta">
               <Building2 className="w-4 h-4" />
@@ -251,9 +251,9 @@ export const DashboardPage: React.FC = () => {
             <span className="text-[11px] text-secondary">Nota darurat</span>
           </div>
           <div className="mt-3 pt-2 border-t border-border-subtle flex justify-between items-center text-xs text-secondary">
-            <span>Tagihan Pabrik Belum Bayar:</span>
-            <span className="font-bold text-red-600">
-              {factoryInvoices.filter((f) => f.status !== 'LUNAS').length} Faktur
+            <span>Kas Kecil Disetujui:</span>
+            <span className="font-bold text-emerald-700">
+              {pettyCashList.filter((p) => p.status === 'DISETUJUI').length} Nota
             </span>
           </div>
         </div>

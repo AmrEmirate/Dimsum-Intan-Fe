@@ -10,7 +10,6 @@ import { PosPage } from './pages/PosPage';
 import { ShiftPage } from './pages/ShiftPage';
 import { MenuHppPage } from './pages/MenuHppPage';
 import { PettyCashPage } from './pages/PettyCashPage';
-import { FactoryBillsPage } from './pages/FactoryBillsPage';
 import { FixedExpensesPage } from './pages/FixedExpensesPage';
 import { ProfitLossPage } from './pages/ProfitLossPage';
 import { BranchesPage } from './pages/BranchesPage';
@@ -46,7 +45,6 @@ export const AppContent: React.FC = () => {
         'sesi-shift-kasir',
         'master-menu-dimsum-hpp',
         'kas-kecil-outlet',
-        'tagihan-suplai-pabrik',
         'beban-operasional-tetap',
         'laporan-laba-rugi-arus-kas',
         'dompet-penarikan-saldo',
@@ -85,8 +83,6 @@ export const AppContent: React.FC = () => {
         return <MenuHppPage />;
       case 'kas-kecil-outlet':
         return <PettyCashPage />;
-      case 'tagihan-suplai-pabrik':
-        return <FactoryBillsPage />;
       case 'beban-operasional-tetap':
         return <FixedExpensesPage />;
       case 'laporan-laba-rugi-arus-kas':

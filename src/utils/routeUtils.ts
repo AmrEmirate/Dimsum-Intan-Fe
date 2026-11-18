@@ -15,7 +15,6 @@ export const VIEW_TO_SLUG: Record<AppView, string> = {
   'sesi-shift-kasir': 'shift',
   'master-menu-dimsum-hpp': 'barang',
   'kas-kecil-outlet': 'kas-kecil',
-  'tagihan-suplai-pabrik': 'tagihan-pabrik',
   'beban-operasional-tetap': 'beban-operasional',
   'laporan-laba-rugi-arus-kas': 'laba-rugi',
   'dompet-penarikan-saldo': 'dompet',
@@ -54,12 +53,6 @@ export const SLUG_TO_VIEW: Record<string, AppView> = {
   kaskecil: 'kas-kecil-outlet',
   'petty-cash': 'kas-kecil-outlet',
   pettycash: 'kas-kecil-outlet',
-
-  // Tagihan Suplai Pabrik
-  'tagihan-pabrik': 'tagihan-suplai-pabrik',
-  pabrik: 'tagihan-suplai-pabrik',
-  factory: 'tagihan-suplai-pabrik',
-  tagihan: 'tagihan-suplai-pabrik',
 
   // Beban Operasional Tetap
   'beban-operasional': 'beban-operasional-tetap',
@@ -101,7 +94,6 @@ export const VIEW_TITLES: Record<AppView, string> = {
   'sesi-shift-kasir': 'Sesi Shift Kasir',
   'master-menu-dimsum-hpp': 'Master Menu Dimsum & HPP',
   'kas-kecil-outlet': 'Kas Kecil (Petty Cash)',
-  'tagihan-suplai-pabrik': 'Tagihan Suplai Pabrik',
   'beban-operasional-tetap': 'Beban Operasional Tetap',
   'laporan-laba-rugi-arus-kas': 'Laporan Laba Rugi & Arus Kas',
   'dompet-penarikan-saldo': 'Dompet Digital & Tarik Saldo',

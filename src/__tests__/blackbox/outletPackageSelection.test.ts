@@ -234,7 +234,6 @@ describe('Outlet Package Selection & Transaction Quotas (Black-Box & White-Box)'
         'sesi-shift-kasir',
         'master-menu-dimsum-hpp',
         'kas-kecil-outlet',
-        'tagihan-suplai-pabrik',
         'beban-operasional-tetap',
         'laporan-laba-rugi-arus-kas',
         'dompet-penarikan-saldo',
