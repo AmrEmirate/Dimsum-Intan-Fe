@@ -30,6 +30,7 @@ import { CustomSelect } from '../components/common/CustomSelect';
 import { ConfirmationModal } from '../components/common/ConfirmationModal';
 import { ImageUpload } from '../components/common/ImageUpload';
 import { RupiahInput } from '../components/common/RupiahInput';
+import { RawMaterialBomPanel } from '../components/menu/RawMaterialBomPanel';
 import {
   exportToCsv,
   exportToJson,
@@ -1440,6 +1441,9 @@ export const MenuHppPage: React.FC = () => {
         }}
         onCancel={() => setDeleteConfirmItem(null)}
       />
+
+      {/* Bahan Baku & Resep Menu (BOM) untuk Audit Stock Opname Malam */}
+      {isOwner && <RawMaterialBomPanel />}
     </div>
   );
 };

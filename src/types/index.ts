@@ -306,3 +306,53 @@ export interface WalletSummary {
   recentWithdrawals: WithdrawalRequest[];
 }
 
+export interface RawMaterial {
+  id: string;
+  outletId?: string | null;
+  name: string;
+  unit: string;
+  costPerUnit: number;
+  currentStock: number;
+  minStock: number;
+  isLowStock?: boolean;
+}
+
+export interface MenuRecipeItem {
+  id?: string;
+  menuId: string;
+  menuName?: string;
+  rawMaterialId: string;
+  rawMaterialName?: string;
+  unit?: string;
+  costPerUnit?: number;
+  quantityUsed: number;
+}
+
+export interface ShiftMaterialOpnameInput {
+  rawMaterialId: string;
+  actualClosing: number;
+  restockIn?: number;
+  notes?: string;
+}
+
+export interface ShiftMaterialOpnameAudit {
+  id: string;
+  shiftId: string;
+  shiftName: string;
+  outletName: string;
+  cashierName: string;
+  shiftEndTime: string;
+  rawMaterialId: string;
+  materialName: string;
+  unit: string;
+  openingStock: number;
+  restockIn: number;
+  theoreticalUsed: number;
+  expectedClosing: number;
+  actualClosing: number;
+  variance: number;
+  varianceValue: number;
+  status: 'NORMAL' | 'LEAKAGE' | 'SURPLUS';
+  notes?: string;
+}
+

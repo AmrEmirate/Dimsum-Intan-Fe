@@ -18,6 +18,10 @@ import {
   WalletSummary,
   WalletTransaction,
   WithdrawalRequest,
+  RawMaterial,
+  MenuRecipeItem,
+  ShiftMaterialOpnameInput,
+  ShiftMaterialOpnameAudit,
 } from '../types';
 import {
   api,
@@ -133,8 +137,24 @@ interface AppContextType {
   activeShift: ShiftSession | null;
   shiftHistory: ShiftSession[];
   openShift: (startingCash: number) => Promise<void>;
-  closeShift: (actualEndingCash: number, notes?: string) => Promise<void>;
+  closeShift: (
+    actualEndingCash: number,
+    notes?: string,
+    materialOpnames?: ShiftMaterialOpnameInput[]
+  ) => Promise<void>;
   fetchShiftHistory: () => Promise<void>;
+
+  // Raw Materials, Menu Recipes (BOM) & Opname Audit
+  rawMaterials: RawMaterial[];
+  menuRecipes: MenuRecipeItem[];
+  opnameAuditLogs: ShiftMaterialOpnameAudit[];
+  fetchRawMaterials: () => Promise<void>;
+  createRawMaterial: (payload: Omit<RawMaterial, 'id'>) => Promise<boolean>;
+  updateRawMaterial: (id: string, payload: Partial<RawMaterial> & { addStock?: number }) => Promise<boolean>;
+  deleteRawMaterial: (id: string) => Promise<boolean>;
+  fetchMenuRecipes: () => Promise<void>;
+  saveMenuRecipe: (menuId: string, items: Array<{ rawMaterialId: string; quantityUsed: number }>) => Promise<boolean>;
+  fetchOpnameAudit: (shiftId?: string) => Promise<void>;
 
   // Petty Cash
   pettyCashList: PettyCashExpense[];
@@ -263,6 +283,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   const [outlets, setOutlets] = useState<Outlet[]>([]);
+  const [rawMaterials, setRawMaterials] = useState<RawMaterial[]>([]);
+  const [menuRecipes, setMenuRecipes] = useState<MenuRecipeItem[]>([]);
+  const [opnameAuditLogs, setOpnameAuditLogs] = useState<ShiftMaterialOpnameAudit[]>([]);
   const [currentView, setCurrentViewState] = useState<AppView>(() => {
     if (typeof window !== 'undefined') {
       const parsed = parsePathToRoute(window.location.pathname, []);
@@ -450,6 +473,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // 10. Fetch Billing Status
       await fetchBillingStatus();
+
+      // 11. Fetch Raw Materials & Recipes
+      await fetchRawMaterials();
+      await fetchMenuRecipes();
     } catch (err: any) {
       console.warn('[Data Fetch Error]', err);
     }
@@ -1014,7 +1041,115 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const closeShift = async (actualEndingCash: number, notes?: string) => {
+  const fetchRawMaterials = async () => {
+    try {
+      const q = selectedOutletId && selectedOutletId !== 'all' ? `?outletId=${selectedOutletId}` : '';
+      const res = await api.get<{ success: boolean; data: RawMaterial[] }>(`/materials${q}`).catch(() => null);
+      if (res?.success && Array.isArray(res.data)) {
+        setRawMaterials(res.data);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const createRawMaterial = async (payload: Omit<RawMaterial, 'id'>): Promise<boolean> => {
+    try {
+      const res = await api.post<{ success: boolean; message: string; data: RawMaterial }>('/materials', payload);
+      if (res.success) {
+        showNotification(res.message, 'success');
+        await fetchRawMaterials();
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      showNotification(`Gagal menambah bahan baku: ${error.message}`, 'error');
+      return false;
+    }
+  };
+
+  const updateRawMaterial = async (
+    id: string,
+    payload: Partial<RawMaterial> & { addStock?: number }
+  ): Promise<boolean> => {
+    try {
+      const res = await api.put<{ success: boolean; message: string }>(`/materials/${id}`, payload);
+      if (res.success) {
+        showNotification(res.message, 'success');
+        await fetchRawMaterials();
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      showNotification(`Gagal memperbarui bahan baku: ${error.message}`, 'error');
+      return false;
+    }
+  };
+
+  const deleteRawMaterial = async (id: string): Promise<boolean> => {
+    try {
+      const res = await api.delete<{ success: boolean; message: string }>(`/materials/${id}`);
+      if (res.success) {
+        showNotification(res.message, 'success');
+        await fetchRawMaterials();
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      showNotification(`Gagal menghapus bahan baku: ${error.message}`, 'error');
+      return false;
+    }
+  };
+
+  const fetchMenuRecipes = async () => {
+    try {
+      const res = await api.get<{ success: boolean; data: MenuRecipeItem[] }>('/recipes').catch(() => null);
+      if (res?.success && Array.isArray(res.data)) {
+        setMenuRecipes(res.data);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const saveMenuRecipe = async (
+    menuId: string,
+    items: Array<{ rawMaterialId: string; quantityUsed: number }>
+  ): Promise<boolean> => {
+    try {
+      const res = await api.put<{ success: boolean; message: string }>(`/recipes/${menuId}`, { items });
+      if (res.success) {
+        showNotification(res.message, 'success');
+        await fetchMenuRecipes();
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      showNotification(`Gagal menyimpan resep: ${error.message}`, 'error');
+      return false;
+    }
+  };
+
+  const fetchOpnameAudit = async (shiftId?: string) => {
+    try {
+      const params = new URLSearchParams();
+      if (shiftId) params.set('shiftId', shiftId);
+      else if (selectedOutletId && selectedOutletId !== 'all') params.set('outletId', selectedOutletId);
+      const q = params.toString() ? `?${params.toString()}` : '';
+      const res = await api.get<{ success: boolean; data: ShiftMaterialOpnameAudit[] }>(`/shifts/opname-audit${q}`).catch(() => null);
+      if (res?.success && Array.isArray(res.data)) {
+        setOpnameAuditLogs(res.data);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const closeShift = async (
+    actualEndingCash: number,
+    notes?: string,
+    materialOpnames?: ShiftMaterialOpnameInput[]
+  ) => {
     try {
       const res = await api.post<{ success: boolean; message: string; data: ShiftSession }>(
         '/shifts/close',
@@ -1023,12 +1158,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           notes,
           shiftId: activeShift?.id,
           outletId: selectedOutletId === 'all' ? (currentUser?.outletId || activeShift?.outletId) : selectedOutletId,
+          ...(materialOpnames && materialOpnames.length > 0 ? { materialOpnames } : {}),
         }
       );
 
       if (res.success && res.data) {
         setActiveShift(res.data);
         showNotification(res.message, 'success');
+        await fetchShiftHistory();
+        await fetchRawMaterials();
+        if (currentUser?.role !== 'KASIR') {
+          await fetchOpnameAudit();
+        }
       }
     } catch (error: any) {
       showNotification(`Gagal menutup shift: ${error.message}`, 'error');
@@ -1642,6 +1783,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         openShift,
         closeShift,
         fetchShiftHistory,
+        rawMaterials,
+        menuRecipes,
+        opnameAuditLogs,
+        fetchRawMaterials,
+        createRawMaterial,
+        updateRawMaterial,
+        deleteRawMaterial,
+        fetchMenuRecipes,
+        saveMenuRecipe,
+        fetchOpnameAudit,
         pettyCashList,
         addPettyCash,
         updatePettyCash,

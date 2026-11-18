@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Clock,
   Coins,
@@ -15,29 +15,38 @@ import {
   Printer,
   FileText,
   X,
+  PackageSearch,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { RupiahInput } from '../components/common/RupiahInput';
+import { CloseShiftModal } from '../components/common/CloseShiftModal';
 
 export const ShiftPage: React.FC = () => {
   const {
     activeShift,
     shiftHistory,
     openShift,
-    closeShift,
     currentUser,
     selectedOutletId,
     outlets,
     showNotification,
+    opnameAuditLogs,
+    fetchOpnameAudit,
   } = useApp();
+
+  const isAuditViewer = currentUser?.role !== 'KASIR';
+
+  useEffect(() => {
+    if (isAuditViewer) {
+      fetchOpnameAudit();
+    }
+  }, [isAuditViewer, selectedOutletId]);
 
   const [isOpenShiftModal, setIsOpenShiftModal] = useState(false);
   const [isCloseShiftModal, setIsCloseShiftModal] = useState(false);
   const [selectedShiftForZReport, setSelectedShiftForZReport] = useState<any>(null);
   const [zReportPaperSize, setZReportPaperSize] = useState<'80mm' | '58mm'>('80mm');
   const [startCashInput, setStartCashInput] = useState('500000');
-  const [actualCashInput, setActualCashInput] = useState('');
-  const [closingNotes, setClosingNotes] = useState('');
 
   const outletObj = outlets.find((o) => o.id === selectedOutletId) || outlets[0];
   const outletName = outletObj?.name || (selectedOutletId === 'all' ? 'Semua Outlet' : 'Outlet Utama');
@@ -53,17 +62,7 @@ export const ShiftPage: React.FC = () => {
     setIsOpenShiftModal(false);
   };
 
-  const handleCloseShiftSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const actual = parseFloat(actualCashInput) || 0;
-    closeShift(actual, closingNotes);
-    setIsCloseShiftModal(false);
-    setActualCashInput('');
-    setClosingNotes('');
-  };
-
   const expectedCash = activeShift ? Number(activeShift.expectedCash || 0) : 0;
-  const currentDiff = actualCashInput ? (parseFloat(actualCashInput) || 0) - expectedCash : 0;
   const safeHistory = Array.isArray(shiftHistory) ? shiftHistory : [];
 
   return (
@@ -606,89 +605,124 @@ export const ShiftPage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal: Tutup Shift & Rekonsiliasi */}
-      {isCloseShiftModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4">
-          <form
-            onSubmit={handleCloseShiftSubmit}
-            className="w-full max-w-md bg-surface-card rounded-3xl border border-border-subtle shadow-2xl p-6 relative"
-          >
-            <h3 className="font-serif-title font-bold text-xl text-brand-espresso">
-              Tutup Shift & Cek Fisik Kas Laci
-            </h3>
-            <p className="text-xs text-secondary mt-1">
-              Hitung uang fisik di laci kasir saat ini untuk mendeteksi selisih otomatis.
-            </p>
+      {/* Modal: Tutup Shift & Rekonsiliasi + Blind Stock Opname */}
+      <CloseShiftModal
+        isOpen={isCloseShiftModal}
+        onClose={() => setIsCloseShiftModal(false)}
+      />
 
-            <div className="my-4 p-3 rounded-xl bg-surface-container text-xs space-y-1">
-              <div className="flex justify-between">
-                <span className="text-secondary">Kas Wajib Sistem:</span>
-                <span className="font-bold text-brand-espresso tabular-nums">
-                  Rp {expectedCash.toLocaleString('id-ID')}
-                </span>
+      {/* Audit Pemakaian Bahan Baku (Khusus Owner / Supervisor) */}
+      {isAuditViewer && (
+        <div className="rounded-3xl bg-surface-card border border-border-subtle p-5 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-brand-terracotta/15 text-brand-terracotta flex items-center justify-center shrink-0">
+                <PackageSearch className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-black text-brand-espresso">
+                  Audit Stock Opname Bahan Baku (Anti-Fraud)
+                </h3>
+                <p className="text-[11px] text-secondary">
+                  Perbandingan pemakaian teoritis dari struk POS vs hitungan fisik kasir saat tutup shift.
+                </p>
               </div>
             </div>
+            <button
+              type="button"
+              onClick={() => fetchOpnameAudit()}
+              className="px-3 py-1.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso hover:bg-surface-container cursor-pointer self-start"
+            >
+              Muat Ulang Audit
+            </button>
+          </div>
 
-            <div className="space-y-3">
-              <RupiahInput
-                label="Total Uang Fisik di Laci Kasir"
-                value={actualCashInput}
-                onChange={(e) => setActualCashInput(e.target.value)}
-                placeholder="Contoh: 2.080.000"
-                required
-              />
-
-              {actualCashInput && (
-                <div
-                  className={`p-2.5 rounded-xl text-xs font-semibold flex justify-between items-center ${
-                    currentDiff === 0
-                      ? 'bg-status-lunas-bg text-status-lunas-text'
-                      : currentDiff < 0
-                      ? 'bg-status-unpaid-bg text-status-unpaid-text'
-                      : 'bg-status-pending-bg text-status-pending-text'
-                  }`}
-                >
-                  <span>Selisih Terhitung:</span>
-                  <span className="font-bold tabular-nums">
-                    {currentDiff === 0
-                      ? 'Rp 0 (SEIMBANG)'
-                      : currentDiff < 0
-                      ? `-Rp ${Math.abs(currentDiff).toLocaleString('id-ID')} (KURANG)`
-                      : `+Rp ${currentDiff.toLocaleString('id-ID')} (LEBIH)`}
-                  </span>
-                </div>
-              )}
-
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-brand-espresso">
-                  Catatan Rekonsiliasi (Opsional)
-                </label>
-                <textarea
-                  rows={2}
-                  value={closingNotes}
-                  onChange={(e) => setClosingNotes(e.target.value)}
-                  placeholder="Catatan bila ada selisih uang atau kondisi kasir..."
-                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setIsCloseShiftModal(false)}
-                className="px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="px-5 py-2.5 rounded-xl bg-brand-terracotta hover:bg-brand-terracotta-dark text-white text-xs font-bold shadow-md transition-all cursor-pointer"
-              >
-                Konfirmasi Tutup Shift
-              </button>
-            </div>
-          </form>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-border-subtle text-[10px] uppercase text-secondary">
+                  <th className="py-2 pr-3">Bahan Baku</th>
+                  <th className="py-2 px-2">Shift / Kasir</th>
+                  <th className="py-2 px-2 text-right">Awal + Masuk</th>
+                  <th className="py-2 px-2 text-right">Teoritis POS</th>
+                  <th className="py-2 px-2 text-right">Target Sisa</th>
+                  <th className="py-2 px-2 text-right">Fisik Kasir</th>
+                  <th className="py-2 px-2 text-right">Selisih</th>
+                  <th className="py-2 pl-2 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border-subtle">
+                {opnameAuditLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-6 text-center text-secondary">
+                      Belum ada riwayat audit opname bahan baku. Pastikan bahan baku sudah ditambahkan di Master Menu & HPP.
+                    </td>
+                  </tr>
+                ) : (
+                  opnameAuditLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-surface-container/40">
+                      <td className="py-2.5 pr-3 font-bold text-brand-espresso">
+                        {log.materialName}
+                        <span className="block text-[10px] font-normal text-secondary">
+                          {log.unit}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-2">
+                        <span className="font-semibold text-brand-espresso block">
+                          {log.shiftName}
+                        </span>
+                        <span className="text-[10px] text-secondary">{log.cashierName}</span>
+                      </td>
+                      <td className="py-2.5 px-2 text-right tabular-nums">
+                        {log.openingStock + log.restockIn}
+                      </td>
+                      <td className="py-2.5 px-2 text-right tabular-nums text-secondary">
+                        -{log.theoreticalUsed}
+                      </td>
+                      <td className="py-2.5 px-2 text-right tabular-nums font-semibold">
+                        {log.expectedClosing}
+                      </td>
+                      <td className="py-2.5 px-2 text-right tabular-nums font-bold text-brand-espresso">
+                        {log.actualClosing}
+                      </td>
+                      <td
+                        className={`py-2.5 px-2 text-right tabular-nums font-black ${
+                          log.status === 'LEAKAGE'
+                            ? 'text-red-600'
+                            : log.status === 'SURPLUS'
+                            ? 'text-amber-600'
+                            : 'text-emerald-600'
+                        }`}
+                      >
+                        {log.variance > 0 ? `+${log.variance}` : log.variance}
+                        <span className="block text-[10px] font-semibold">
+                          ({log.varianceValue >= 0 ? '+' : '-'}Rp{' '}
+                          {Math.abs(log.varianceValue).toLocaleString('id-ID')})
+                        </span>
+                      </td>
+                      <td className="py-2.5 pl-2 text-right">
+                        <span
+                          className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-black ${
+                            log.status === 'LEAKAGE'
+                              ? 'bg-red-100 text-red-700'
+                              : log.status === 'SURPLUS'
+                              ? 'bg-amber-100 text-amber-800'
+                              : 'bg-emerald-100 text-emerald-700'
+                          }`}
+                        >
+                          {log.status === 'LEAKAGE'
+                            ? 'KEBOCORAN'
+                            : log.status === 'SURPLUS'
+                            ? 'SURPLUS'
+                            : 'NORMAL'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

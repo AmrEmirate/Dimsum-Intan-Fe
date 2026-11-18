@@ -1,20 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Timer,
   X,
-  Wallet,
-  TrendingUp,
-  Receipt,
   AlertTriangle,
   CheckCircle2,
-  DollarSign,
   QrCode,
-  Sparkles,
-  ArrowRight,
   Calculator,
+  PackageCheck,
+  ShieldAlert,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { RupiahInput } from './RupiahInput';
+import { ShiftMaterialOpnameInput } from '../../types';
 
 interface CloseShiftModalProps {
   isOpen: boolean;
@@ -25,11 +22,22 @@ export const CloseShiftModal: React.FC<CloseShiftModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { activeShift, closeShift, currentUser } = useApp();
+  const { activeShift, closeShift, currentUser, rawMaterials } = useApp();
 
   const [actualCashInput, setActualCashInput] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [opnameInputs, setOpnameInputs] = useState<Record<string, { actualClosing: string; restockIn: string }>>({});
+
+  useEffect(() => {
+    if (isOpen && rawMaterials.length > 0) {
+      const initial: Record<string, { actualClosing: string; restockIn: string }> = {};
+      for (const m of rawMaterials) {
+        initial[m.id] = { actualClosing: '', restockIn: '0' };
+      }
+      setOpnameInputs(initial);
+    }
+  }, [isOpen, rawMaterials]);
 
   if (!isOpen || !activeShift) return null;
 
@@ -54,8 +62,16 @@ export const CloseShiftModal: React.FC<CloseShiftModalProps> = ({
     e.preventDefault();
     if (!actualCashInput) return;
 
+    const materialOpnames: ShiftMaterialOpnameInput[] = rawMaterials
+      .filter((m) => opnameInputs[m.id]?.actualClosing !== '' && opnameInputs[m.id]?.actualClosing !== undefined)
+      .map((m) => ({
+        rawMaterialId: m.id,
+        actualClosing: Number(opnameInputs[m.id].actualClosing) || 0,
+        restockIn: Number(opnameInputs[m.id].restockIn) || 0,
+      }));
+
     setIsSubmitting(true);
-    await closeShift(actualCash, notes.trim() || undefined);
+    await closeShift(actualCash, notes.trim() || undefined, materialOpnames);
     setIsSubmitting(false);
     onClose();
   };
@@ -194,6 +210,83 @@ export const CloseShiftModal: React.FC<CloseShiftModalProps> = ({
                   ? 'Rp 0'
                   : `${difference > 0 ? '+' : '-'}Rp ${Math.abs(difference).toLocaleString('id-ID')}`}
               </span>
+            </div>
+          )}
+
+          {/* Blind Stock Opname Bahan Baku (Anti-Fraud) */}
+          {rawMaterials.length > 0 && (
+            <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <PackageCheck className="w-4 h-4 text-amber-700 shrink-0" />
+                  <div>
+                    <span className="text-xs font-black text-brand-espresso block">
+                      Stock Opname Bahan Baku (Blind Count)
+                    </span>
+                    <span className="text-[11px] text-secondary">
+                      Hitung & masukkan sisa fisik bahan malam ini. Target sistem disembunyikan untuk audit owner.
+                    </span>
+                  </div>
+                </div>
+                <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+              </div>
+
+              <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                {rawMaterials.map((mat) => {
+                  const val = opnameInputs[mat.id] || { actualClosing: '', restockIn: '0' };
+                  return (
+                    <div
+                      key={mat.id}
+                      className="p-2.5 rounded-xl bg-white border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+                    >
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-brand-espresso block truncate">
+                          {mat.name}
+                        </span>
+                        <span className="text-[10px] text-secondary">Satuan: {mat.unit}</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="w-24">
+                          <label className="text-[10px] text-secondary block">Restock (+)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            value={val.restockIn}
+                            onChange={(e) =>
+                              setOpnameInputs((prev) => ({
+                                ...prev,
+                                [mat.id]: { ...val, restockIn: e.target.value },
+                              }))
+                            }
+                            className="w-full px-2 py-1.5 rounded-lg border border-border-subtle text-xs font-semibold text-brand-espresso"
+                          />
+                        </div>
+                        <div className="w-28">
+                          <label className="text-[10px] font-bold text-brand-terracotta block">
+                            Sisa Fisik *
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            required
+                            placeholder={`0 ${mat.unit}`}
+                            value={val.actualClosing}
+                            onChange={(e) =>
+                              setOpnameInputs((prev) => ({
+                                ...prev,
+                                [mat.id]: { ...val, actualClosing: e.target.value },
+                              }))
+                            }
+                            className="w-full px-2 py-1.5 rounded-lg border border-brand-terracotta/50 text-xs font-bold text-brand-espresso focus:outline-none focus:border-brand-terracotta"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
