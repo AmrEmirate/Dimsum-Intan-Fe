@@ -109,7 +109,21 @@ export const WalletWithdrawalPage: React.FC = () => {
     }
   };
 
+  const todayKey = new Date().toLocaleDateString('en-CA');
+  const todayWithdrawal = withdrawals.find((w) => {
+    if (w.status === 'REJECTED') return false;
+    return new Date(w.createdAt).toLocaleDateString('en-CA') === todayKey;
+  });
+  const hasWithdrawnToday = Boolean(todayWithdrawal);
+
   const handleOpenWithdraw = () => {
+    if (hasWithdrawnToday) {
+      showNotification(
+        `Penarikan saldo dibatasi maksimal 1 kali per hari (${todayWithdrawal?.withdrawalNumber} sudah diajukan hari ini). Silakan ajukan lagi besok.`,
+        'warning'
+      );
+      return;
+    }
     if (!hasBankAccount) {
       showNotification('Harap atur rekening bank tujuan penarikan terlebih dahulu!', 'warning');
       setIsBankModalOpen(true);
@@ -122,6 +136,10 @@ export const WalletWithdrawalPage: React.FC = () => {
 
   const handleSubmitWithdrawModal = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (hasWithdrawnToday) {
+      showNotification('Kuota penarikan hari ini sudah terpakai (maksimal 1× sehari).', 'warning');
+      return;
+    }
     const amountNum = Math.round(currentBalance);
     if (!amountNum || amountNum <= 0) {
       showNotification('Saldo dompet kosong, belum ada dana QRIS untuk ditarik!', 'error');
@@ -151,6 +169,13 @@ export const WalletWithdrawalPage: React.FC = () => {
 
   const handleSubmitCalcWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (hasWithdrawnToday) {
+      showNotification(
+        `Penarikan saldo dibatasi maksimal 1 kali per hari (${todayWithdrawal?.withdrawalNumber} sudah diajukan hari ini).`,
+        'warning'
+      );
+      return;
+    }
     if (!hasBankAccount) {
       showNotification('Harap atur rekening bank tujuan penarikan terlebih dahulu!', 'warning');
       setIsBankModalOpen(true);
@@ -960,8 +985,13 @@ export const WalletWithdrawalPage: React.FC = () => {
             {/* Form Tarik Habis Seluruh Saldo */}
             <form onSubmit={handleSubmitCalcWithdraw} className="space-y-3.5">
               <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-900 leading-relaxed">
-                <strong>Wajib Tarik Habis (100%):</strong> Dompet ini bukan penyimpanan dana. Setiap pengajuan pencairan otomatis menarik seluruh saldo QRIS aktif ke rekening bank Anda.
+                <strong>Wajib Tarik Habis (100%) • Maks 1×/Hari:</strong> Dompet ini bukan penyimpanan dana. Setiap pengajuan pencairan otomatis menarik seluruh saldo QRIS aktif ke rekening bank Anda (maksimal 1 kali per hari).
               </div>
+              {hasWithdrawnToday && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-[11px] text-red-700 font-semibold leading-relaxed">
+                  Kuota penarikan hari ini sudah terpakai ({todayWithdrawal?.withdrawalNumber}). Anda dapat mengajukan penarikan berikutnya besok.
+                </div>
+              )}
 
               {/* Notes Field */}
               <div>
