@@ -71,6 +71,8 @@ interface AppContextType {
   currentUser: User;
   isAuthenticated: boolean;
   login: (username: string, password?: string, role?: UserRole) => Promise<boolean>;
+  loginWithGoogle: (credential: string) => Promise<{ ok: boolean; message?: string }>;
+  loginWithToken: (token: string) => Promise<boolean>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
 
@@ -540,6 +542,52 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [refreshData]);
 
   // Full Login Method
+  const applyAuthenticatedSession = async (token: string, u: User) => {
+    setAuthToken(token);
+    setIsAuthenticated(true);
+    const avatarMap: Record<UserRole, string> = {
+      SUPERADMIN: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      OWNER: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+      SUPERVISOR: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+      KASIR: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    };
+    const updatedUser: User = {
+      id: u.id,
+      name: u.name,
+      username: u.username,
+      role: u.role,
+      outletId: u.outletId,
+      outletName: u.outletName,
+      tenantId: u.tenantId,
+      tenant: u.tenant,
+      avatar: avatarMap[u.role] || avatarMap.OWNER,
+    };
+    setCurrentUser(updatedUser);
+
+    if (u.tenant) {
+      setCurrentTenant(u.tenant);
+      applyTenantTheme(u.tenant);
+      setTenantSlug(u.tenant.slug);
+    }
+
+    if (u.role === 'SUPERADMIN') {
+      setSelectedOutletIdState('all');
+      setCurrentView('superadmin-portal');
+    } else if (u.role === 'KASIR') {
+      setSelectedOutletIdState(u.outletId || (outlets[0]?.id ?? 'all'));
+      setCurrentView('transaksi-kasir-pos');
+    } else if (u.role === 'SUPERVISOR') {
+      setSelectedOutletIdState(u.outletId || (outlets[0]?.id ?? 'all'));
+      setCurrentView('dashboard-utama');
+    } else {
+      setSelectedOutletIdState('all');
+      setCurrentView('dashboard-utama');
+    }
+
+    showNotification(`Selamat datang, ${u.name}! Berhasil masuk sebagai ${u.role}.`, 'success');
+    await refreshData();
+  };
+
   const login = async (username: string, password?: string): Promise<boolean> => {
     try {
       if (!username || !password) {
@@ -555,50 +603,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }>('/auth/login', { username, password });
 
       if (res.success && res.token) {
-        setAuthToken(res.token);
-        setIsAuthenticated(true);
-        const u = res.user;
-        const avatarMap: Record<UserRole, string> = {
-          SUPERADMIN: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          OWNER: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
-          SUPERVISOR: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-          KASIR: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-        };
-        const updatedUser: User = {
-          id: u.id,
-          name: u.name,
-          username: u.username,
-          role: u.role,
-          outletId: u.outletId,
-          outletName: u.outletName,
-          tenantId: u.tenantId,
-          tenant: u.tenant,
-          avatar: avatarMap[u.role] || avatarMap.OWNER,
-        };
-        setCurrentUser(updatedUser);
-
-        if (u.tenant) {
-          setCurrentTenant(u.tenant);
-          applyTenantTheme(u.tenant);
-          setTenantSlug(u.tenant.slug);
-        }
-
-        if (u.role === 'SUPERADMIN') {
-          setSelectedOutletIdState('all');
-          setCurrentView('superadmin-portal');
-        } else if (u.role === 'KASIR') {
-          setSelectedOutletIdState(u.outletId || (outlets[0]?.id ?? 'all'));
-          setCurrentView('transaksi-kasir-pos');
-        } else if (u.role === 'SUPERVISOR') {
-          setSelectedOutletIdState(u.outletId || (outlets[0]?.id ?? 'all'));
-          setCurrentView('dashboard-utama');
-        } else {
-          setSelectedOutletIdState('all');
-          setCurrentView('dashboard-utama');
-        }
-
-        showNotification(`Selamat datang, ${u.name}! Berhasil masuk sebagai ${u.role}.`, 'success');
-        await refreshData();
+        await applyAuthenticatedSession(res.token, res.user);
         return true;
       }
     } catch (err: any) {
@@ -606,6 +611,53 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     return false;
   };
+
+  const loginWithGoogle = async (credential: string): Promise<{ ok: boolean; message?: string }> => {
+    try {
+      const res = await api.post<{
+        success: boolean;
+        message: string;
+        token: string;
+        user: User;
+      }>('/auth/google', { credential });
+
+      if (res.success && res.token) {
+        await applyAuthenticatedSession(res.token, res.user);
+        return { ok: true };
+      }
+      return { ok: false, message: res.message || 'Login Google gagal.' };
+    } catch (err: any) {
+      const msg = err?.message || 'Akun Google tidak terdaftar atau gagal verifikasi.';
+      showNotification(msg, 'error');
+      return { ok: false, message: msg };
+    }
+  };
+
+  const loginWithToken = async (token: string): Promise<boolean> => {
+    try {
+      setAuthToken(token);
+      const res = await api.get<{ success: boolean; data: User }>('/auth/me');
+      if (res.success && res.data) {
+        await applyAuthenticatedSession(token, res.data);
+        return true;
+      }
+    } catch (err: any) {
+      setAuthToken('');
+      showNotification(err?.message || 'Gagal memverifikasi sesi Google.', 'error');
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const googleToken = params.get('google_token');
+    if (googleToken) {
+      params.delete('google_token');
+      const cleanUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+      window.history.replaceState({}, '', cleanUrl);
+      loginWithToken(googleToken);
+    }
+  }, []);
 
   // Logout Method
   const logout = () => {
@@ -1805,6 +1857,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         currentUser,
         isAuthenticated,
         login,
+        loginWithGoogle,
+        loginWithToken,
         logout,
         switchRole,
         outlets,

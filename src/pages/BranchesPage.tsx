@@ -335,10 +335,11 @@ export const BranchesPage: React.FC = () => {
     e.preventDefault();
     setStaffError(null);
 
-    if (!staffName.trim() || !staffUsername.trim() || (!editingStaff && !staffPassword.trim())) {
+    const isGoogleEmail = staffUsername.trim().includes('@');
+    if (!staffName.trim() || !staffUsername.trim() || (!editingStaff && !isGoogleEmail && !staffPassword.trim())) {
       setStaffError(
-        editingStaff
-          ? 'Nama lengkap dan username wajib diisi!'
+        editingStaff || isGoogleEmail
+          ? 'Nama lengkap dan email/username wajib diisi!'
           : 'Nama lengkap, username, dan kata sandi wajib diisi!'
       );
       return;
@@ -1606,13 +1607,13 @@ export const BranchesPage: React.FC = () => {
 
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-secondary uppercase">
-                    Username Login *
+                    Email Google / Username Login *
                   </label>
                   <input
                     type="text"
                     value={staffUsername}
                     onChange={(e) => setStaffUsername(e.target.value)}
-                    placeholder="Contoh: kasir_dago"
+                    placeholder="Contoh: kasir@gmail.com atau kasir_dago"
                     className="w-full p-2.5 rounded-xl bg-surface-container border border-border-subtle text-xs font-mono font-bold text-brand-espresso lowercase focus:outline-none focus:border-brand-gold"
                     required
                   />
@@ -1620,15 +1621,21 @@ export const BranchesPage: React.FC = () => {
 
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-secondary uppercase">
-                    {editingStaff ? 'Kata Sandi Baru (Opsional)' : 'Kata Sandi (Password) *'}
+                    {editingStaff || staffUsername.includes('@')
+                      ? 'Kata Sandi Baru (Opsional untuk Email Google)'
+                      : 'Kata Sandi (Password) *'}
                   </label>
                   <input
                     type="password"
                     value={staffPassword}
                     onChange={(e) => setStaffPassword(e.target.value)}
-                    placeholder={editingStaff ? 'Kosongkan jika tidak ingin ubah password' : 'Minimal 6 karakter...'}
+                    placeholder={
+                      editingStaff || staffUsername.includes('@')
+                        ? 'Kosongkan jika login pakai Google / tidak ubah password'
+                        : 'Minimal 6 karakter...'
+                    }
                     className="w-full p-2.5 rounded-xl bg-surface-container border border-border-subtle text-xs text-brand-espresso focus:outline-none focus:border-brand-gold"
-                    required={!editingStaff}
+                    required={!editingStaff && !staffUsername.includes('@')}
                   />
                 </div>
 
