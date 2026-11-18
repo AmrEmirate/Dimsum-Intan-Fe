@@ -471,7 +471,7 @@ export const WalletWithdrawalPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border-subtle">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-center font-black text-blue-900 text-base tracking-wider shrink-0 shadow-2xs">
-              {walletSummary?.bankInfo?.bankName ? walletSummary.bankInfo.bankName.slice(0, 4).toUpperCase() : 'BCA'}
+              {walletSummary?.bankInfo?.bankName ? walletSummary.bankInfo.bankName.slice(0, 4).toUpperCase() : 'BANK'}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
@@ -481,11 +481,11 @@ export const WalletWithdrawalPage: React.FC = () => {
                 {hasBankAccount ? (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                    REKENING TERVERIFIKASI
+                    REKENING TERDAFTAR
                   </span>
                 ) : (
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-status-unpaid-bg text-status-unpaid-text border border-status-unpaid-border">
-                    BELUM DIATUR
+                    BELUM DIVERIFIKASI
                   </span>
                 )}
               </div>
