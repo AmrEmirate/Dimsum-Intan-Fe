@@ -110,7 +110,7 @@ export const WalletWithdrawalPage: React.FC = () => {
   };
 
   const todayKey = new Date().toLocaleDateString('en-CA');
-  const todayWithdrawal = withdrawals.find((w) => {
+  const todayWithdrawal = (walletSummary?.recentWithdrawals || []).find((w) => {
     if (w.status === 'REJECTED') return false;
     return new Date(w.createdAt).toLocaleDateString('en-CA') === todayKey;
   });
