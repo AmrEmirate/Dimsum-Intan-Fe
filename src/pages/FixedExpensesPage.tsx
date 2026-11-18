@@ -40,6 +40,8 @@ export const FixedExpensesPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [formCategory, setFormCategory] = useState<FixedExpenseCategory>('SEWA_LAPAK');
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategoryText, setCustomCategoryText] = useState('');
   const [formOutletId, setFormOutletId] = useState('du');
   const [formAmount, setFormAmount] = useState('7500000');
   const [formDueDate, setFormDueDate] = useState('2024-11-05');
@@ -50,9 +52,33 @@ export const FixedExpensesPage: React.FC = () => {
   const [editingExpense, setEditingExpense] = useState<FixedExpense | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editCategory, setEditCategory] = useState<FixedExpenseCategory>('SEWA_LAPAK');
+  const [isEditCustomCategory, setIsEditCustomCategory] = useState(false);
+  const [editCustomCategoryText, setEditCustomCategoryText] = useState('');
   const [editAmount, setEditAmount] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
   const [editAutoDebet, setEditAutoDebet] = useState(false);
+
+  const presetCategories: Array<{ value: string; label: string }> = [
+    { value: 'SEWA_LAPAK', label: 'Sewa Lapak Cabang' },
+    { value: 'PAYROLL_GAJI', label: 'Payroll Gaji Karyawan' },
+    { value: 'LISTRIK', label: 'Listrik PLN' },
+    { value: 'AIR', label: 'Air PDAM' },
+    { value: 'INTERNET_POS', label: 'Internet POS & CCTV' },
+  ];
+
+  const existingCustomCategories = Array.from(
+    new Set(
+      fixedExpenses
+        .map((e) => e.category)
+        .filter((c) => c && !presetCategories.some((p) => p.value === c))
+    )
+  ).map((c) => ({ value: c, label: c }));
+
+  const categorySelectOptions = [
+    ...presetCategories,
+    ...existingCustomCategories,
+    { value: '__NEW__', label: '+ Tambah Kategori Beban Baru...' },
+  ];
 
   const handleOpenEdit = (expense: FixedExpense) => {
     if (!isOwner) {
@@ -62,6 +88,8 @@ export const FixedExpensesPage: React.FC = () => {
     setEditingExpense(expense);
     setEditTitle(expense.title);
     setEditCategory(expense.category);
+    setIsEditCustomCategory(false);
+    setEditCustomCategoryText('');
     setEditAmount(expense.amount.toString());
     setEditDueDate(expense.dueDate);
     setEditAutoDebet(expense.autoDebet);
@@ -72,9 +100,13 @@ export const FixedExpensesPage: React.FC = () => {
     e.preventDefault();
     if (!editingExpense) return;
 
+    const finalEditCategory = isEditCustomCategory
+      ? editCustomCategoryText.trim() || 'Lainnya'
+      : editCategory;
+
     await updateFixedExpense(editingExpense.id, {
       title: editTitle,
-      category: editCategory,
+      category: finalEditCategory,
       amount: parseFloat(editAmount) || 0,
       dueDate: editDueDate,
       autoDebet: editAutoDebet,
@@ -144,9 +176,13 @@ export const FixedExpensesPage: React.FC = () => {
         ? 'Konsolidasi Seluruh Outlet'
         : outlets.find((o) => o.id === formOutletId)?.name || 'Cabang Operasional';
 
+    const finalCategory = isCustomCategory
+      ? customCategoryText.trim() || 'Lainnya'
+      : formCategory;
+
     addFixedExpense({
       title: formTitle,
-      category: formCategory,
+      category: finalCategory,
       outletId: formOutletId,
       outletName,
       amount: parseFloat(formAmount) || 0,
@@ -158,6 +194,8 @@ export const FixedExpensesPage: React.FC = () => {
 
     setIsModalOpen(false);
     setFormTitle('');
+    setIsCustomCategory(false);
+    setCustomCategoryText('');
   };
 
   return (
@@ -497,19 +535,40 @@ export const FixedExpensesPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
-                  <CustomSelect<FixedExpenseCategory>
-                    label="Kategori Beban"
-                    size="sm"
-                    value={formCategory}
-                    onChange={(val) => setFormCategory(val)}
-                    options={[
-                      { value: 'SEWA_LAPAK', label: 'Sewa Lapak Cabang' },
-                      { value: 'PAYROLL_GAJI', label: 'Payroll Gaji Karyawan' },
-                      { value: 'LISTRIK', label: 'Listrik PLN' },
-                      { value: 'AIR', label: 'Air PDAM' },
-                      { value: 'INTERNET_POS', label: 'Internet POS & CCTV' },
-                    ]}
-                  />
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-brand-espresso">Kategori Beban</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCustomCategory(!isCustomCategory)}
+                      className="text-[10px] text-orange-600 hover:underline font-semibold cursor-pointer"
+                    >
+                      {isCustomCategory ? '← Pilih dari daftar' : '+ Kategori Beban'}
+                    </button>
+                  </div>
+                  {isCustomCategory ? (
+                    <input
+                      type="text"
+                      value={customCategoryText}
+                      onChange={(e) => setCustomCategoryText(e.target.value)}
+                      placeholder="Contoh: Marketing, Kebersihan, Maintenance..."
+                      className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none border border-orange-500/50"
+                      required
+                    />
+                  ) : (
+                    <CustomSelect<FixedExpenseCategory>
+                      size="sm"
+                      value={formCategory}
+                      onChange={(val) => {
+                        if (val === '__NEW__') {
+                          setIsCustomCategory(true);
+                          setCustomCategoryText('');
+                        } else {
+                          setFormCategory(val);
+                        }
+                      }}
+                      options={categorySelectOptions}
+                    />
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -604,19 +663,40 @@ export const FixedExpensesPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1">
-                <CustomSelect<FixedExpenseCategory>
-                  label="Kategori Pos Beban"
-                  size="sm"
-                  value={editCategory}
-                  onChange={(val) => setEditCategory(val)}
-                  options={[
-                    { value: 'SEWA_LAPAK', label: 'Sewa Lapak Cabang' },
-                    { value: 'PAYROLL_GAJI', label: 'Payroll Gaji Karyawan' },
-                    { value: 'LISTRIK', label: 'Tagihan Listrik PLN' },
-                    { value: 'AIR', label: 'Tagihan Air PDAM' },
-                    { value: 'INTERNET_POS', label: 'Internet & Sistem POS' },
-                  ]}
-                />
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-brand-espresso">Kategori Pos Beban</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditCustomCategory(!isEditCustomCategory)}
+                    className="text-[10px] text-orange-600 hover:underline font-semibold cursor-pointer"
+                  >
+                    {isEditCustomCategory ? '← Pilih dari daftar' : '+ Kategori Beban'}
+                  </button>
+                </div>
+                {isEditCustomCategory ? (
+                  <input
+                    type="text"
+                    value={editCustomCategoryText}
+                    onChange={(e) => setEditCustomCategoryText(e.target.value)}
+                    placeholder="Ketik kategori bebas..."
+                    className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none border border-orange-500/50"
+                    required
+                  />
+                ) : (
+                  <CustomSelect<FixedExpenseCategory>
+                    size="sm"
+                    value={editCategory}
+                    onChange={(val) => {
+                      if (val === '__NEW__') {
+                        setIsEditCustomCategory(true);
+                        setEditCustomCategoryText('');
+                      } else {
+                        setEditCategory(val);
+                      }
+                    }}
+                    options={categorySelectOptions}
+                  />
+                )}
               </div>
 
               <RupiahInput

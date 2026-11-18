@@ -175,7 +175,7 @@ export interface FactoryInvoice {
   bankAccount: string;
 }
 
-export type FixedExpenseCategory = 'SEWA_LAPAK' | 'PAYROLL_GAJI' | 'LISTRIK' | 'AIR' | 'INTERNET_POS';
+export type FixedExpenseCategory = string;
 
 export interface FixedExpense {
   id: string;
