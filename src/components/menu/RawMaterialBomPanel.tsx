@@ -399,14 +399,17 @@ export const RawMaterialBomPanel: React.FC<RawMaterialBomPanelProps> = ({ forced
                     </select>
                     <div className="flex items-center rounded-xl bg-white border border-border-subtle overflow-hidden shrink-0">
                       <input
-                        type="number"
-                        min="0"
-                        step="any"
-                        placeholder="Qty"
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="1.5"
                         value={row.quantityUsed}
                         onChange={(e) => {
+                          const normalized = e.target.value
+                            .replace(/,/g, '.')
+                            .replace(/[^0-9.]/g, '')
+                            .replace(/(\..*)\./g, '$1');
                           const next = [...recipeRows];
-                          next[idx].quantityUsed = e.target.value;
+                          next[idx].quantityUsed = normalized;
                           setRecipeRows(next);
                         }}
                         className="w-16 sm:w-20 px-2.5 py-2 text-xs font-bold text-brand-espresso text-right focus:outline-none"
@@ -425,6 +428,12 @@ export const RawMaterialBomPanel: React.FC<RawMaterialBomPanelProps> = ({ forced
                   </div>
                 );
               })}
+
+              {recipeRows.length > 0 && (
+                <p className="text-[10px] text-secondary px-1">
+                  Tips: Untuk takaran desimal gunakan titik (misal <strong>1.5</strong>), atau angka bulat (misal <strong>25</strong>).
+                </p>
+              )}
 
               {selectedMenu && (
                 <div className="p-3 rounded-xl bg-white border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
