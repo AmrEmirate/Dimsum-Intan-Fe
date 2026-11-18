@@ -328,6 +328,20 @@ export const LoginPage: React.FC = () => {
             </div>
           </div>
 
+          {/* Download Android APK Link (sembunyikan jika sudah di dalam APK) */}
+          {typeof navigator !== 'undefined' && !navigator.userAgent.includes('DimsumIntanAPK') && (
+            <div className="mt-5 flex justify-center">
+              <a
+                href="https://github.com/AmrEmirate/Dimsum-Intan-Fe/releases/latest/download/dimsum-intan.apk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high border border-border-subtle text-brand-espresso text-xs font-bold transition-all min-h-[40px]"
+              >
+                <span>Download Aplikasi Android (.apk)</span>
+              </a>
+            </div>
+          )}
+
           {/* Security Notice Footer */}
           <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-border-subtle flex items-center justify-center gap-1.5 text-secondary text-[10px] sm:text-xs text-center">
             <Shield className="w-3.5 h-3.5 text-primary shrink-0" />

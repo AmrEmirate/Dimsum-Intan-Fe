@@ -1,0 +1,75 @@
+name: Build & Release Android APK
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'apk/**'
+      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Generate Release Keystore
+        working-directory: apk/app
+        run: |
+          keytool -genkey -v \
+            -keystore release.keystore \
+            -alias dimsumintan \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass dimsumintan2026 \
+            -keypass dimsumintan2026 \
+            -dname "CN=Dimsum Intan POS, OU=IT, O=Dimsum Intan, L=Bandung, S=Jawa Barat, C=ID"
+
+      - name: Build Release APK
+        working-directory: apk
+        run: gradle assembleRelease --no-daemon
+
+      - name: Rename APK output
+        run: |
+          cp "apk/app/build/outputs/apk/release/app-release.apk" dimsum-intan.apk
+          ls -lh dimsum-intan.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dimsum-intan-apk
+          path: dimsum-intan.apk
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: Dimsum Intan POS Android (v1.0.0)
+          body: |
+            Aplikasi Android WebView resmi untuk **https://dimsumintan.vimtk.cloud/**
+            - Mode Portrait terkunci (tidak bisa landscape)
+            - Penyesuaian poni / notch & status bar aman
+            - Keyboard HP otomatis resize agar input & tombol tetap terlihat
+            - Mendukung Login Google & upload gambar
+          files: dimsum-intan.apk
