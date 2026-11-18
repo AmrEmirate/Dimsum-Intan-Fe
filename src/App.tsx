@@ -65,13 +65,36 @@ export const AppContent: React.FC = () => {
       }
     }
 
+    const role = currentUser.role;
+    const ownerOnlyViews = [
+      'beban-operasional-tetap',
+      'laporan-laba-rugi-arus-kas',
+      'dompet-penarikan-saldo',
+      'langganan-billing',
+    ];
+    const kasirAllowedViews = [
+      'transaksi-kasir-pos',
+      'sesi-shift-kasir',
+      'kas-kecil-outlet',
+    ];
+
+    if (role === 'KASIR' && !kasirAllowedViews.includes(currentView)) {
+      return <PosPage />;
+    }
+    if (role !== 'OWNER' && ownerOnlyViews.includes(currentView)) {
+      return <DashboardPage />;
+    }
+    if (role !== 'KASIR' && currentView === 'transaksi-kasir-pos') {
+      return <DashboardPage />;
+    }
+
     switch (currentView) {
       case 'dashboard-utama':
         return <DashboardPage />;
       case 'master-cabang-outlet':
         return <BranchesPage />;
       case 'transaksi-kasir-pos':
-        return currentUser.role === 'OWNER' ? <DashboardPage /> : <PosPage />;
+        return <PosPage />;
       case 'sesi-shift-kasir':
         return <ShiftPage />;
       case 'master-menu-dimsum-hpp':

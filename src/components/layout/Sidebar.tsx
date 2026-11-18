@@ -92,7 +92,7 @@ export const Sidebar: React.FC = () => {
       label: 'Transaksi Kasir (POS)',
       section: 'pos',
       icon: Store,
-      allowedRoles: ['SUPERVISOR', 'KASIR'],
+      allowedRoles: ['KASIR'],
     },
     {
       id: 'master-menu-dimsum-hpp',
@@ -127,7 +127,7 @@ export const Sidebar: React.FC = () => {
       label: 'Dompet & Tarik Saldo',
       section: 'akuntansi',
       icon: Wallet,
-      allowedRoles: ['OWNER', 'SUPERVISOR'],
+      allowedRoles: ['OWNER'],
       badge: 'QRIS & Payout',
     },
     {
