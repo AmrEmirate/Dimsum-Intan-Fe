@@ -562,10 +562,10 @@ export const WalletWithdrawalPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ================= 5. MAIN WORKSPACE: SPLIT GRID (8 cols + 4 cols) ================= */}
+      {/* ================= 5. MAIN WORKSPACE: FULL-WIDTH LEDGER ================= */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT / CENTER: AUDIT LEDGER TABLE (8 COLS) */}
-        <div className="lg:col-span-8 bg-surface-card border border-border-subtle rounded-2xl shadow-2xs flex flex-col overflow-hidden">
+        {/* MAIN: AUDIT LEDGER TABLE (12 COLS) */}
+        <div className="lg:col-span-12 bg-surface-card border border-border-subtle rounded-2xl shadow-2xs flex flex-col overflow-hidden">
           {/* Tab Navigation Header */}
           <div className="flex items-center border-b border-border-subtle px-4 pt-2 overflow-x-auto">
             <button
@@ -951,127 +951,15 @@ export const WalletWithdrawalPage: React.FC = () => {
           )}
         </div>
 
-        {/* RIGHT: QUICK WITHDRAWAL CALCULATOR & NOTICE (4 COLS) */}
-        <div className="lg:col-span-4 space-y-4">
-          {/* Quick Withdrawal Calculator Card */}
-          <div className="bg-surface-card border border-border-strong rounded-2xl p-5 shadow-2xs space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-border-subtle">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-brand-gold/15 text-brand-gold">
-                  <Calculator className="w-4 h-4" />
-                </div>
-                <h3 className="font-bold text-sm text-brand-espresso">
-                  Kalkulator Penarikan Baru
-                </h3>
-              </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 bg-status-lunas-bg text-status-lunas-text rounded border border-status-lunas-border">
-                BI-FAST READY
-              </span>
-            </div>
-
-            {/* Saldo Tersedia Box */}
-            <div>
-              <label className="text-[11px] font-bold text-secondary uppercase tracking-wider block mb-1">
-                Saldo Tersedia
-              </label>
-              <div className="text-xl font-bold font-mono text-brand-espresso bg-surface-container-low p-2.5 rounded-xl border border-border-subtle flex justify-between items-center">
-                <span>Rp {currentBalance.toLocaleString('id-ID')}</span>
-                <span className="text-xs text-status-lunas-text font-semibold">
-                  Maksimal
-                </span>
-              </div>
-            </div>
-
-            {/* Form Tarik Habis Seluruh Saldo */}
-            <form onSubmit={handleSubmitCalcWithdraw} className="space-y-3.5">
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-900 leading-relaxed">
-                <strong>Wajib Tarik Habis (100%) • Maks 1×/Hari:</strong> Dompet ini bukan penyimpanan dana. Setiap pengajuan pencairan otomatis menarik seluruh saldo QRIS aktif ke rekening bank Anda (maksimal 1 kali per hari).
-              </div>
-              {hasWithdrawnToday && (
-                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-[11px] text-red-700 font-semibold leading-relaxed">
-                  Kuota penarikan hari ini sudah terpakai ({todayWithdrawal?.withdrawalNumber}). Anda dapat mengajukan penarikan berikutnya besok.
-                </div>
-              )}
-
-              {/* Notes Field */}
-              <div>
-                <label className="text-xs font-bold text-brand-espresso block mb-1">
-                  Catatan Pengajuan (Opsional)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Pencairan omzet mingguan"
-                  value={calcNotes}
-                  onChange={(e) => setCalcNotes(e.target.value)}
-                  className="w-full text-xs px-3 py-2 bg-surface-card border border-border-strong rounded-xl text-brand-espresso focus:outline-none focus:border-brand-gold"
-                />
-              </div>
-
-              {/* Details Breakdown */}
-              <div className="bg-surface-container-low/60 rounded-xl p-3 space-y-2 text-xs border border-border-subtle">
-                <div className="flex justify-between text-secondary">
-                  <span>Rekening Tujuan:</span>
-                  <span className="font-bold text-brand-espresso">
-                    {walletSummary?.bankInfo?.bankName || 'BCA'} •{' '}
-                    {walletSummary?.bankInfo?.bankAccountNumber
-                      ? walletSummary.bankInfo.bankAccountNumber
-                      : 'Belum Diatur'}
-                  </span>
-                </div>
-                <div className="flex justify-between text-secondary">
-                  <span>Biaya Transfer:</span>
-                  <span className="font-bold text-status-lunas-text">
-                    Rp 0 (Prioritas Merchant)
-                  </span>
-                </div>
-                <div className="flex justify-between text-secondary">
-                  <span>Estimasi Masuk:</span>
-                  <span className="font-bold text-brand-espresso">
-                    Maksimal 15 Menit (BI-FAST)
-                  </span>
-                </div>
-                <div className="pt-2 border-t border-border-subtle flex justify-between font-bold text-sm text-brand-espresso">
-                  <span>Total Diterima:</span>
-                  <span className="text-brand-terracotta font-mono font-bold">
-                    Rp {(parseFloat(calcAmount) || 0).toLocaleString('id-ID')}
-                  </span>
-                </div>
-              </div>
-
-              {/* Action Confirmation Button */}
-              <button
-                type="submit"
-                disabled={isSubmittingCalc || currentBalance <= 0}
-                className="w-full min-h-[46px] py-3 bg-brand-terracotta hover:bg-brand-terracotta-dark disabled:opacity-50 text-white rounded-xl font-bold text-xs tracking-wide shadow-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer"
-              >
-                {isSubmittingCalc ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Memproses Pengajuan...</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" />
-                    <span>Ajukan Pencairan Sekarang</span>
-                  </>
-                )}
-              </button>
-
-              <div className="text-[11px] text-center text-secondary flex items-center justify-center gap-1.5 pt-1">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Dilindungi Enkripsi &amp; Otorisasi Finansial</span>
-              </div>
-            </form>
-          </div>
-
-          {/* Operational Notice Card */}
+        {/* OPERATIONAL NOTICE (12 COLS) */}
+        <div className="lg:col-span-12">
           <div className="bg-surface-card border border-border-subtle rounded-2xl p-4 text-xs space-y-2 shadow-2xs">
             <div className="flex items-center gap-2 text-brand-espresso font-bold">
               <Clock className="w-4 h-4 text-brand-terracotta" />
               <span>Ketentuan Penarikan Saldo Outlet</span>
             </div>
             <p className="text-secondary leading-relaxed">
-              Penarikan di atas pukul 22:00 WIB akan diproses melalui batch sistem otomatis buku besar penutupan kasir shift malam untuk menjaga konsistensi laporan laba rugi harian multi-outlet.
+              Setiap pengajuan penarikan wajib menarik seluruh saldo QRIS aktif (100%) dan dibatasi maksimal 1 kali per hari. Penarikan di atas pukul 22:00 WIB akan diproses melalui batch sistem otomatis buku besar penutupan kasir shift malam.
             </p>
           </div>
         </div>
