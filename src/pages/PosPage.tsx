@@ -52,12 +52,15 @@ export const PosPage: React.FC = () => {
     createDuitkuPosQr,
     checkDuitkuStatus,
     fetchWalletSummary,
+    setCurrentView,
   } = useApp();
+
+  const isShiftActive = activeShift?.status === 'ACTIVE';
 
   const [selectedCategory, setSelectedCategory] = useState<MenuCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [discountType, setDiscountType] = useState<'RP' | 'PERCENT'>('RP');
-  const [discountInput, setDiscountInput] = useState<string>('0');
+  const [discountInput, setDiscountInput] = useState<string>('');
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState<boolean>(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('CASH');
   const [cashGiven, setCashGiven] = useState<string>('');
@@ -127,6 +130,10 @@ export const PosPage: React.FC = () => {
   };
 
   const handleOpenCheckout = (method: PaymentMethod) => {
+    if (!isShiftActive) {
+      showNotification('Shift kasir belum dibuka atau sudah ditutup! Buka sesi shift kasir terlebih dahulu.', 'warning');
+      return;
+    }
     if (cart.length === 0) {
       showNotification('Keranjang pesanan masih kosong!', 'warning');
       return;
@@ -198,7 +205,7 @@ export const PosPage: React.FC = () => {
 
     const order = await processCheckout(selectedPaymentMethod, cashVal, discountAmount);
     setIsCheckoutModalOpen(false);
-    setDiscountInput('0');
+    setDiscountInput('');
     setDuitkuQrData(null);
     if (order) {
       setCompletedOrder(order);
@@ -207,6 +214,30 @@ export const PosPage: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-4 w-full animate-in fade-in duration-200">
+      {/* Shift Kasir Guard Banner (wajib buka shift sebelum transaksi / setelah tutup shift) */}
+      {!isShiftActive && (
+        <div className="mb-4 p-4 rounded-2xl bg-amber-50 border border-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-2.5">
+            <Timer className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs sm:text-sm font-bold text-amber-950">
+                Sesi Shift Kasir Belum Dibuka / Sudah Ditutup
+              </p>
+              <p className="text-[11px] sm:text-xs text-amber-800">
+                Kasir wajib membuka sesi shift terlebih dahulu sebelum dapat menginput pesanan dan memproses pembayaran.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCurrentView('sesi-shift-kasir')}
+            className="px-4 py-2.5 rounded-xl bg-brand-espresso hover:bg-[#2e211e] text-brand-gold text-xs font-bold shadow-xs cursor-pointer shrink-0 min-h-[40px]"
+          >
+            Buka Sesi Shift Kasir
+          </button>
+        </div>
+      )}
+
       {/* 2-Column Responsive Layout: Side-by-Side on Tablet & Desktop (md+), Mobile Stacked */}
       <div className="grid grid-cols-12 gap-3.5 sm:gap-4 lg:gap-5 items-start">
         {/* LEFT COLUMN: Menu Catalog (Tablet md: 7 cols, Desktop xl: 8 cols) */}
@@ -318,7 +349,13 @@ export const PosPage: React.FC = () => {
               return (
                 <div
                   key={menu.id}
-                  onClick={() => !isOutOfStock && addToCart(menu)}
+                  onClick={() => {
+                    if (!isShiftActive) {
+                      showNotification('Buka sesi shift kasir terlebih dahulu sebelum input pesanan!', 'warning');
+                      return;
+                    }
+                    if (!isOutOfStock) addToCart(menu);
+                  }}
                   className={`group bg-surface-card rounded-2xl p-2 sm:p-3 border shadow-xs hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden select-none ${
                     isOutOfStock
                       ? 'opacity-60 cursor-not-allowed border-dashed border-red-300 bg-red-50/10'
@@ -399,9 +436,13 @@ export const PosPage: React.FC = () => {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (!isShiftActive) {
+                          showNotification('Buka sesi shift kasir terlebih dahulu sebelum input pesanan!', 'warning');
+                          return;
+                        }
                         if (!isOutOfStock) addToCart(menu);
                       }}
-                      disabled={isOutOfStock}
+                      disabled={isOutOfStock || !isShiftActive}
                       className={`w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-xs transition-colors active:scale-90 cursor-pointer shrink-0 ${
                         isOutOfStock
                           ? 'bg-surface-muted text-secondary cursor-not-allowed'
@@ -531,7 +572,7 @@ export const PosPage: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setDiscountType('RP');
-                        setDiscountInput('0');
+                        setDiscountInput('');
                       }}
                       className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer transition-colors ${
                         discountType === 'RP'
@@ -545,7 +586,7 @@ export const PosPage: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setDiscountType('PERCENT');
-                        setDiscountInput('0');
+                        setDiscountInput('');
                       }}
                       className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer transition-colors ${
                         discountType === 'PERCENT'
@@ -559,12 +600,14 @@ export const PosPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <input
-                    type="number"
-                    min="0"
-                    max={discountType === 'PERCENT' ? 100 : subtotal}
+                    type="text"
+                    inputMode="numeric"
                     value={discountInput}
-                    onChange={(e) => setDiscountInput(e.target.value)}
-                    placeholder={discountType === 'PERCENT' ? 'Contoh: 10' : 'Contoh: 5000'}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+                      setDiscountInput(clean);
+                    }}
+                    placeholder="0"
                     className="w-24 px-2 py-1 rounded-lg bg-surface-card border border-border-subtle text-xs font-bold text-brand-espresso focus:outline-none focus:ring-1 focus:ring-brand-gold"
                   />
                   <div className="flex items-center gap-1 flex-wrap">
@@ -793,7 +836,7 @@ export const PosPage: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setDiscountType('RP');
-                        setDiscountInput('0');
+                        setDiscountInput('');
                       }}
                       className={`px-2.5 py-1 rounded-md text-xs font-bold ${
                         discountType === 'RP'
@@ -807,7 +850,7 @@ export const PosPage: React.FC = () => {
                       type="button"
                       onClick={() => {
                         setDiscountType('PERCENT');
-                        setDiscountInput('0');
+                        setDiscountInput('');
                       }}
                       className={`px-2.5 py-1 rounded-md text-xs font-bold ${
                         discountType === 'PERCENT'
@@ -821,12 +864,14 @@ export const PosPage: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <input
-                    type="number"
-                    min="0"
-                    max={discountType === 'PERCENT' ? 100 : subtotal}
+                    type="text"
+                    inputMode="numeric"
                     value={discountInput}
-                    onChange={(e) => setDiscountInput(e.target.value)}
-                    placeholder={discountType === 'PERCENT' ? '10' : '5000'}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+                      setDiscountInput(clean);
+                    }}
+                    placeholder="0"
                     className="w-24 px-2.5 py-1.5 rounded-lg bg-surface-card border border-border-subtle text-xs font-bold text-brand-espresso"
                   />
                   <div className="flex items-center gap-1.5 flex-wrap">
