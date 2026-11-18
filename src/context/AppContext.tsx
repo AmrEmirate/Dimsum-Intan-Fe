@@ -174,7 +174,7 @@ interface AppContextType {
   deletePettyCash: (id: string, pin: string) => Promise<boolean>;
 
   // Master Menu & HPP
-  addMenuItem: (menu: Omit<MenuItem, 'id' | 'code'>) => Promise<void>;
+  addMenuItem: (menu: Omit<MenuItem, 'id' | 'code'>) => Promise<MenuItem | null>;
   updateMenuItem: (id: string, menu: Partial<MenuItem>) => Promise<void>;
   deleteMenuItem: (id: string) => Promise<void>;
   toggleMenuAvailability: (id: string) => Promise<void>;
@@ -1274,7 +1274,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Master Menu Actions via Backend API
-  const addMenuItem = async (menu: Omit<MenuItem, 'id' | 'code'>) => {
+  const addMenuItem = async (menu: Omit<MenuItem, 'id' | 'code'>): Promise<MenuItem | null> => {
     try {
       const res = await api.post<{ success: boolean; message: string; data: MenuItem }>(
         '/menus',
@@ -1284,9 +1284,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (res.success && res.data) {
         setMenuItems((prev) => [res.data, ...prev]);
         showNotification(res.message, 'success');
+        return res.data;
       }
+      return null;
     } catch (error: any) {
       showNotification(`Gagal menambahkan menu: ${error.message}`, 'error');
+      return null;
     }
   };
 

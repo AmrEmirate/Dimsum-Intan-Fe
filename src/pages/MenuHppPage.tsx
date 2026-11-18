@@ -33,10 +33,16 @@ import { RupiahInput } from '../components/common/RupiahInput';
 import { RawMaterialBomPanel } from '../components/menu/RawMaterialBomPanel';
 import {
   exportToCsv,
-  exportToJson,
   parseCsv,
   downloadMenuCsvTemplate,
 } from '../utils/exportUtils';
+import {
+  filterActiveMenus,
+  calculateMarginMetrics,
+  calculateAverageMargin,
+  findHighestMarginItem,
+  validateMenuHppForm,
+} from '../utils/menuHppUtils';
 
 interface ParsedImportItem {
   name: string;
@@ -55,6 +61,7 @@ interface ParsedImportItem {
 export const MenuHppPage: React.FC = () => {
   const {
     menuItems,
+    menuRecipes,
     addMenuItem,
     updateMenuItem,
     deleteMenuItem,
@@ -64,10 +71,21 @@ export const MenuHppPage: React.FC = () => {
   } = useApp();
 
   const isOwner = currentUser.role === 'OWNER';
+  const activeMenuItems = filterActiveMenus(menuItems);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSavingMenu, setIsSavingMenu] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<MenuItem | null>(null);
+  const [bomTargetMenuId, setBomTargetMenuId] = useState<string | null>(null);
+  const bomPanelRef = useRef<HTMLDivElement>(null);
+
+  const jumpToBomForMenu = (menuId: string) => {
+    setBomTargetMenuId(menuId);
+    setTimeout(() => {
+      bomPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
 
   // Bulk Import State (Google Stitch Architecture)
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -107,28 +125,19 @@ export const MenuHppPage: React.FC = () => {
       'Mentai',
       'Kukus',
       'Goreng',
-      ...menuItems.map((m) => m.category).filter(Boolean),
+      ...activeMenuItems.map((m) => m.category).filter(Boolean),
     ])
   );
 
-  // Calculations
-  const totalItems = menuItems.length;
-  const avgMargin =
-    totalItems > 0
-      ? (
-          menuItems.reduce((acc, m) => acc + ((m.price - m.costPrice) / m.price) * 100, 0) /
-          totalItems
-        ).toFixed(1)
-      : '0';
+  // Calculations (Safe against division by zero & soft-deleted items)
+  const totalItems = activeMenuItems.length;
+  const avgMarginValue = calculateAverageMargin(activeMenuItems);
+  const avgMargin = avgMarginValue.toFixed(1);
+  const avgMarginBarWidth = Math.max(0, Math.min(100, avgMarginValue));
 
-  const highestMarginItem =
-    menuItems.length > 0
-      ? [...menuItems].sort(
-          (a, b) => (b.price - b.costPrice) / b.price - (a.price - a.costPrice) / a.price
-        )[0]
-      : null;
+  const highestMarginItem = findHighestMarginItem(activeMenuItems);
 
-  const categoryCounts = menuItems.reduce<Record<string, number>>((acc, item) => {
+  const categoryCounts = activeMenuItems.reduce<Record<string, number>>((acc, item) => {
     acc[item.category] = (acc[item.category] || 0) + 1;
     return acc;
   }, {});
@@ -175,42 +184,75 @@ export const MenuHppPage: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isOwner) {
+      showNotification('Hanya akun OWNER yang diizinkan menyimpan perubahan menu & HPP!', 'error');
+      return;
+    }
+
     const price = parseFloat(formPrice) || 0;
     const costPrice = parseFloat(formCostPrice) || 0;
-    const stock = parseInt(formStock) || 0;
+    const stock = parseInt(formStock, 10) || 0;
     const finalCategory = isCustomCategory
       ? customCategoryText.trim() || 'Lainnya'
       : formCategory;
 
-    if (editingItem) {
-      updateMenuItem(editingItem.id, {
-        name: formName,
-        category: finalCategory,
-        price,
-        costPrice,
-        stock,
-        description: formDescription,
-        image: formImage,
-      });
-    } else {
-      addMenuItem({
-        name: formName,
-        category: finalCategory,
-        price,
-        costPrice,
-        stock,
-        description: formDescription,
-        image: formImage,
-        isAvailable: true,
-      });
+    const validation = validateMenuHppForm({
+      name: formName,
+      price,
+      costPrice,
+      stock,
+    });
+
+    if (!validation.isValid) {
+      showNotification(validation.error || 'Data menu & HPP tidak valid!', 'error');
+      return;
     }
 
-    setIsModalOpen(false);
+    setIsSavingMenu(true);
+    try {
+      if (editingItem) {
+        await updateMenuItem(editingItem.id, {
+          name: formName.trim(),
+          category: finalCategory,
+          price,
+          costPrice,
+          stock,
+          description: formDescription,
+          image: formImage,
+        });
+      } else {
+        const created = await addMenuItem({
+          name: formName.trim(),
+          category: finalCategory,
+          price,
+          costPrice,
+          stock,
+          description: formDescription,
+          image: formImage,
+          isAvailable: true,
+        });
+        if (created) {
+          jumpToBomForMenu(created.id);
+          showNotification(
+            'Menu berhasil ditambahkan! Wajib input Master Bahan Baku & Resep (BOM) di bawah agar tidak ada kecurangan stok di kasir.',
+            'info'
+          );
+        }
+      }
+      setIsModalOpen(false);
+    } finally {
+      setIsSavingMenu(false);
+    }
   };
 
   const handleExportMenuHpp = () => {
+    if (!isOwner) {
+      showNotification('Hanya akun OWNER yang diizinkan mengekspor data HPP!', 'error');
+      return;
+    }
+
     const headers = [
       'Kode Menu',
       'Nama Menu',
@@ -223,9 +265,8 @@ export const MenuHppPage: React.FC = () => {
       'Status Ketersediaan',
     ];
 
-    const rows = menuItems.map((item) => {
-      const profit = item.price - item.costPrice;
-      const margin = ((profit / item.price) * 100).toFixed(1);
+    const rows = activeMenuItems.map((item) => {
+      const { profit, marginPct } = calculateMarginMetrics(item.price, item.costPrice);
       return [
         item.code,
         item.name,
@@ -233,7 +274,7 @@ export const MenuHppPage: React.FC = () => {
         item.price,
         item.costPrice,
         profit,
-        `${margin}%`,
+        `${marginPct.toFixed(1)}%`,
         item.stock,
         item.isAvailable && item.stock > 0 ? 'Tersedia' : 'Habis / Nonaktif',
       ];
@@ -245,14 +286,6 @@ export const MenuHppPage: React.FC = () => {
       rows
     );
     showNotification('Katalog Menu & HPP berhasil diunduh ke Excel!', 'success');
-  };
-
-  const handleExportJson = () => {
-    exportToJson(
-      `Master_Menu_HPP_Dimsum_Intan_${new Date().toISOString().slice(0, 10)}`,
-      menuItems
-    );
-    showNotification('Data menu berhasil diekspor ke JSON!', 'success');
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -340,7 +373,7 @@ export const MenuHppPage: React.FC = () => {
     let updatedCount = 0;
 
     for (const item of validItems) {
-      const existing = menuItems.find(
+      const existing = activeMenuItems.find(
         (m) => m.name.toLowerCase().trim() === item.name.toLowerCase().trim()
       );
 
@@ -383,7 +416,7 @@ export const MenuHppPage: React.FC = () => {
 
   const handleRecordWaste = (e: React.FormEvent) => {
     e.preventDefault();
-    const item = menuItems.find((m) => m.id === wasteMenuId);
+    const item = activeMenuItems.find((m) => m.id === wasteMenuId);
     if (!item) {
       showNotification('Silakan pilih produk dimsum terlebih dahulu!', 'warning');
       return;
@@ -467,40 +500,34 @@ export const MenuHppPage: React.FC = () => {
 
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             {isOwner && (
-              <button
-                type="button"
-                onClick={() => setIsImportModalOpen(true)}
-                className="flex items-center gap-1.5 bg-brand-gold/15 hover:bg-brand-gold/30 text-brand-espresso text-xs font-bold px-3.5 py-2 rounded-xl border border-brand-gold/40 shadow-xs transition-all active:scale-95 cursor-pointer"
-                title="Impor Massal Data Menu & HPP dari CSV / Excel"
-              >
-                <FileUp className="w-4 h-4 text-brand-terracotta" />
-                <span>Impor Massal (CSV)</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsImportModalOpen(true)}
+                  className="flex items-center gap-1.5 bg-brand-gold/15 hover:bg-brand-gold/30 text-brand-espresso text-xs font-bold px-3.5 py-2 min-h-[40px] rounded-xl border border-brand-gold/40 shadow-xs transition-all active:scale-95 cursor-pointer"
+                  title="Impor Massal Data Menu & HPP dari CSV / Excel"
+                >
+                  <FileUp className="w-4 h-4 text-brand-terracotta" />
+                  <span>Impor Massal (CSV)</span>
+                </button>
+
+                <button
+                  onClick={handleExportMenuHpp}
+                  className="flex items-center gap-1.5 bg-surface-container hover:bg-surface-container-high text-brand-espresso text-xs font-semibold px-3.5 py-2 min-h-[40px] rounded-xl border border-border-subtle shadow-xs transition-all active:scale-95 cursor-pointer"
+                  title="Unduh Katalog Menu & HPP ke Excel / CSV"
+                >
+                  <FileDown className="w-4 h-4 text-emerald-700" />
+                  <span>Ekspor CSV / Excel</span>
+                </button>
+              </>
             )}
 
             <button
-              onClick={handleExportMenuHpp}
-              className="flex items-center gap-1.5 bg-surface-container hover:bg-surface-container-high text-brand-espresso text-xs font-semibold px-3.5 py-2 rounded-xl border border-border-subtle shadow-xs transition-all active:scale-95 cursor-pointer"
-              title="Unduh Katalog Menu & HPP ke Excel / CSV"
-            >
-              <FileDown className="w-4 h-4 text-emerald-700" />
-              <span>Ekspor CSV / Excel</span>
-            </button>
-
-            <button
-              onClick={handleExportJson}
-              className="hidden sm:flex items-center gap-1.5 bg-surface-container hover:bg-surface-container-high text-brand-espresso text-xs font-semibold px-3 py-2 rounded-xl border border-border-subtle shadow-xs transition-all active:scale-95 cursor-pointer"
-              title="Ekspor Data JSON"
-            >
-              <span>JSON</span>
-            </button>
-
-            <button
               onClick={() => {
-                setWasteMenuId(menuItems[0]?.id || '');
+                setWasteMenuId(activeMenuItems[0]?.id || '');
                 setIsWasteModalOpen(true);
               }}
-              className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold px-3.5 py-2 rounded-xl border border-red-200 shadow-xs transition-all active:scale-95 cursor-pointer"
+              className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold px-3.5 py-2 min-h-[40px] rounded-xl border border-red-200 shadow-xs transition-all active:scale-95 cursor-pointer"
               title="Catat Produk Basi / Kukusan Rusak"
             >
               <Trash className="w-4 h-4 text-red-600" />
@@ -526,30 +553,35 @@ export const MenuHppPage: React.FC = () => {
       </div>
 
       {/* KPI Bento Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* KPI 1: Gross Margin */}
-        <div className="bg-surface-card rounded-2xl p-4 border border-border-subtle shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
-              Rata-Rata Gross Margin
-            </span>
-            <span className="p-1.5 rounded-lg bg-status-lunas-bg text-status-lunas-text">
-              <TrendingUp className="w-4 h-4" />
+      <div className={`grid grid-cols-1 md:grid-cols-2 ${isOwner ? 'xl:grid-cols-4' : ''} gap-4`}>
+        {/* KPI 1: Gross Margin (Owner Only) */}
+        {isOwner && (
+          <div className="bg-surface-card rounded-2xl p-4 border border-border-subtle shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
+                Rata-Rata Gross Margin
+              </span>
+              <span className="p-1.5 rounded-lg bg-status-lunas-bg text-status-lunas-text">
+                <TrendingUp className="w-4 h-4" />
+              </span>
+            </div>
+            <div className="mt-3 flex items-baseline gap-1.5">
+              <span className="font-serif-title text-2xl font-bold text-brand-espresso">
+                {avgMargin}%
+              </span>
+              <span className="text-xs text-status-lunas-text font-bold">Target &gt; 50%</span>
+            </div>
+            <div className="w-full bg-surface-container rounded-full h-1.5 mt-2 overflow-hidden">
+              <div
+                className="bg-brand-gold h-full rounded-full transition-all"
+                style={{ width: `${avgMarginBarWidth}%` }}
+              />
+            </div>
+            <span className="text-[10px] text-secondary mt-1">
+              Standar industri makanan siap saji
             </span>
           </div>
-          <div className="mt-3 flex items-baseline gap-1.5">
-            <span className="font-serif-title text-2xl font-bold text-brand-espresso">
-              {avgMargin}%
-            </span>
-            <span className="text-xs text-status-lunas-text font-bold">Target &gt; 50%</span>
-          </div>
-          <div className="w-full bg-surface-container rounded-full h-1.5 mt-2 overflow-hidden">
-            <div className="bg-brand-gold h-full rounded-full" style={{ width: `${avgMargin}%` }} />
-          </div>
-          <span className="text-[10px] text-secondary mt-1">
-            Standar industri makanan siap saji
-          </span>
-        </div>
+        )}
 
         {/* KPI 2: Total Variasi */}
         <div className="bg-surface-card rounded-2xl p-4 border border-border-subtle shadow-xs flex flex-col justify-between">
@@ -572,30 +604,32 @@ export const MenuHppPage: React.FC = () => {
           </span>
         </div>
 
-        {/* KPI 3: Margin Tertinggi */}
-        <div className="bg-surface-card rounded-2xl p-4 border border-border-subtle shadow-xs flex flex-col justify-between">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
-              Margin Tertinggi
-            </span>
-            <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800">
-              <Percent className="w-4 h-4" />
+        {/* KPI 3: Margin Tertinggi (Owner Only) */}
+        {isOwner && (
+          <div className="bg-surface-card rounded-2xl p-4 border border-border-subtle shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
+                Margin Tertinggi
+              </span>
+              <span className="p-1.5 rounded-lg bg-emerald-100 text-emerald-800">
+                <Percent className="w-4 h-4" />
+              </span>
+            </div>
+            <div className="mt-3">
+              <div className="font-bold text-xs text-brand-espresso truncate">
+                {highestMarginItem ? highestMarginItem.name : '-'}
+              </div>
+              <div className="font-serif-title text-lg font-bold text-emerald-700 mt-0.5">
+                {highestMarginItem
+                  ? `Margin ${calculateMarginMetrics(highestMarginItem.price, highestMarginItem.costPrice).marginPct.toFixed(1)}%`
+                  : '0%'}
+              </div>
+            </div>
+            <span className="text-[10px] text-secondary mt-1">
+              {highestMarginItem ? 'Profit center utama outlet' : 'Belum ada data menu'}
             </span>
           </div>
-          <div className="mt-3">
-            <div className="font-bold text-xs text-brand-espresso truncate">
-              {highestMarginItem ? highestMarginItem.name : '-'}
-            </div>
-            <div className="font-serif-title text-lg font-bold text-emerald-700 mt-0.5">
-              {highestMarginItem
-                ? `Margin ${(((highestMarginItem.price - highestMarginItem.costPrice) / highestMarginItem.price) * 100).toFixed(1)}%`
-                : '0%'}
-            </div>
-          </div>
-          <span className="text-[10px] text-secondary mt-1">
-            {highestMarginItem ? 'Profit center utama outlet' : 'Belum ada data menu'}
-          </span>
-        </div>
+        )}
 
         {/* KPI 4: Ketersediaan Bahan */}
         <div className="bg-surface-card rounded-2xl p-4 border border-border-subtle shadow-xs flex flex-col justify-between">
@@ -609,7 +643,7 @@ export const MenuHppPage: React.FC = () => {
           </div>
           <div className="mt-3">
             <span className="font-serif-title text-2xl font-bold text-brand-espresso">
-              {menuItems.filter((m) => m.isAvailable && m.stock > 0).length} / {totalItems}
+              {activeMenuItems.filter((m) => m.isAvailable && m.stock > 0).length} / {totalItems}
             </span>
             <span className="text-xs text-emerald-700 ml-1 font-bold">Tersedia</span>
           </div>
@@ -621,54 +655,82 @@ export const MenuHppPage: React.FC = () => {
 
       {/* Main Menu & HPP Table */}
       <div className="bg-surface-card rounded-2xl border border-border-subtle shadow-xs overflow-hidden">
-        <div className="p-4 border-b border-border-subtle flex items-center justify-between">
+        <div className="p-4 border-b border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="font-serif-title text-base font-bold text-brand-espresso">
-              Daftar Menu & Perhitungan Margin HPP
+              {isOwner ? 'Daftar Menu & Perhitungan Margin HPP' : 'Daftar Menu & Ketersediaan Stok'}
             </h2>
             <p className="text-xs text-secondary mt-0.5">
-              Rincian harga modal beli pabrik vs harga jual kasir di seluruh cabang
+              {isOwner
+                ? 'Rincian harga modal beli pabrik vs harga jual kasir di seluruh cabang'
+                : 'Pantau harga jual kasir dan ketersediaan stok menu outlet'}
             </p>
           </div>
-          <span className="text-[11px] font-bold text-secondary bg-surface-container px-2.5 py-1 rounded-lg">
-            Formula: Margin % = (Harga Jual - HPP) / Harga Jual
-          </span>
+          {isOwner && (
+            <span className="text-[11px] font-bold text-secondary bg-surface-container px-2.5 py-1 rounded-lg self-start sm:self-auto">
+              Formula: Margin % = (Harga Jual - HPP) / Harga Jual
+            </span>
+          )}
         </div>
 
         {/* Mobile View: Menu Cards (< md screen) */}
         <div className="md:hidden divide-y divide-border-subtle p-3">
-          {menuItems.map((item) => {
-            const profitPerPortion = item.price - item.costPrice;
-            const marginPct = ((profitPerPortion / item.price) * 100).toFixed(1);
+          {activeMenuItems.map((item) => {
+            const { marginPct, status } = calculateMarginMetrics(item.price, item.costPrice);
+            const marginBadgeClass =
+              status === 'loss'
+                ? 'bg-red-100 text-red-700'
+                : status === 'low'
+                ? 'bg-amber-100 text-amber-800'
+                : 'bg-emerald-100 text-emerald-800';
             const isOutOfStock = !item.isAvailable || item.stock <= 0;
 
             return (
               <div key={item.id} className="py-3.5 flex flex-col gap-2.5">
                 <div className="flex items-center gap-3">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-14 h-14 rounded-2xl object-cover border border-border-subtle shrink-0"
-                  />
+                  {item.image ? (
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-14 h-14 rounded-2xl object-cover border border-border-subtle shrink-0"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-2xl bg-surface-container border border-border-subtle flex items-center justify-center text-secondary shrink-0">
+                      <UtensilsCrossed className="w-5 h-5" />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="font-bold text-xs text-brand-espresso truncate">
                         {item.name}
                       </span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 shrink-0">
-                        {marginPct}%
-                      </span>
+                      {isOwner && (
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${marginBadgeClass}`}>
+                          {marginPct.toFixed(1)}%
+                        </span>
+                      )}
                     </div>
-                    <span className="text-[10px] text-secondary uppercase font-semibold block">
+                    <span className="text-[10px] text-secondary uppercase font-semibold block truncate">
                       {item.code} • {item.category}
                     </span>
-                    <div className="flex items-baseline gap-2 mt-0.5">
+                    <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
                       <span className="text-xs font-bold text-brand-espresso">
                         Rp {item.price.toLocaleString('id-ID')}
                       </span>
-                      <span className="text-[10px] text-secondary">
-                        (HPP: Rp {item.costPrice.toLocaleString('id-ID')})
-                      </span>
+                      {isOwner && (
+                        <span className="text-[10px] text-secondary">
+                          (HPP: Rp {item.costPrice.toLocaleString('id-ID')})
+                        </span>
+                      )}
+                      {isOwner && menuRecipes.filter((r) => r.menuId === item.id).length === 0 && (
+                        <button
+                          type="button"
+                          onClick={() => jumpToBomForMenu(item.id)}
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 hover:bg-amber-200 cursor-pointer"
+                        >
+                          Wajib Input BOM
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -676,7 +738,7 @@ export const MenuHppPage: React.FC = () => {
                 <div className="flex items-center justify-between pt-1 gap-2 flex-wrap">
                   <button
                     onClick={() => toggleMenuAvailability(item.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                    className={`px-3 py-1.5 min-h-[40px] rounded-xl text-xs font-bold transition-all active:scale-95 ${
                       !isOutOfStock
                         ? 'bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border'
                         : 'bg-status-unpaid-bg text-status-unpaid-text border border-status-unpaid-border'
@@ -686,17 +748,17 @@ export const MenuHppPage: React.FC = () => {
                   </button>
 
                   {isOwner && (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleOpenEdit(item)}
-                        className="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-bold text-brand-espresso transition-all active:scale-95"
+                        className="px-3 py-1.5 min-h-[40px] rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-bold text-brand-espresso transition-all active:scale-95"
                       >
                         Edit HPP
                       </button>
                       <button
                         type="button"
                         onClick={() => setDeleteConfirmItem(item)}
-                        className="p-2 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer"
+                        className="p-2.5 min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl bg-red-50 text-red-600 hover:bg-red-100 transition-colors cursor-pointer"
                         title="Hapus Menu"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -715,18 +777,24 @@ export const MenuHppPage: React.FC = () => {
             <thead>
               <tr className="bg-surface-container-low border-b border-border-subtle text-[11px] font-bold uppercase tracking-wider text-secondary">
                 <th className="py-3 px-4">Menu & Kategori</th>
-                <th className="py-3 px-4 text-right">Modal Pabrik (HPP)</th>
+                {isOwner && <th className="py-3 px-4 text-right">Modal Pabrik (HPP)</th>}
                 <th className="py-3 px-4 text-right">Harga Jual Kasir</th>
-                <th className="py-3 px-4 text-right">Laba Kotor / Porsi</th>
-                <th className="py-3 px-4 text-center">Gross Margin (%)</th>
+                {isOwner && <th className="py-3 px-4 text-right">Laba Kotor / Porsi</th>}
+                {isOwner && <th className="py-3 px-4 text-center">Gross Margin (%)</th>}
                 <th className="py-3 px-4 text-center">Stok & Status</th>
                 {isOwner && <th className="py-3 px-4 text-center">Aksi (Owner)</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle text-xs">
-              {menuItems.map((item) => {
-                const profitPerPortion = item.price - item.costPrice;
-                const marginPct = ((profitPerPortion / item.price) * 100).toFixed(1);
+              {activeMenuItems.map((item) => {
+                const { profit, marginPct, status } = calculateMarginMetrics(item.price, item.costPrice);
+                const profitClass = profit < 0 ? 'text-red-600' : 'text-emerald-700';
+                const marginBadgeClass =
+                  status === 'loss'
+                    ? 'bg-red-100 text-red-700'
+                    : status === 'low'
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-emerald-100 text-emerald-800';
                 const isOutOfStock = !item.isAvailable || item.stock <= 0;
 
                 return (
@@ -734,41 +802,65 @@ export const MenuHppPage: React.FC = () => {
                     {/* Menu and info */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-10 h-10 rounded-xl object-cover border border-border-subtle"
-                        />
-                        <div className="flex flex-col">
-                          <span className="font-bold text-brand-espresso">{item.name}</span>
-                          <span className="text-[10px] text-secondary uppercase tracking-wider">
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-10 h-10 rounded-xl object-cover border border-border-subtle shrink-0"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-xl bg-surface-container border border-border-subtle flex items-center justify-center text-secondary shrink-0">
+                            <UtensilsCrossed className="w-4 h-4" />
+                          </div>
+                        )}
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-brand-espresso truncate">{item.name}</span>
+                            {isOwner && menuRecipes.filter((r) => r.menuId === item.id).length === 0 && (
+                              <button
+                                type="button"
+                                onClick={() => jumpToBomForMenu(item.id)}
+                                className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 hover:bg-amber-200 cursor-pointer shrink-0"
+                                title="Klik untuk input Master Bahan Baku (BOM)"
+                              >
+                                Wajib Input BOM
+                              </button>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-secondary uppercase tracking-wider truncate">
                             {item.code} • {item.category}
                           </span>
                         </div>
                       </div>
                     </td>
 
-                    {/* HPP */}
-                    <td className="py-3 px-4 text-right font-medium text-secondary tabular-nums">
-                      Rp {item.costPrice.toLocaleString('id-ID')}
-                    </td>
+                    {/* HPP (Owner Only) */}
+                    {isOwner && (
+                      <td className="py-3 px-4 text-right font-medium text-secondary tabular-nums">
+                        Rp {item.costPrice.toLocaleString('id-ID')}
+                      </td>
+                    )}
 
                     {/* Price */}
                     <td className="py-3 px-4 text-right font-bold text-brand-espresso tabular-nums">
                       Rp {item.price.toLocaleString('id-ID')}
                     </td>
 
-                    {/* Profit per Portion */}
-                    <td className="py-3 px-4 text-right font-bold text-emerald-700 tabular-nums">
-                      +Rp {profitPerPortion.toLocaleString('id-ID')}
-                    </td>
+                    {/* Profit per Portion (Owner Only) */}
+                    {isOwner && (
+                      <td className={`py-3 px-4 text-right font-bold tabular-nums ${profitClass}`}>
+                        {profit >= 0 ? '+' : '-'}Rp {Math.abs(profit).toLocaleString('id-ID')}
+                      </td>
+                    )}
 
-                    {/* Margin % */}
-                    <td className="py-3 px-4 text-center">
-                      <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
-                        {marginPct}%
-                      </span>
-                    </td>
+                    {/* Margin % (Owner Only) */}
+                    {isOwner && (
+                      <td className="py-3 px-4 text-center">
+                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${marginBadgeClass}`}>
+                          {marginPct.toFixed(1)}%
+                        </span>
+                      </td>
+                    )}
 
                     {/* Stock & Availability */}
                     <td className="py-3 px-4 text-center">
@@ -830,10 +922,10 @@ export const MenuHppPage: React.FC = () => {
 
       {/* Modal: Tambah / Edit Menu */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4 overflow-y-auto">
           <form
             onSubmit={handleSubmit}
-            className="w-full max-w-lg bg-surface-card rounded-3xl border border-border-subtle shadow-2xl p-6 relative my-6"
+            className="w-full max-w-lg bg-surface-card rounded-3xl border border-border-subtle shadow-2xl p-5 sm:p-6 relative my-4 sm:my-6"
           >
             <button
               type="button"
@@ -942,22 +1034,29 @@ export const MenuHppPage: React.FC = () => {
               </div>
 
               {/* Calculated Margin Live Indicator */}
-              <div className="p-3 rounded-xl bg-surface-container flex justify-between items-center text-xs">
-                <span className="text-secondary">Margin Kotor Terhitung:</span>
-                <span className="font-bold text-emerald-700">
-                  Rp{' '}
-                  {(
-                    (parseFloat(formPrice) || 0) - (parseFloat(formCostPrice) || 0)
-                  ).toLocaleString('id-ID')}{' '}
-                  (
-                  {(
-                    (((parseFloat(formPrice) || 0) - (parseFloat(formCostPrice) || 0)) /
-                      (parseFloat(formPrice) || 1)) *
-                    100
-                  ).toFixed(1)}
-                  %)
-                </span>
-              </div>
+              {(() => {
+                const liveMetrics = calculateMarginMetrics(
+                  parseFloat(formPrice) || 0,
+                  parseFloat(formCostPrice) || 0
+                );
+                const liveColorClass =
+                  liveMetrics.status === 'loss'
+                    ? 'text-red-600'
+                    : liveMetrics.status === 'low'
+                    ? 'text-amber-700'
+                    : 'text-emerald-700';
+
+                return (
+                  <div className="p-3 rounded-xl bg-surface-container flex justify-between items-center text-xs gap-2">
+                    <span className="text-secondary">Margin Kotor Terhitung:</span>
+                    <span className={`font-bold text-right ${liveColorClass}`}>
+                      {liveMetrics.profit >= 0 ? '' : '-'}Rp{' '}
+                      {Math.abs(liveMetrics.profit).toLocaleString('id-ID')} (
+                      {liveMetrics.marginPct.toFixed(1)}%)
+                    </span>
+                  </div>
+                );
+              })()}
 
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-brand-espresso">Deskripsi Menu</label>
@@ -982,16 +1081,18 @@ export const MenuHppPage: React.FC = () => {
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
+                disabled={isSavingMenu}
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2.5 rounded-xl border border-border-strong text-xs font-bold text-brand-espresso"
+                className="px-4 py-2.5 min-h-[40px] rounded-xl border border-border-strong text-xs font-bold text-brand-espresso cursor-pointer disabled:opacity-50"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all"
+                disabled={isSavingMenu}
+                className="px-5 py-2.5 min-h-[40px] rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all cursor-pointer disabled:opacity-50"
               >
-                Simpan Menu & HPP
+                {isSavingMenu ? 'Menyimpan...' : 'Simpan Menu & HPP'}
               </button>
             </div>
           </form>
@@ -1028,14 +1129,16 @@ export const MenuHppPage: React.FC = () => {
                 <CustomSelect
                   label="Pilih Produk Dimsum"
                   size="sm"
-                  searchable={menuItems.length > 5}
+                  searchable={activeMenuItems.length > 5}
                   value={wasteMenuId}
                   onChange={(val) => setWasteMenuId(val)}
-                  options={menuItems.map((m) => ({
+                  options={activeMenuItems.map((m) => ({
                     value: m.id,
                     label: m.name,
                     badge: `Stok: ${m.stock} pcs`,
-                    sublabel: `Kategori: ${m.category} • HPP: Rp ${Number(m.costPrice).toLocaleString('id-ID')}`,
+                    sublabel: isOwner
+                      ? `Kategori: ${m.category} • HPP: Rp ${Number(m.costPrice).toLocaleString('id-ID')}`
+                      : `Kategori: ${m.category}`,
                   }))}
                 />
               </div>
@@ -1443,7 +1546,11 @@ export const MenuHppPage: React.FC = () => {
       />
 
       {/* Bahan Baku & Resep Menu (BOM) untuk Audit Stock Opname Malam */}
-      {isOwner && <RawMaterialBomPanel />}
+      {isOwner && (
+        <div ref={bomPanelRef}>
+          <RawMaterialBomPanel forcedMenuId={bomTargetMenuId} />
+        </div>
+      )}
     </div>
   );
 };
