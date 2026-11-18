@@ -243,7 +243,7 @@ export const Header: React.FC = () => {
   useEffect(() => {
     const update = () => {
       const now = new Date();
-      setCurrentTime(now.toLocaleTimeString('id-ID', { hour12: false }));
+      setCurrentTime(now.toLocaleTimeString('id-ID', { hour12: false, timeZone: 'Asia/Jakarta' }));
     };
     update();
     const timer = setInterval(update, 1000);
@@ -351,13 +351,18 @@ export const Header: React.FC = () => {
             <span className="text-[10px] sm:text-xs font-bold text-brand-espresso tracking-tight whitespace-nowrap">
               {activeShift?.status === 'ACTIVE' ? (
                 <>
-                  <span className="sm:hidden">Shift Aktif</span>
+                  <span className="sm:hidden">{currentTime || 'Shift Aktif'}</span>
                   <span className="hidden sm:inline">
                     {activeShift.shiftName}: {currentTime} WIB
                   </span>
                 </>
               ) : (
-                'Shift Tutup'
+                <>
+                  <span className="sm:hidden">{currentTime || 'Tutup'}</span>
+                  <span className="hidden sm:inline">
+                    Shift Tutup • {currentTime} WIB
+                  </span>
+                </>
               )}
             </span>
             {activeShift?.status === 'ACTIVE' && (
