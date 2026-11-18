@@ -13,7 +13,6 @@ import { PettyCashPage } from './pages/PettyCashPage';
 import { FixedExpensesPage } from './pages/FixedExpensesPage';
 import { ProfitLossPage } from './pages/ProfitLossPage';
 import { BranchesPage } from './pages/BranchesPage';
-import { SuperadminPortalPage } from './pages/SuperadminPortalPage';
 import { SubscriptionBillingPage } from './pages/SubscriptionBillingPage';
 import { WalletWithdrawalPage } from './pages/WalletWithdrawalPage';
 
@@ -33,9 +32,8 @@ export const AppContent: React.FC = () => {
     );
   }
 
-  const isSuperadmin = currentUser.role === 'SUPERADMIN';
   const isSubscriptionActive = billingStatus?.isSubscriptionActive ?? true;
-  const isOperationalLocked = !isSuperadmin && billingStatus !== null && !isSubscriptionActive;
+  const isOperationalLocked = billingStatus !== null && !isSubscriptionActive;
 
   const renderCurrentView = () => {
     if (isOperationalLocked) {
@@ -68,8 +66,6 @@ export const AppContent: React.FC = () => {
     }
 
     switch (currentView) {
-      case 'superadmin-portal':
-        return <SuperadminPortalPage />;
       case 'dashboard-utama':
         return <DashboardPage />;
       case 'master-cabang-outlet':
@@ -91,7 +87,7 @@ export const AppContent: React.FC = () => {
       case 'dompet-penarikan-saldo':
         return <WalletWithdrawalPage />;
       default:
-        return currentUser.role === 'SUPERADMIN' ? <SuperadminPortalPage /> : <DashboardPage />;
+        return <DashboardPage />;
     }
   };
 

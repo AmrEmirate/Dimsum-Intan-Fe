@@ -16,30 +16,26 @@ describe('Black Box Testing: Role-Based User Access Matrix & Permissions', () =>
     | 'beban-operasional'
     | 'langganan-billing'
     | 'pengaturan-payment-gateway'
-    | 'dompet-penarikan-saldo'
-    | 'superadmin-portal';
+    | 'dompet-penarikan-saldo';
 
   const checkUserCanAccessFeature = (role: UserRole, feature: Feature): boolean => {
     switch (feature) {
-      case 'superadmin-portal':
-        return role === 'SUPERADMIN';
-
       case 'langganan-billing':
       case 'pengaturan-payment-gateway':
       case 'dompet-penarikan-saldo':
       case 'kelola-staf-karyawan':
       case 'kelola-cabang-outlet':
-        return role === 'SUPERADMIN' || role === 'OWNER';
+        return role === 'OWNER';
 
       case 'kelola-menu-hpp':
       case 'tagihan-supplier':
       case 'beban-operasional':
       case 'laporan-laba-rugi':
-        return role === 'SUPERADMIN' || role === 'OWNER' || role === 'SUPERVISOR';
+        return role === 'OWNER' || role === 'SUPERVISOR';
 
       case 'verifikasi-kas-kecil':
       case 'batal-transaksi-void':
-        return role === 'SUPERADMIN' || role === 'OWNER' || role === 'SUPERVISOR';
+        return role === 'OWNER' || role === 'SUPERVISOR';
 
       case 'transaksi-kasir-pos':
         return role !== 'OWNER'; // Owner fokus audit & manajemen, bukan di depan kasir
@@ -61,8 +57,7 @@ describe('Black Box Testing: Role-Based User Access Matrix & Permissions', () =>
       expect(checkUserCanAccessFeature(role, 'kas-kecil-outlet')).toBe(true);
     });
 
-    it('should be strictly denied from Administrative, Billing, and Superadmin portals', () => {
-      expect(checkUserCanAccessFeature(role, 'superadmin-portal')).toBe(false);
+    it('should be strictly denied from Administrative and Billing portals', () => {
       expect(checkUserCanAccessFeature(role, 'langganan-billing')).toBe(false);
       expect(checkUserCanAccessFeature(role, 'pengaturan-payment-gateway')).toBe(false);
       expect(checkUserCanAccessFeature(role, 'kelola-cabang-outlet')).toBe(false);
@@ -83,7 +78,6 @@ describe('Black Box Testing: Role-Based User Access Matrix & Permissions', () =>
     it('should NOT be able to change payment gateway credentials or platform billing', () => {
       expect(checkUserCanAccessFeature(role, 'pengaturan-payment-gateway')).toBe(false);
       expect(checkUserCanAccessFeature(role, 'langganan-billing')).toBe(false);
-      expect(checkUserCanAccessFeature(role, 'superadmin-portal')).toBe(false);
     });
   });
 
@@ -98,19 +92,8 @@ describe('Black Box Testing: Role-Based User Access Matrix & Permissions', () =>
       expect(checkUserCanAccessFeature(role, 'laporan-laba-rugi')).toBe(true);
     });
 
-    it('should NOT access Superadmin Platform Portal or front-counter POS terminal', () => {
-      expect(checkUserCanAccessFeature(role, 'superadmin-portal')).toBe(false);
+    it('should NOT access front-counter POS terminal', () => {
       expect(checkUserCanAccessFeature(role, 'transaksi-kasir-pos')).toBe(false);
-    });
-  });
-
-  describe('Black Box: SUPERADMIN Role Boundary', () => {
-    const role: UserRole = 'SUPERADMIN';
-
-    it('should have universal access including Superadmin Portal', () => {
-      expect(checkUserCanAccessFeature(role, 'superadmin-portal')).toBe(true);
-      expect(checkUserCanAccessFeature(role, 'pengaturan-payment-gateway')).toBe(true);
-      expect(checkUserCanAccessFeature(role, 'transaksi-kasir-pos')).toBe(true);
     });
   });
 });

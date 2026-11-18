@@ -20,7 +20,6 @@ export const VIEW_TO_SLUG: Record<AppView, string> = {
   'dompet-penarikan-saldo': 'dompet',
   'master-cabang-outlet': 'cabang',
   'langganan-billing': 'langganan',
-  'superadmin-portal': 'superadmin',
 };
 
 // Aliases mapping to AppView
@@ -78,7 +77,6 @@ export const SLUG_TO_VIEW: Record<string, AppView> = {
   langganan: 'langganan-billing',
   billing: 'langganan-billing',
   subscription: 'langganan-billing',
-  superadmin: 'superadmin-portal',
 };
 
 export const VIEW_TITLES: Record<AppView, string> = {
@@ -92,14 +90,12 @@ export const VIEW_TITLES: Record<AppView, string> = {
   'dompet-penarikan-saldo': 'Dompet Digital & Tarik Saldo',
   'master-cabang-outlet': 'Kelola Cabang Outlet',
   'langganan-billing': 'Langganan & Billing',
-  'superadmin-portal': 'Superadmin Portal',
 };
 
 // Global views that don't need outlet slug
 export const GLOBAL_VIEWS: AppView[] = [
   'master-cabang-outlet',
   'langganan-billing',
-  'superadmin-portal',
 ];
 
 /**

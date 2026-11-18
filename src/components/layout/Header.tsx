@@ -263,8 +263,6 @@ export const Header: React.FC = () => {
 
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
-      case 'SUPERADMIN':
-        return 'bg-amber-500 text-stone-950 border border-amber-300 font-black shadow-xs';
       case 'OWNER':
         return 'bg-brand-espresso text-brand-gold border border-brand-gold/30';
       case 'SUPERVISOR':
@@ -630,18 +628,14 @@ export const Header: React.FC = () => {
                   {currentUser.name}
                 </span>
                 <span className="text-[10px] text-secondary truncate max-w-[130px]">
-                  {currentUser.role === 'SUPERADMIN'
-                    ? (currentTenant ? `Tenant: ${currentTenant.name}` : 'Platform Global')
-                    : currentUser.role === 'OWNER'
+                  {currentUser.role === 'OWNER'
                     ? (outlets.length > 0 ? `${outlets.length} Cabang & Pusat` : 'Pusat (0 Cabang Fisik)')
                     : activeOutletObj?.name || 'Cabang Kasir'}
                 </span>
               </div>
 
               <div className="w-7 h-7 rounded-full bg-brand-espresso text-brand-gold flex items-center justify-center font-bold text-xs shadow-xs">
-                {currentUser.role === 'SUPERADMIN' ? (
-                  <Crown className="w-4 h-4 text-brand-gold" />
-                ) : currentUser.role === 'OWNER' ? (
+                {currentUser.role === 'OWNER' ? (
                   <Shield className="w-4 h-4" />
                 ) : currentUser.role === 'SUPERVISOR' ? (
                   <UserCheck className="w-4 h-4" />
@@ -669,22 +663,6 @@ export const Header: React.FC = () => {
                     </span>
                   </div>
                 </div>
-
-                {/* Additional Settings: Superadmin Portal */}
-                {currentUser.role === 'SUPERADMIN' && (
-                  <div className="pt-1.5 mt-1 border-t border-border-subtle">
-                    <button
-                      onClick={() => {
-                        setIsRoleDropdownOpen(false);
-                        setCurrentView('superadmin-portal');
-                      }}
-                      className="w-full flex items-center gap-2 p-2 rounded-xl text-left text-xs font-black text-amber-900 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer"
-                    >
-                      <Crown className="w-4 h-4 text-amber-600" />
-                      <span>Portal Superadmin SaaS</span>
-                    </button>
-                  </div>
-                )}
 
                 {/* Additional Settings: PIN Update for Owner/SPV */}
                 {(currentUser.role === 'OWNER' || currentUser.role === 'SUPERVISOR') && (

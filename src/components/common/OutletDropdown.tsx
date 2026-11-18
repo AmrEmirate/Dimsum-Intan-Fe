@@ -36,7 +36,6 @@ export const OutletDropdown: React.FC<OutletDropdownProps> = ({
 
   const isKasir = currentUser.role === 'KASIR';
   const isOwner = currentUser.role === 'OWNER';
-  const isSuperAdmin = currentUser.role === 'SUPERADMIN';
 
   // Find currently selected outlet object
   const activeOutlet = outlets.find((o) => o.id === selectedOutletId);
@@ -301,7 +300,7 @@ export const OutletDropdown: React.FC<OutletDropdownProps> = ({
           </div>
 
           {/* Quick Action Footer for Owner */}
-          {(isOwner || isSuperAdmin) && (
+          {isOwner && (
             <div className="mt-2 pt-2 border-t border-border-subtle/80">
               <button
                 type="button"

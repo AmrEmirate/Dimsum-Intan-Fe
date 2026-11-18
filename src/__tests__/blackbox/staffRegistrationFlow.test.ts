@@ -210,7 +210,7 @@ describe('Black Box Testing: Staff Registration & Branch Assignment Dropdown Flo
       };
 
       const canSwitchOutlet = (user: User, targetOutletId: string): boolean => {
-        if (user.role === 'OWNER' || user.role === 'SUPERVISOR' || user.role === 'SUPERADMIN') {
+        if (user.role === 'OWNER' || user.role === 'SUPERVISOR') {
           return true;
         }
         return user.outletId === targetOutletId;

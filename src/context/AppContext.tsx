@@ -51,8 +51,7 @@ export type AppView =
   | 'beban-operasional-tetap'
   | 'laporan-laba-rugi-arus-kas'
   | 'dompet-penarikan-saldo'
-  | 'langganan-billing'
-  | 'superadmin-portal';
+  | 'langganan-billing';
 
 interface NotificationState {
   id: string;
@@ -546,7 +545,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setAuthToken(token);
     setIsAuthenticated(true);
     const avatarMap: Record<UserRole, string> = {
-      SUPERADMIN: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       OWNER: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
       SUPERVISOR: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
       KASIR: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
@@ -570,10 +568,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       setTenantSlug(u.tenant.slug);
     }
 
-    if (u.role === 'SUPERADMIN') {
-      setSelectedOutletIdState('all');
-      setCurrentView('superadmin-portal');
-    } else if (u.role === 'KASIR') {
+    if (u.role === 'KASIR') {
       setSelectedOutletIdState(u.outletId || (outlets[0]?.id ?? 'all'));
       setCurrentView('transaksi-kasir-pos');
     } else if (u.role === 'SUPERVISOR') {

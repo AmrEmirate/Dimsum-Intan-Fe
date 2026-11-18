@@ -918,27 +918,11 @@ export const WalletWithdrawalPage: React.FC = () => {
                                     : 'Hari ini'}
                                 </span>
                               )}
-                              {w.status === 'PENDING' &&
-                                (currentUser?.role === 'SUPERADMIN' ? (
-                                  <div className="flex items-center gap-1.5">
-                                    <button
-                                      onClick={() => handleSuperadminProcess(w.id, 'PROCESSED')}
-                                      className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold shadow-xs cursor-pointer transition-all"
-                                    >
-                                      Setujui Transfer
-                                    </button>
-                                    <button
-                                      onClick={() => handleSuperadminProcess(w.id, 'REJECTED')}
-                                      className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold shadow-xs cursor-pointer transition-all"
-                                    >
-                                      Tolak
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <span className="text-secondary text-xs">
-                                    Sedang diverifikasi bagian keuangan
-                                  </span>
-                                ))}
+                              {w.status === 'PENDING' && (
+                                <span className="text-secondary text-xs">
+                                  Sedang diverifikasi bagian keuangan
+                                </span>
+                              )}
                             </td>
                           </tr>
                         );
