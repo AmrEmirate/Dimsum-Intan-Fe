@@ -154,9 +154,13 @@ export const ShiftPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="font-serif-title font-bold text-lg text-emerald-700 tabular-nums">
-                Rp {Number(activeShift?.cashSales || 0).toLocaleString('id-ID')}
+                {currentUser.role === 'KASIR'
+                  ? '••••• (Blind)'
+                  : `Rp ${Number(activeShift?.cashSales || 0).toLocaleString('id-ID')}`}
               </div>
-              <span className="text-[10px] text-secondary">Kas masuk dari transaksi tunai</span>
+              <span className="text-[10px] text-secondary">
+                {currentUser.role === 'KASIR' ? 'Dirahasiakan saat shift aktif' : 'Kas masuk dari transaksi tunai'}
+              </span>
             </div>
           </div>
 
@@ -186,10 +190,14 @@ export const ShiftPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="font-serif-title font-bold text-lg text-brand-espresso tabular-nums">
-                Rp {expectedCash.toLocaleString('id-ID')}
+                {currentUser.role === 'KASIR'
+                  ? '••••• (Blind)'
+                  : `Rp ${expectedCash.toLocaleString('id-ID')}`}
               </div>
               <span className="text-[10px] text-brand-espresso-muted font-medium">
-                Wajib ada di laci saat cek fisik
+                {currentUser.role === 'KASIR'
+                  ? 'Dirahasiakan untuk mencegah tebak angka'
+                  : 'Wajib ada di laci saat cek fisik'}
               </span>
             </div>
           </div>
@@ -202,7 +210,9 @@ export const ShiftPage: React.FC = () => {
             </div>
             <div className="mt-3">
               <div className="font-serif-title font-bold text-lg text-brand-espresso tabular-nums">
-                Rp {Number(activeShift?.qrisSales || 0).toLocaleString('id-ID')}
+                {currentUser.role === 'KASIR'
+                  ? '••••• (Blind)'
+                  : `Rp ${Number(activeShift?.qrisSales || 0).toLocaleString('id-ID')}`}
               </div>
               <span className="text-[10px] text-secondary">Langsung masuk rekening bank</span>
             </div>

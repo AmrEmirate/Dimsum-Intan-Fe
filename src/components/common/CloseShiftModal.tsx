@@ -108,40 +108,54 @@ export const CloseShiftModal: React.FC<CloseShiftModalProps> = ({
           </div>
         </div>
 
-        {/* Formula Akuntansi Aliran Kas Laci */}
-        <div className="mt-4 p-4 rounded-2xl bg-surface-container/60 border border-border-subtle space-y-2.5">
-          <span className="text-[10px] font-black uppercase tracking-wider text-secondary block">
-            Aliran Kas Laci Tunai (Drawer Cash)
-          </span>
-
-          <div className="space-y-1.5 text-xs text-brand-espresso">
-            <div className="flex justify-between items-center">
-              <span className="text-secondary">Modal Awal Laci:</span>
-              <span className="font-semibold">Rp {startingCash.toLocaleString('id-ID')}</span>
-            </div>
-            <div className="flex justify-between items-center text-emerald-700">
-              <span>+ Penjualan Tunai Shift Ini:</span>
-              <span className="font-semibold">+Rp {cashSales.toLocaleString('id-ID')}</span>
-            </div>
-            <div className="flex justify-between items-center text-brand-terracotta">
-              <span>− Kas Kecil Darurat Keluar:</span>
-              <span className="font-semibold">−Rp {pettyCashOut.toLocaleString('id-ID')}</span>
-            </div>
-            <div className="pt-2 border-t border-border-subtle flex justify-between items-center text-sm font-black">
-              <span className="text-brand-espresso">Target Uang Fisik di Laci:</span>
-              <span className="text-brand-espresso">Rp {expectedCash.toLocaleString('id-ID')}</span>
-            </div>
+        {/* Formula Akuntansi Aliran Kas Laci (Dirahasiakan untuk KASIR / Blind Close) */}
+        {currentUser.role === 'KASIR' ? (
+          <div className="mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-200 space-y-1.5">
+            <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 block">
+              Mode Blind Count (Anti-Manipulasi)
+            </span>
+            <p className="text-xs text-amber-900 leading-relaxed">
+              Hitung seluruh uang tunai fisik yang ada di dalam laci saat ini (termasuk modal awal Rp{' '}
+              {startingCash.toLocaleString('id-ID')}) dan masukkan total riilnya di bawah. Data target sistem dirahasiakan dan hanya tampil untuk Owner/Supervisor.
+            </p>
           </div>
-        </div>
+        ) : (
+          <>
+            <div className="mt-4 p-4 rounded-2xl bg-surface-container/60 border border-border-subtle space-y-2.5">
+              <span className="text-[10px] font-black uppercase tracking-wider text-secondary block">
+                Aliran Kas Laci Tunai (Drawer Cash)
+              </span>
 
-        {/* Non-Cash / QRIS auto-settlement indicator */}
-        <div className="mt-2.5 px-3 py-2 rounded-xl bg-sky-50 border border-sky-200 text-sky-900 text-xs flex items-center justify-between">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <QrCode className="w-4 h-4 text-sky-600 shrink-0" />
-            <span className="truncate">Penjualan QRIS / Online:</span>
-          </div>
-          <span className="font-bold shrink-0">Rp {qrisSales.toLocaleString('id-ID')}</span>
-        </div>
+              <div className="space-y-1.5 text-xs text-brand-espresso">
+                <div className="flex justify-between items-center">
+                  <span className="text-secondary">Modal Awal Laci:</span>
+                  <span className="font-semibold">Rp {startingCash.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between items-center text-emerald-700">
+                  <span>+ Penjualan Tunai Shift Ini:</span>
+                  <span className="font-semibold">+Rp {cashSales.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between items-center text-brand-terracotta">
+                  <span>− Kas Kecil Darurat Keluar:</span>
+                  <span className="font-semibold">−Rp {pettyCashOut.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="pt-2 border-t border-border-subtle flex justify-between items-center text-sm font-black">
+                  <span className="text-brand-espresso">Target Uang Fisik di Laci:</span>
+                  <span className="text-brand-espresso">Rp {expectedCash.toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Non-Cash / QRIS auto-settlement indicator */}
+            <div className="mt-2.5 px-3 py-2 rounded-xl bg-sky-50 border border-sky-200 text-sky-900 text-xs flex items-center justify-between">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <QrCode className="w-4 h-4 text-sky-600 shrink-0" />
+                <span className="truncate">Penjualan QRIS / Online:</span>
+              </div>
+              <span className="font-bold shrink-0">Rp {qrisSales.toLocaleString('id-ID')}</span>
+            </div>
+          </>
+        )}
 
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
@@ -151,27 +165,33 @@ export const CloseShiftModal: React.FC<CloseShiftModalProps> = ({
               <label className="text-xs font-bold text-brand-espresso">
                 Hitungan Uang Fisik Aktual di Laci *
               </label>
-              <button
-                type="button"
-                onClick={handleAutoFillExact}
-                className="text-[11px] font-bold text-brand-terracotta hover:underline cursor-pointer flex items-center gap-1"
-              >
-                <Calculator className="w-3.5 h-3.5" />
-                <span>Isi Nilai Pas</span>
-              </button>
+              {currentUser.role !== 'KASIR' && (
+                <button
+                  type="button"
+                  onClick={handleAutoFillExact}
+                  className="text-[11px] font-bold text-brand-terracotta hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  <Calculator className="w-3.5 h-3.5" />
+                  <span>Isi Nilai Pas</span>
+                </button>
+              )}
             </div>
 
             <RupiahInput
               value={actualCashInput}
               onChange={(e) => setActualCashInput(e.target.value)}
-              placeholder={`Contoh: ${expectedCash.toLocaleString('id-ID')}`}
+              placeholder={
+                currentUser.role === 'KASIR'
+                  ? 'Masukkan total uang fisik di laci'
+                  : `Contoh: ${expectedCash.toLocaleString('id-ID')}`
+              }
               required
               className="rounded-2xl bg-surface-card border-border-strong text-base font-black text-brand-espresso"
             />
           </div>
 
-          {/* Difference Calculation Banner */}
-          {actualCashInput && (
+          {/* Difference Calculation Banner (Hanya tampil untuk Owner/Supervisor, bukan Kasir) */}
+          {actualCashInput && currentUser.role !== 'KASIR' && (
             <div
               className={`p-3 rounded-2xl border text-xs flex items-center justify-between transition-all ${
                 difference === 0
