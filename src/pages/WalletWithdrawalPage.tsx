@@ -109,30 +109,26 @@ export const WalletWithdrawalPage: React.FC = () => {
     }
   };
 
-  const handleOpenWithdraw = (presetAmount?: number) => {
+  const handleOpenWithdraw = () => {
     if (!hasBankAccount) {
       showNotification('Harap atur rekening bank tujuan penarikan terlebih dahulu!', 'warning');
       setIsBankModalOpen(true);
       return;
     }
-    setWithdrawAmount(presetAmount ? String(presetAmount) : '');
+    setWithdrawAmount(String(currentBalance));
     setWithdrawNotes('');
     setIsWithdrawModalOpen(true);
   };
 
   const handleSubmitWithdrawModal = async (e: React.FormEvent) => {
     e.preventDefault();
-    const amountNum = parseFloat(withdrawAmount);
+    const amountNum = Math.round(currentBalance);
     if (!amountNum || amountNum <= 0) {
-      showNotification('Masukkan nominal penarikan yang valid!', 'error');
+      showNotification('Saldo dompet kosong, belum ada dana QRIS untuk ditarik!', 'error');
       return;
     }
     if (amountNum < 20000) {
       showNotification('Nominal penarikan minimal Rp 20.000!', 'error');
-      return;
-    }
-    if (amountNum > currentBalance) {
-      showNotification('Saldo dompet tidak mencukupi untuk penarikan ini!', 'error');
       return;
     }
 
@@ -161,17 +157,13 @@ export const WalletWithdrawalPage: React.FC = () => {
       return;
     }
 
-    const amountNum = parseFloat(calcAmount);
+    const amountNum = Math.round(currentBalance);
     if (!amountNum || amountNum <= 0) {
-      showNotification('Masukkan nominal penarikan yang valid pada kalkulator!', 'error');
+      showNotification('Saldo dompet kosong, belum ada dana QRIS untuk ditarik!', 'error');
       return;
     }
     if (amountNum < 20000) {
       showNotification('Nominal penarikan minimal Rp 20.000!', 'error');
-      return;
-    }
-    if (amountNum > currentBalance) {
-      showNotification('Saldo dompet tidak mencukupi untuk nominal ini!', 'error');
       return;
     }
 
@@ -277,7 +269,7 @@ export const WalletWithdrawalPage: React.FC = () => {
             Dompet Digital Kasir &amp; Rekening Penarikan
           </h1>
           <p className="font-sans text-xs text-secondary mt-1 max-w-2xl leading-relaxed">
-            Arsip penampungan pendapatan digital (QRIS Dinamis &amp; Virtual Account) kasir multi-outlet, siap ditransfer ke rekening bank resmi operasional.
+            Arsip penampungan pendapatan khusus QRIS kasir multi-outlet, siap ditransfer ke rekening bank resmi operasional (wajib tarik habis sekaligus, bukan penyimpanan dana).
           </p>
         </div>
 
@@ -386,13 +378,13 @@ export const WalletWithdrawalPage: React.FC = () => {
               +Rp {(walletSummary?.totalCredited || 0).toLocaleString('id-ID')}
             </div>
             <p className="text-xs text-secondary mt-1 leading-snug">
-              Total penerimaan QRIS &amp; VA kasir (Duitku Verified)
+              Total penerimaan khusus QRIS kasir
             </p>
           </div>
 
           <div className="pt-2.5 border-t border-border-subtle text-[11px] text-secondary flex items-center gap-1.5 font-medium">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-            <span>Terverifikasi Gateway Duitku</span>
+            <span>Khusus Pembayaran QRIS</span>
           </div>
         </div>
 
@@ -965,42 +957,10 @@ export const WalletWithdrawalPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Form Input Nominal */}
+            {/* Form Tarik Habis Seluruh Saldo */}
             <form onSubmit={handleSubmitCalcWithdraw} className="space-y-3.5">
-              <RupiahInput
-                label="Nominal Penarikan Dana"
-                value={calcAmount}
-                onChange={(e) => setCalcAmount(e.target.value)}
-                placeholder="Minimal Rp 20.000"
-                required
-                className="border-2 border-brand-gold focus:border-brand-gold-hover font-mono"
-              />
-
-              {/* Quick Preset Buttons */}
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {amountPresets.map((preset) => (
-                  <button
-                    key={preset}
-                    type="button"
-                    disabled={preset > currentBalance}
-                    onClick={() => setCalcAmount(String(preset))}
-                    className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-                      calcAmount === String(preset)
-                        ? 'bg-brand-espresso text-brand-gold border-brand-espresso font-bold shadow-2xs'
-                        : 'bg-surface-muted hover:bg-secondary-container text-brand-espresso border-border-subtle'
-                    }`}
-                  >
-                    Rp {(preset / 1000).toLocaleString('id-ID')}k
-                  </button>
-                ))}
-                <button
-                  type="button"
-                  disabled={currentBalance <= 0}
-                  onClick={() => setCalcAmount(String(currentBalance))}
-                  className="col-span-2 py-2 px-2.5 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso rounded-xl font-bold text-xs transition-colors cursor-pointer shadow-2xs"
-                >
-                  Tarik Semua Saldo
-                </button>
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-900 leading-relaxed">
+                <strong>Wajib Tarik Habis (100%):</strong> Dompet ini bukan penyimpanan dana. Setiap pengajuan pencairan otomatis menarik seluruh saldo QRIS aktif ke rekening bank Anda.
               </div>
 
               {/* Notes Field */}
@@ -1140,39 +1100,22 @@ export const WalletWithdrawalPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Nominal Input */}
+              {/* Nominal Penarikan (Wajib Tarik Habis 100%) */}
               <div className="space-y-1.5">
-                <RupiahInput
-                  label="Nominal Penarikan"
-                  value={withdrawAmount}
-                  onChange={(e) => setWithdrawAmount(e.target.value)}
-                  placeholder="Minimal Rp 20.000"
-                  required
-                  className="font-mono"
-                />
-
-                {/* Preset Chips */}
-                <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                  {amountPresets.map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      disabled={preset > currentBalance}
-                      onClick={() => setWithdrawAmount(String(preset))}
-                      className="px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-surface-container-highest disabled:opacity-40 text-[11px] font-mono font-bold text-secondary cursor-pointer transition-all"
-                    >
-                      +{(preset / 1000)}k
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    disabled={currentBalance <= 0}
-                    onClick={() => setWithdrawAmount(String(currentBalance))}
-                    className="px-2.5 py-1 rounded-lg bg-brand-gold hover:bg-brand-gold-hover text-[11px] font-bold text-brand-espresso cursor-pointer transition-all ml-auto"
-                  >
-                    Tarik Semua
-                  </button>
+                <label className="text-xs font-bold text-brand-espresso block">
+                  Nominal Penarikan (Wajib Tarik Habis 100%)
+                </label>
+                <div className="p-3 rounded-xl bg-brand-gold-subtle/60 border border-brand-gold/40 flex items-center justify-between">
+                  <span className="text-base font-bold font-mono text-brand-espresso">
+                    Rp {currentBalance.toLocaleString('id-ID')}
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-espresso text-brand-gold">
+                    100% Saldo Aktif
+                  </span>
                 </div>
+                <p className="text-[11px] text-secondary">
+                  Dompet ini bukan penyimpanan uang. Seluruh saldo QRIS aktif akan langsung dicairkan sekaligus (minimal Rp 20.000).
+                </p>
               </div>
 
               {/* Catatan */}
@@ -1196,7 +1139,7 @@ export const WalletWithdrawalPage: React.FC = () => {
                 <div className="flex justify-between text-brand-espresso font-bold pt-1 border-t border-border-subtle">
                   <span>Total Diterima di Rekening:</span>
                   <span className="font-mono text-brand-terracotta">
-                    Rp {(parseFloat(withdrawAmount) || 0).toLocaleString('id-ID')}
+                    Rp {currentBalance.toLocaleString('id-ID')}
                   </span>
                 </div>
               </div>
