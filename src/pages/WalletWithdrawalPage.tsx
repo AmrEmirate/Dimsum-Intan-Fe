@@ -227,25 +227,6 @@ export const WalletWithdrawalPage: React.FC = () => {
     }
   };
 
-  // Superadmin Action to Process or Reject Withdrawal
-  const handleSuperadminProcess = async (id: string, status: 'PROCESSED' | 'REJECTED') => {
-    try {
-      const res = await api.post<{ success: boolean; message: string }>(
-        `/superadmin/withdrawals/${id}/process`,
-        { status }
-      );
-      if (res.success) {
-        showNotification(
-          `Pengajuan penarikan dana berhasil ${status === 'PROCESSED' ? 'disetujui & ditransfer' : 'ditolak dan direfund ke dompet'}.`,
-          'success'
-        );
-        await fetchWalletSummary();
-      }
-    } catch (err: any) {
-      showNotification(err.message || 'Gagal memproses penarikan saldo', 'error');
-    }
-  };
-
   // Filtered Transactions
   const rawTransactions = walletSummary?.recentTransactions || [];
   const transactions = rawTransactions.filter((tx) => {

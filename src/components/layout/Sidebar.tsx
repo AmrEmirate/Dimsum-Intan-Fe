@@ -165,21 +165,13 @@ export const Sidebar: React.FC = () => {
           <div className="px-5 pb-4 flex items-center justify-between border-b border-border-subtle/70">
             <div className="flex items-center gap-3 min-w-0">
               <div
-                className="w-10 h-10 rounded-xl p-1.5 flex items-center justify-center shadow-sm shrink-0 font-black text-white text-base"
-                style={{ backgroundColor: brandColor }}
+                className="w-10 h-10 rounded-full p-0.5 flex items-center justify-center shadow-sm shrink-0 overflow-hidden border border-brand-gold/50 bg-[#FFCC00]"
               >
-                {currentTenant?.logoUrl ? (
-                  <img
-                    src={currentTenant.logoUrl}
-                    alt={brandName}
-                    className="w-full h-full object-contain filter drop-shadow"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
-                ) : (
-                  brandName.charAt(0).toUpperCase()
-                )}
+                <img
+                  src={currentTenant?.logoUrl || '/logo_intan.png'}
+                  alt={brandName}
+                  className="w-full h-full object-cover rounded-full"
+                />
               </div>
               <div className="flex flex-col leading-tight min-w-0">
                 <span className="font-serif-title font-bold text-base text-brand-espresso tracking-tight truncate">

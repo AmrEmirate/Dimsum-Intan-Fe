@@ -4,13 +4,13 @@
   --font-display: "Playfair Display", Georgia, serif;
   --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-  --color-brand-gold: #F5A623;
-  --color-brand-gold-hover: #E59819;
-  --color-brand-gold-subtle: #FEF8EC;
-  --color-brand-espresso: #2B1E16;
-  --color-brand-espresso-muted: #5A4438;
-  --color-brand-terracotta: #E65A28;
-  --color-brand-terracotta-dark: #C94517;
+  --color-brand-gold: #FFCC00;
+  --color-brand-gold-hover: #F5A623;
+  --color-brand-gold-subtle: #FFF9DB;
+  --color-brand-espresso: #2B1608;
+  --color-brand-espresso-muted: #5A3A28;
+  --color-brand-terracotta: #E65100;
+  --color-brand-terracotta-dark: #BF360C;
 
   --color-surface-canvas: #FDFBF7;
   --color-surface-card: #FFFFFF;

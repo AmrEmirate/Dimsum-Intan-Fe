@@ -70,16 +70,15 @@ export const LoginPage: React.FC = () => {
         {/* Left Side: Brand Heritage Banner (Desktop Only) */}
         <div className="hidden lg:flex lg:col-span-5 bg-gradient-to-br from-brand-espresso via-[#382622] to-brand-espresso p-8 flex-col justify-between text-white relative">
           <div className="relative z-10">
-            <div className="flex items-center gap-2.5 mb-6">
+            <div className="flex items-center gap-3 mb-6">
               <div
-                className="w-11 h-11 rounded-2xl flex items-center justify-center font-serif font-black text-xl shadow-lg text-white"
-                style={{ backgroundColor: brandColor }}
+                className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center shadow-lg border-2 border-brand-gold bg-[#FFCC00] shrink-0"
               >
-                {currentTenant?.logoUrl ? (
-                  <img src={currentTenant.logoUrl} alt={brandName} className="w-full h-full object-contain p-1" />
-                ) : (
-                  brandName.charAt(0).toUpperCase()
-                )}
+                <img
+                  src={currentTenant?.logoUrl || '/logo_intan.png'}
+                  alt={brandName}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div className="min-w-0">
                 <h1 className="font-serif-title font-bold text-lg leading-tight text-white truncate">
@@ -134,14 +133,13 @@ export const LoginPage: React.FC = () => {
             {/* Mobile Brand Header */}
             <div className="flex lg:hidden flex-col items-center text-center mb-6">
               <div
-                className="w-14 h-14 rounded-2xl p-2 flex items-center justify-center shadow-lg border border-brand-gold/30 mb-2.5 font-serif font-black text-2xl text-white"
-                style={{ backgroundColor: brandColor }}
+                className="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center shadow-lg border-2 border-brand-gold bg-[#FFCC00] mb-2.5"
               >
-                {currentTenant?.logoUrl ? (
-                  <img src={currentTenant.logoUrl} alt={brandName} className="w-full h-full object-contain filter drop-shadow" />
-                ) : (
-                  brandName.charAt(0).toUpperCase()
-                )}
+                <img
+                  src={currentTenant?.logoUrl || '/logo_intan.png'}
+                  alt={brandName}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <h1 className="font-serif-title font-bold text-xl text-brand-espresso tracking-tight">
                 {brandName}
