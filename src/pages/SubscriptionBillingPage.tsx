@@ -37,9 +37,9 @@ export const OFFICIAL_SAAS_PLANS = [
     price: 50000,
     dailyTxLimit: 50,
     monthlyTxLimit: 1500,
-    description: 'Kuota 1.500 transaksi (per struk) / bulan (50 tx/hari)',
+    description: 'Kuota 1.500 transaksi (per struk) / bulan (setara 50 tx/hari)',
     features: [
-      '1.500 Transaksi (Per Struk) / Bulan = 50 Tx / Hari',
+      '1.500 Transaksi (Per Struk) / Bulan (Setara 50 Tx / Hari)',
       'Akumulatif Bulanan (Hari ramai tetap aman)',
       'Kasir POS & Cetak Struk Realtime',
       'Manajemen Menu & Stok Bahan Pokok (HPP)',
@@ -55,9 +55,9 @@ export const OFFICIAL_SAAS_PLANS = [
     price: 100000,
     dailyTxLimit: 200,
     monthlyTxLimit: 6000,
-    description: 'Kuota 200 transaksi per hari (6.000 tx/bulan)',
+    description: 'Kuota 6.000 transaksi (per struk) / bulan (setara 200 tx/hari)',
     features: [
-      '200 Transaksi / Hari (Akumulasi 6.000 Tx / Bulan)',
+      '6.000 Transaksi (Per Struk) / Bulan (Setara 200 Tx / Hari)',
       'Akumulatif Bulanan (Hari ramai tetap aman)',
       'Kasir POS & Cetak Struk Realtime',
       'Rekonsiliasi Shift & Tutup Kasir',
@@ -73,9 +73,9 @@ export const OFFICIAL_SAAS_PLANS = [
     price: 150000,
     dailyTxLimit: 350,
     monthlyTxLimit: 10500,
-    description: 'Kuota 350 transaksi per hari (10.500 tx/bulan)',
+    description: 'Kuota 10.500 transaksi (per struk) / bulan (setara 350 tx/hari)',
     features: [
-      '350 Transaksi / Hari (Akumulasi 10.500 Tx / Bulan)',
+      '10.500 Transaksi (Per Struk) / Bulan (Setara 350 Tx / Hari)',
       'Akumulatif Bulanan (Hari ramai tetap aman)',
       'Multi-Outlet & Manajemen Karyawan',
       'Laporan Laba Rugi & Arus Kas Otomatis',
@@ -134,6 +134,7 @@ export const SubscriptionBillingPage: React.FC = () => {
     createDuitkuSubscriptionCheckout,
     showNotification,
     outlets,
+    selectedOutletId: activeGlobalOutletId,
     setCurrentView,
   } = useApp();
 
@@ -388,10 +389,38 @@ export const SubscriptionBillingPage: React.FC = () => {
   const monthlyTxLimit = isUnlimited ? 0 : (billingStatus?.effectiveMonthlyTxLimit ?? currentPlan.monthlyTxLimit ?? 6000);
   const monthTxCount = billingStatus?.monthOrdersCount || 0;
 
-  const monthPercentage = isUnlimited
+  const billingOutlets = billingStatus?.outlets || [];
+  const selectedBranchStat =
+    activeGlobalOutletId && activeGlobalOutletId !== 'all'
+      ? billingOutlets.find((o) => o.id === activeGlobalOutletId) || null
+      : null;
+
+  const displayIsUnlimited = selectedBranchStat
+    ? Boolean(selectedBranchStat.isUnlimited)
+    : billingOutlets.length > 0
+    ? billingOutlets.every((o) => o.isUnlimited)
+    : Boolean(isUnlimited);
+
+  const displayMonthTxCount = selectedBranchStat
+    ? selectedBranchStat.monthOrders ?? 0
+    : billingOutlets.length > 0
+    ? billingOutlets.reduce((sum, o) => sum + (o.monthOrders ?? 0), 0)
+    : monthTxCount;
+
+  const displayMonthlyLimit = selectedBranchStat
+    ? selectedBranchStat.monthlyLimit ?? monthlyTxLimit
+    : billingOutlets.length > 0
+    ? billingOutlets.reduce((sum, o) => sum + (o.isUnlimited ? 0 : (o.monthlyLimit ?? 0)), 0)
+    : monthlyTxLimit;
+
+  const displayScopeLabel = selectedBranchStat
+    ? `${selectedBranchStat.name} (${selectedBranchStat.planName || selectedBranchStat.plan || currentPlan.name})`
+    : `Semua Cabang (${billingOutlets.length || activeOperationalOutlets} Cabang)`;
+
+  const monthPercentage = displayIsUnlimited
     ? 100
-    : monthlyTxLimit > 0
-    ? Math.min(100, Math.round((monthTxCount / monthlyTxLimit) * 100))
+    : displayMonthlyLimit > 0
+    ? Math.min(100, Math.round((displayMonthTxCount / displayMonthlyLimit) * 100))
     : 0;
 
   // Compute calculated amounts for preview
@@ -585,31 +614,34 @@ export const SubscriptionBillingPage: React.FC = () => {
               </span>
               <span
                 className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
-                  isUnlimited
+                  displayIsUnlimited
                     ? 'bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border'
                     : monthPercentage > 85
                     ? 'bg-status-unpaid-bg text-status-unpaid-text border border-status-unpaid-border'
                     : 'bg-status-pending-bg text-status-pending-text border border-status-pending-border'
                 }`}
               >
-                {isUnlimited ? 'UNLIMITED' : `${monthPercentage}% Terpakai`}
+                {displayIsUnlimited ? 'UNLIMITED' : `${monthPercentage}% Terpakai`}
               </span>
             </div>
             <div className="space-y-1">
               <div className="text-2xl font-bold text-brand-espresso font-serif-title">
-                {isUnlimited ? (
+                {displayIsUnlimited ? (
                   <span className="flex items-center gap-1.5">
                     <InfinityIcon className="w-6 h-6 text-brand-gold" />
-                    <span>Tanpa Batas</span>
+                    <span>{displayMonthTxCount.toLocaleString('id-ID')} / Tanpa Batas</span>
                   </span>
                 ) : (
                   <span>
-                    {monthTxCount.toLocaleString('id-ID')} / {monthlyTxLimit.toLocaleString('id-ID')}{' '}
+                    {displayMonthTxCount.toLocaleString('id-ID')} / {displayMonthlyLimit.toLocaleString('id-ID')}{' '}
                     <span className="text-sm font-normal text-secondary">Tx</span>
                   </span>
                 )}
               </div>
-              <p className="text-xs text-secondary">
+              <p className="text-xs text-secondary font-medium truncate" title={displayScopeLabel}>
+                {displayScopeLabel}
+              </p>
+              <p className="text-[11px] text-secondary">
                 Reset kuota transaksi otomatis setiap awal bulan
               </p>
             </div>
@@ -619,13 +651,17 @@ export const SubscriptionBillingPage: React.FC = () => {
             <div className="w-full bg-surface-container-high h-2 rounded-full overflow-hidden mb-1.5">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  isUnlimited ? 'bg-status-lunas-text' : monthPercentage > 85 ? 'bg-brand-terracotta' : 'bg-brand-gold'
+                  displayIsUnlimited ? 'bg-status-lunas-text' : monthPercentage > 85 ? 'bg-brand-terracotta' : 'bg-brand-gold'
                 }`}
                 style={{ width: `${monthPercentage}%` }}
               />
             </div>
             <div className="flex justify-between text-[11px] text-secondary">
-              <span>{isUnlimited ? 'Bebas Transaksi' : `${(monthlyTxLimit - monthTxCount).toLocaleString('id-ID')} Tx Tersisa`}</span>
+              <span>
+                {displayIsUnlimited
+                  ? 'Bebas Transaksi'
+                  : `${Math.max(0, displayMonthlyLimit - displayMonthTxCount).toLocaleString('id-ID')} Tx Tersisa`}
+              </span>
               <button
                 onClick={() => openCheckout('ADD_TX_QUOTA')}
                 className="font-bold text-primary hover:underline"
