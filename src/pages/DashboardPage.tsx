@@ -129,13 +129,15 @@ export const DashboardPage: React.FC = () => {
             <Download className="w-4 h-4 text-primary" />
             <span>Ekspor P&L</span>
           </button>
-          <button
-            onClick={() => setCurrentView('transaksi-kasir-pos')}
-            className="inline-flex items-center gap-1.5 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso px-4 py-2 rounded-xl shadow-xs text-xs font-bold transition-all active:scale-95"
-          >
-            <Store className="w-4 h-4" />
-            <span>Buka Layar Kasir</span>
-          </button>
+          {currentUser.role !== 'OWNER' && (
+            <button
+              onClick={() => setCurrentView('transaksi-kasir-pos')}
+              className="inline-flex items-center gap-1.5 bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso px-4 py-2 rounded-xl shadow-xs text-xs font-bold transition-all active:scale-95"
+            >
+              <Store className="w-4 h-4" />
+              <span>Buka Layar Kasir</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -332,13 +334,15 @@ export const DashboardPage: React.FC = () => {
               Daftar nota penjualan langsung dari terminal kasir dengan otorisasi pembatalan nota
             </p>
           </div>
-          <button
-            onClick={() => setCurrentView('transaksi-kasir-pos')}
-            className="flex items-center gap-1.5 text-xs font-bold text-primary hover:text-brand-gold-hover transition-colors"
-          >
-            <span>Buka Terminal Kasir</span>
-            <ArrowUpRight className="w-4 h-4" />
-          </button>
+          {currentUser.role !== 'OWNER' && (
+            <button
+              onClick={() => setCurrentView('transaksi-kasir-pos')}
+              className="flex items-center gap-1.5 text-xs font-bold text-primary hover:text-brand-gold-hover transition-colors"
+            >
+              <span>Buka Terminal Kasir</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Mobile View: Card List (< md screen) */}

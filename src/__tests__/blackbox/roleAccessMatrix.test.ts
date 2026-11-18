@@ -42,9 +42,10 @@ describe('Black Box Testing: Role-Based User Access Matrix & Permissions', () =>
         return role === 'SUPERADMIN' || role === 'OWNER' || role === 'SUPERVISOR';
 
       case 'transaksi-kasir-pos':
+        return role !== 'OWNER'; // Owner fokus audit & manajemen, bukan di depan kasir
       case 'sesi-shift-kasir':
       case 'kas-kecil-outlet':
-        return true; // Semuanya bisa akses operasional kasir
+        return true; // Semuanya bisa akses operasional shift/audit
 
       default:
         return false;
@@ -97,8 +98,9 @@ describe('Black Box Testing: Role-Based User Access Matrix & Permissions', () =>
       expect(checkUserCanAccessFeature(role, 'laporan-laba-rugi')).toBe(true);
     });
 
-    it('should NOT access Superadmin Platform Portal', () => {
+    it('should NOT access Superadmin Platform Portal or front-counter POS terminal', () => {
       expect(checkUserCanAccessFeature(role, 'superadmin-portal')).toBe(false);
+      expect(checkUserCanAccessFeature(role, 'transaksi-kasir-pos')).toBe(false);
     });
   });
 

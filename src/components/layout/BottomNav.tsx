@@ -22,6 +22,7 @@ export const BottomNav: React.FC = () => {
 
   const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  const isOwner = currentUser.role === 'OWNER';
   const isSupervisorOrOwner =
     currentUser.role === 'OWNER' || currentUser.role === 'SUPERVISOR';
 
@@ -37,8 +38,9 @@ export const BottomNav: React.FC = () => {
       aria-label="Navigasi Bawah Mobile & Tablet"
       className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface-card/95 backdrop-blur-lg border-t border-border-subtle shadow-[0_-4px_20px_rgba(43,30,22,0.08)] select-none safe-area-pb"
     >
-      <div className="grid grid-cols-5 h-16 max-w-lg mx-auto px-1 items-center">
-        {/* 1. Kasir POS */}
+      <div className={`grid ${isOwner ? 'grid-cols-4' : 'grid-cols-5'} h-16 max-w-lg mx-auto px-1 items-center`}>
+        {/* 1. Kasir POS (disembunyikan untuk OWNER — owner fokus audit & manajemen) */}
+        {!isOwner && (
         <button
           type="button"
           onClick={() => handleNavClick('transaksi-kasir-pos')}
@@ -68,6 +70,7 @@ export const BottomNav: React.FC = () => {
             Kasir
           </span>
         </button>
+        )}
 
         {/* 2. Sesi Shift */}
         <button

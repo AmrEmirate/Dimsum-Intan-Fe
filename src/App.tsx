@@ -78,7 +78,7 @@ export const AppContent: React.FC = () => {
       case 'master-cabang-outlet':
         return <BranchesPage />;
       case 'transaksi-kasir-pos':
-        return <PosPage />;
+        return currentUser.role === 'OWNER' ? <DashboardPage /> : <PosPage />;
       case 'sesi-shift-kasir':
         return <ShiftPage />;
       case 'master-menu-dimsum-hpp':

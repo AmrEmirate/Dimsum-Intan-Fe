@@ -563,16 +563,18 @@ export const Header: React.FC = () => {
 
                 {/* Popover Footer Quick Access */}
                 <div className="p-2.5 border-t border-border-subtle bg-surface-container/30 flex items-center justify-between text-[11px]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsNotificationOpen(false);
-                      setCurrentView('transaksi-kasir-pos');
-                    }}
-                    className="font-bold text-brand-espresso hover:text-brand-terracotta cursor-pointer transition-colors"
-                  >
-                    Kasir POS &rarr;
-                  </button>
+                  {currentUser.role !== 'OWNER' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsNotificationOpen(false);
+                        setCurrentView('transaksi-kasir-pos');
+                      }}
+                      className="font-bold text-brand-espresso hover:text-brand-terracotta cursor-pointer transition-colors"
+                    >
+                      Kasir POS &rarr;
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => {

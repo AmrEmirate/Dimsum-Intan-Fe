@@ -101,7 +101,7 @@ export const Sidebar: React.FC = () => {
       label: 'Transaksi Kasir (POS)',
       section: 'pos',
       icon: Store,
-      allowedRoles: ['SUPERADMIN', 'OWNER', 'SUPERVISOR', 'KASIR'],
+      allowedRoles: ['SUPERADMIN', 'SUPERVISOR', 'KASIR'],
     },
     {
       id: 'master-menu-dimsum-hpp',
