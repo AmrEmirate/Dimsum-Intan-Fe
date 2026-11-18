@@ -94,6 +94,22 @@ interface AppContextType {
     outletId?: string;
     pin?: string;
   }) => Promise<boolean>;
+  updateStaffUser: (
+    id: string,
+    data: {
+      name: string;
+      username: string;
+      password?: string;
+      role: UserRole;
+      outletId?: string;
+      pin?: string;
+    }
+  ) => Promise<boolean>;
+  updateOwnProfile: (data: {
+    name: string;
+    username: string;
+    password?: string;
+  }) => Promise<boolean>;
   deleteStaffUser: (id: string) => Promise<boolean>;
 
   // View Navigation
@@ -785,6 +801,49 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     } catch (err: any) {
       showNotification(`Gagal mendaftarkan akun staf: ${err.message}`, 'error');
+    }
+    return false;
+  };
+
+  const updateStaffUser = async (
+    id: string,
+    data: {
+      name: string;
+      username: string;
+      password?: string;
+      role: UserRole;
+      outletId?: string;
+      pin?: string;
+    }
+  ): Promise<boolean> => {
+    try {
+      const res = await api.put<{ success: boolean; message: string; data: User }>(`/users/${id}`, data);
+      if (res.success && res.data) {
+        setStaffList((prev) => prev.map((u) => (u.id === id ? { ...u, ...res.data } : u)));
+        showNotification(res.message, 'success');
+        return true;
+      }
+    } catch (err: any) {
+      showNotification(`Gagal memperbarui akun staf: ${err.message}`, 'error');
+    }
+    return false;
+  };
+
+  const updateOwnProfile = async (data: {
+    name: string;
+    username: string;
+    password?: string;
+  }): Promise<boolean> => {
+    try {
+      const res = await api.put<{ success: boolean; message: string; data: User }>('/auth/me', data);
+      if (res.success && res.data) {
+        setCurrentUser((prev) => ({ ...prev, ...res.data }));
+        setStaffList((prev) => prev.map((u) => (u.id === res.data.id ? { ...u, ...res.data } : u)));
+        showNotification(res.message, 'success');
+        return true;
+      }
+    } catch (err: any) {
+      showNotification(`Gagal memperbarui informasi akun: ${err.message}`, 'error');
     }
     return false;
   };
@@ -1817,6 +1876,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         staffList,
         fetchStaffList,
         createStaffUser,
+        updateStaffUser,
+        updateOwnProfile,
         deleteStaffUser,
         refreshData,
         currentTenant,

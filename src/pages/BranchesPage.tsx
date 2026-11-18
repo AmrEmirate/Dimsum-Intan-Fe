@@ -36,7 +36,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { Outlet, UserRole } from '../types';
+import { Outlet, UserRole, User } from '../types';
 import { exportToCsv } from '../utils/exportUtils';
 import { CustomSelect } from '../components/common/CustomSelect';
 import { ConfirmationModal } from '../components/common/ConfirmationModal';
@@ -50,14 +50,12 @@ export const BranchesPage: React.FC = () => {
     deleteOutlet,
     staffList,
     createStaffUser,
+    updateStaffUser,
     deleteStaffUser,
     currentUser,
     setSelectedOutletId,
     setCurrentView,
     billingStatus,
-    fetchBillingStatus,
-    createCheckout,
-    submitManualPayment,
     showNotification,
   } = useApp();
 
@@ -149,6 +147,7 @@ export const BranchesPage: React.FC = () => {
 
   // Staff Form Modal State
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<User | null>(null);
   const [staffName, setStaffName] = useState('');
   const [staffUsername, setStaffUsername] = useState('');
   const [staffPassword, setStaffPassword] = useState('');
@@ -207,7 +206,11 @@ export const BranchesPage: React.FC = () => {
     const maxAllowed = billingStatus?.maxOutlets ?? 0;
 
     if (!isSubActive || currentCount >= maxAllowed || maxAllowed === 0) {
-      setIsLicenseModalOpen(true);
+      showNotification(
+        'Kuota cabang penuh atau langganan belum aktif. Silakan selesaikan pembayaran paket/slot cabang di halaman Langganan.',
+        'info'
+      );
+      setCurrentView('langganan-billing');
       return;
     }
 
@@ -362,6 +365,7 @@ export const BranchesPage: React.FC = () => {
 
   // Handlers for Staff
   const handleOpenAddStaff = (presetOutletId?: string) => {
+    setEditingStaff(null);
     setStaffName('');
     setStaffUsername('');
     setStaffPassword('');
@@ -372,28 +376,57 @@ export const BranchesPage: React.FC = () => {
     setIsStaffModalOpen(true);
   };
 
+  const handleOpenEditStaff = (staff: User) => {
+    setEditingStaff(staff);
+    setStaffName(staff.name || '');
+    setStaffUsername(staff.username || '');
+    setStaffPassword('');
+    setStaffRole(staff.role);
+    setStaffOutletId(staff.outletId || (outlets.length > 0 ? outlets[0].id : ''));
+    setStaffPin('');
+    setStaffError(null);
+    setIsStaffModalOpen(true);
+  };
+
   const handleSaveStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     setStaffError(null);
 
-    if (!staffName.trim() || !staffUsername.trim() || !staffPassword.trim()) {
-      setStaffError('Nama lengkap, username, dan kata sandi wajib diisi!');
+    if (!staffName.trim() || !staffUsername.trim() || (!editingStaff && !staffPassword.trim())) {
+      setStaffError(
+        editingStaff
+          ? 'Nama lengkap dan username wajib diisi!'
+          : 'Nama lengkap, username, dan kata sandi wajib diisi!'
+      );
       return;
     }
 
     setIsSavingStaff(true);
-    const success = await createStaffUser({
-      name: staffName.trim(),
-      username: staffUsername.trim().toLowerCase(),
-      password: staffPassword.trim(),
-      role: staffRole,
-      outletId: staffRole === 'KASIR' ? staffOutletId : undefined,
-      pin: staffRole === 'SUPERVISOR' ? staffPin : undefined,
-    });
+    let success = false;
+    if (editingStaff) {
+      success = await updateStaffUser(editingStaff.id, {
+        name: staffName.trim(),
+        username: staffUsername.trim().toLowerCase(),
+        ...(staffPassword.trim() ? { password: staffPassword.trim() } : {}),
+        role: staffRole,
+        outletId: staffRole === 'KASIR' ? staffOutletId : undefined,
+        pin: staffRole === 'SUPERVISOR' && staffPin.trim() ? staffPin.trim() : undefined,
+      });
+    } else {
+      success = await createStaffUser({
+        name: staffName.trim(),
+        username: staffUsername.trim().toLowerCase(),
+        password: staffPassword.trim(),
+        role: staffRole,
+        outletId: staffRole === 'KASIR' ? staffOutletId : undefined,
+        pin: staffRole === 'SUPERVISOR' ? staffPin : undefined,
+      });
+    }
     setIsSavingStaff(false);
 
     if (success) {
       setIsStaffModalOpen(false);
+      setEditingStaff(null);
     }
   };
 
@@ -757,7 +790,10 @@ export const BranchesPage: React.FC = () => {
                     <div className="pt-5 space-y-2.5">
                       <button
                         type="button"
-                        onClick={() => setIsLicenseModalOpen(true)}
+                        onClick={() => {
+                          showNotification('Silakan kelola & bayar penambahan cabang di halaman Langganan.', 'info');
+                          setCurrentView('langganan-billing');
+                        }}
                         className="w-full py-3.5 px-4 rounded-2xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso font-bold text-xs sm:text-sm shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <Zap className="w-4 h-4 fill-brand-espresso" />
@@ -1185,14 +1221,24 @@ export const BranchesPage: React.FC = () => {
                       </span>
 
                       {isOwner && staff.id !== currentUser.id && (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteStaff(staff.id, staff.name)}
-                          className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors"
-                          title="Hapus Akun Staf"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditStaff(staff)}
+                            className="p-2 rounded-lg text-brand-espresso hover:bg-surface-container transition-colors cursor-pointer"
+                            title="Edit Akun Staf"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteStaff(staff.id, staff.name)}
+                            className="p-2 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors cursor-pointer"
+                            title="Hapus Akun Staf"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1244,14 +1290,24 @@ export const BranchesPage: React.FC = () => {
                       </td>
                       <td className="py-3.5 px-5 text-right">
                         {isOwner && staff.id !== currentUser.id && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteStaff(staff.id, staff.name)}
-                            className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors cursor-pointer"
-                            title="Hapus Akun Staf"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditStaff(staff)}
+                              className="p-1.5 rounded-lg text-brand-espresso hover:bg-surface-container transition-colors cursor-pointer"
+                              title="Edit Akun Staf"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteStaff(staff.id, staff.name)}
+                              className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 transition-colors cursor-pointer"
+                              title="Hapus Akun Staf"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -1786,7 +1842,7 @@ export const BranchesPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-primary" />
                 <h3 className="font-serif-title font-bold text-base text-brand-espresso">
-                  Pendaftaran Akun Staf Cabang
+                  {editingStaff ? 'Edit Akun Staf / Kasir' : 'Pendaftaran Akun Staf Cabang'}
                 </h3>
               </div>
               <button
@@ -1837,15 +1893,15 @@ export const BranchesPage: React.FC = () => {
 
                 <div className="flex flex-col gap-1">
                   <label className="text-[11px] font-bold text-secondary uppercase">
-                    Kata Sandi (Password) *
+                    {editingStaff ? 'Kata Sandi Baru (Opsional)' : 'Kata Sandi (Password) *'}
                   </label>
                   <input
                     type="password"
                     value={staffPassword}
                     onChange={(e) => setStaffPassword(e.target.value)}
-                    placeholder="Minimal 6 karakter..."
+                    placeholder={editingStaff ? 'Kosongkan jika tidak ingin ubah password' : 'Minimal 6 karakter...'}
                     className="w-full p-2.5 rounded-xl bg-surface-container border border-border-subtle text-xs text-brand-espresso focus:outline-none focus:border-brand-gold"
-                    required
+                    required={!editingStaff}
                   />
                 </div>
 
@@ -1932,7 +1988,7 @@ export const BranchesPage: React.FC = () => {
                   disabled={isSavingStaff}
                   className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all disabled:opacity-50 cursor-pointer min-h-[44px] flex items-center justify-center gap-1.5"
                 >
-                  {isSavingStaff ? 'Mendaftarkan...' : 'Buat Akun'}
+                  {isSavingStaff ? 'Menyimpan...' : editingStaff ? 'Simpan Perubahan' : 'Buat Akun'}
                 </button>
               </div>
             </form>

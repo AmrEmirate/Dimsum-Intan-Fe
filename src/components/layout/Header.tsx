@@ -24,6 +24,7 @@ import {
   Package,
   ArrowRight,
   Wallet,
+  Edit2,
 } from 'lucide-react';
 import { useApp, AppView } from '../../context/AppContext';
 import { UserRole } from '../../types';
@@ -50,6 +51,7 @@ export const Header: React.FC = () => {
     outlets,
     logout,
     updatePin,
+    updateOwnProfile,
     setIsSidebarOpen,
     setCurrentView,
     currentTenant,
@@ -81,6 +83,35 @@ export const Header: React.FC = () => {
   const [isCloseShiftModalOpen, setIsCloseShiftModalOpen] = useState<boolean>(false);
   const [newPinInput, setNewPinInput] = useState<string>('');
   const [isUpdatingPin, setIsUpdatingPin] = useState<boolean>(false);
+
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [profileName, setProfileName] = useState('');
+  const [profileUsername, setProfileUsername] = useState('');
+  const [profilePassword, setProfilePassword] = useState('');
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+
+  const handleOpenProfileModal = () => {
+    setProfileName(currentUser.name || '');
+    setProfileUsername(currentUser.username || '');
+    setProfilePassword('');
+    setIsRoleDropdownOpen(false);
+    setIsProfileModalOpen(true);
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profileName.trim() || !profileUsername.trim()) return;
+    setIsUpdatingProfile(true);
+    const ok = await updateOwnProfile({
+      name: profileName.trim(),
+      username: profileUsername.trim(),
+      ...(profilePassword.trim() ? { password: profilePassword.trim() } : {}),
+    });
+    setIsUpdatingProfile(false);
+    if (ok) {
+      setIsProfileModalOpen(false);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -670,6 +701,15 @@ export const Header: React.FC = () => {
                         <span>Kelola Master Cabang</span>
                       </button>
                     )}
+                    {currentUser.role === 'OWNER' && (
+                      <button
+                        onClick={handleOpenProfileModal}
+                        className="w-full flex items-center gap-2 p-2 rounded-xl text-left text-xs font-bold text-brand-espresso hover:bg-surface-container transition-colors cursor-pointer"
+                      >
+                        <Edit2 className="w-4 h-4 text-primary" />
+                        <span>Edit Informasi Akun</span>
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         setIsRoleDropdownOpen(false);
@@ -754,6 +794,87 @@ export const Header: React.FC = () => {
                 className="px-4 py-2 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-xs transition-all disabled:opacity-50"
               >
                 {isUpdatingPin ? 'Menyimpan...' : 'Simpan PIN'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal Edit Informasi Akun (Admin / Owner Only) */}
+      {isProfileModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4 overflow-y-auto">
+          <form
+            onSubmit={handleSaveProfile}
+            className="w-full max-w-sm bg-surface-card rounded-3xl border border-border-subtle shadow-2xl p-6 relative my-6"
+          >
+            <button
+              type="button"
+              onClick={() => setIsProfileModalOpen(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-full text-secondary hover:bg-surface-container cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="flex items-center gap-2 text-primary mb-1">
+              <Edit2 className="w-5 h-5" />
+              <h3 className="font-serif-title font-bold text-lg text-brand-espresso">
+                Edit Informasi Akun
+              </h3>
+            </div>
+            <p className="text-xs text-secondary mb-4">
+              Perbarui nama, username login, atau kata sandi akun Admin/Owner.
+            </p>
+
+            <div className="space-y-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">Nama Lengkap</label>
+                <input
+                  type="text"
+                  value={profileName}
+                  onChange={(e) => setProfileName(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs font-semibold text-brand-espresso focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">Username Login</label>
+                <input
+                  type="text"
+                  value={profileUsername}
+                  onChange={(e) => setProfileUsername(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs font-mono font-semibold text-brand-espresso lowercase focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-bold text-brand-espresso">
+                  Kata Sandi Baru <span className="text-secondary font-normal">(Opsional)</span>
+                </label>
+                <input
+                  type="password"
+                  value={profilePassword}
+                  onChange={(e) => setProfilePassword(e.target.value)}
+                  placeholder="Kosongkan jika tidak ingin mengubah password"
+                  className="w-full p-2.5 rounded-xl bg-surface-container text-xs text-brand-espresso focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsProfileModalOpen(false)}
+                className="px-4 py-2 min-h-[40px] rounded-xl border border-border-strong text-xs font-bold text-brand-espresso cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={isUpdatingProfile}
+                className="px-4 py-2 min-h-[40px] rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {isUpdatingProfile ? 'Menyimpan...' : 'Simpan Perubahan'}
               </button>
             </div>
           </form>
