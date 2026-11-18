@@ -22,7 +22,6 @@ export const ProfitLossPage: React.FC = () => {
     pettyCashList,
     fixedExpenses,
     selectedOutletId,
-    setSelectedOutletId,
     currentUser,
     logout,
     outlets,
@@ -30,7 +29,7 @@ export const ProfitLossPage: React.FC = () => {
   } = useApp();
 
   const isOwner = currentUser.role === 'OWNER';
-  const [activeTabBranch, setActiveTabBranch] = useState<string>('all');
+  const activeOutlet = outlets.find((o) => o.id === selectedOutletId);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
 
   // If user is not Owner, show security guardrail
@@ -56,10 +55,10 @@ export const ProfitLossPage: React.FC = () => {
     );
   }
 
-  // Filter calculations based on activeTabBranch
+  // Filter calculations based on selectedOutletId (top header branch selector)
   const branchOrders = orders.filter((o) => {
-    if (activeTabBranch === 'all') return true;
-    return o.outletId === activeTabBranch;
+    if (selectedOutletId === 'all') return true;
+    return o.outletId === selectedOutletId;
   });
 
   const totalRevenue = branchOrders
@@ -75,8 +74,8 @@ export const ProfitLossPage: React.FC = () => {
 
   // Petty cash expenses
   const branchPettyCash = pettyCashList.filter((p) => {
-    if (activeTabBranch === 'all') return true;
-    return p.outletId === activeTabBranch;
+    if (selectedOutletId === 'all') return true;
+    return p.outletId === selectedOutletId;
   });
   const totalPettyCash = branchPettyCash
     .filter((p) => p.status === 'DISETUJUI')
@@ -84,8 +83,8 @@ export const ProfitLossPage: React.FC = () => {
 
   // Fixed OPEX
   const branchFixed = fixedExpenses.filter((e) => {
-    if (activeTabBranch === 'all') return true;
-    return e.outletId === activeTabBranch || e.outletId === 'all';
+    if (selectedOutletId === 'all') return true;
+    return e.outletId === selectedOutletId || e.outletId === 'all';
   });
 
   const totalSewa = branchFixed
@@ -105,9 +104,9 @@ export const ProfitLossPage: React.FC = () => {
   const netMarginPct = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : '0';
 
   const triggerExport = (format: 'PDF' | 'EXCEL') => {
-    const selectedOutlet = outlets.find((o) => o.id === activeTabBranch);
+    const selectedOutlet = outlets.find((o) => o.id === selectedOutletId);
     const branchName =
-      activeTabBranch === 'all'
+      selectedOutletId === 'all'
         ? `Konsolidasi_${outlets.length}_Outlet`
         : (selectedOutlet ? selectedOutlet.name.replace(/\s+/g, '_') : 'Cabang');
     const dateStr = new Date().toISOString().slice(0, 10);
@@ -279,37 +278,14 @@ export const ProfitLossPage: React.FC = () => {
             Pembukuan & Laba Rugi Eksekutif
           </h1>
           <p className="text-xs text-secondary">
-            Dimsum Intan Group {outlets.length > 0 ? `(Konsolidasi ${outlets.length} Cabang Operasional)` : '(Konsolidasi Operasional)'}
+            {selectedOutletId === 'all'
+              ? `Dimsum Intan Group ${outlets.length > 0 ? `(Konsolidasi ${outlets.length} Cabang Operasional)` : '(Konsolidasi Operasional)'}`
+              : `${activeOutlet?.name || 'Cabang Terpilih'} (${activeOutlet?.code || 'Outlet'})`}
           </p>
         </div>
 
-        {/* Outlet Switcher & Export CTAs */}
+        {/* Export CTAs */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center bg-surface-card rounded-xl p-1 border border-border-subtle shadow-xs overflow-x-auto max-w-full">
-            <button
-              onClick={() => setActiveTabBranch('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                activeTabBranch === 'all'
-                  ? 'bg-brand-espresso text-brand-gold shadow-xs'
-                  : 'text-secondary hover:text-brand-espresso'
-              }`}
-            >
-              Semua Outlet ({outlets.length})
-            </button>
-            {outlets.map((o) => (
-              <button
-                key={o.id}
-                onClick={() => setActiveTabBranch(o.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                  activeTabBranch === o.id
-                    ? 'bg-brand-espresso text-brand-gold shadow-xs'
-                    : 'text-secondary hover:text-brand-espresso'
-                }`}
-              >
-                {o.name}
-              </button>
-            ))}
-          </div>
 
           <button
             onClick={() => triggerExport('PDF')}
