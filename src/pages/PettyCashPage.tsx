@@ -32,16 +32,15 @@ export const PettyCashPage: React.FC = () => {
     deletePettyCash,
     currentUser,
     selectedOutletId,
-    outlets,
     showNotification,
     getActiveOutlet,
   } = useApp();
 
   const isKasir = currentUser.role === 'KASIR';
+  const isOwner = currentUser.role === 'OWNER';
   const isSupervisorOrOwner = currentUser.role === 'SUPERVISOR' || currentUser.role === 'OWNER';
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [previewReceiptImage, setPreviewReceiptImage] = useState<string | null>(null);
 
   // SOP Guardrail States (Persisted in localStorage)
@@ -138,6 +137,15 @@ export const PettyCashPage: React.FC = () => {
   const totalSpent = filteredList
     .filter((p) => p.status === 'DISETUJUI')
     .reduce((sum, p) => sum + p.amount, 0);
+
+  const todayKey = new Date().toLocaleDateString('en-CA');
+  const todayList = filteredList.filter((p) => {
+    if (p.status === 'DITOLAK') return false;
+    const itemDate = new Date(p.createdAt).toLocaleDateString('en-CA');
+    return itemDate === todayKey;
+  });
+  const todaySpent = todayList.reduce((sum, p) => sum + p.amount, 0);
+  const todayCount = todayList.length;
 
   const pendingCount = filteredList.filter((p) => p.status === 'MENUNGGU_VERIFIKASI').length;
 
@@ -266,31 +274,26 @@ export const PettyCashPage: React.FC = () => {
                 <span>Atur Batas SOP</span>
               </button>
             )}
-            <button
-              onClick={() => setIsTopUpModalOpen(true)}
-              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-colors border border-white/10 cursor-pointer"
-            >
-              <Wallet className="w-4 h-4 text-brand-gold" />
-              <span>Ajukan Top-Up Plafon</span>
-            </button>
-            <button
-              onClick={() => setIsFormModalOpen(true)}
-              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>+ Catat Pengeluaran Baru</span>
-            </button>
+            {!isOwner && (
+              <button
+                onClick={() => setIsFormModalOpen(true)}
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso text-xs font-bold shadow-md transition-all active:scale-95 cursor-pointer"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>+ Catat Pengeluaran Baru</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       {/* KPI Overview Ribbon */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* Card 1: Saldo Kas Aktif */}
+        {/* Card 1: Pengeluaran Hari Ini (Real Data) */}
         <div className="bg-surface-card rounded-2xl p-4 border border-border-subtle shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-secondary">
-              Plafon Kas Kecil
+              Pengeluaran Hari Ini
             </span>
             <div className="w-8 h-8 rounded-xl bg-surface-container flex items-center justify-center text-primary">
               <Wallet className="w-4 h-4" />
@@ -298,13 +301,11 @@ export const PettyCashPage: React.FC = () => {
           </div>
           <div className="mt-3">
             <div className="font-serif-title text-2xl font-bold text-brand-espresso">
-              Rp {(outlets.length * 2000000).toLocaleString('id-ID')}
+              Rp {todaySpent.toLocaleString('id-ID')}
             </div>
             <div className="flex items-center justify-between mt-1 text-xs text-secondary">
-              <span>{outlets.length > 0 ? `Alokasi ${outlets.length} Cabang:` : 'Alokasi Cabang:'}</span>
-              <span className={outlets.length > 0 ? "text-status-lunas-text font-bold" : "text-secondary font-medium"}>
-                {outlets.length > 0 ? 'Aktif & Aman' : 'Belum Ada Cabang'}
-              </span>
+              <span>{todayCount} Nota hari ini</span>
+              <span className="text-brand-espresso font-semibold">Potong Laci Shift</span>
             </div>
           </div>
         </div>
@@ -702,47 +703,6 @@ export const PettyCashPage: React.FC = () => {
               </button>
             </div>
           </form>
-        </div>
-      )}
-
-      {/* Modal: Top-Up Plafon */}
-      {isTopUpModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md bg-surface-card rounded-3xl border border-border-subtle shadow-2xl p-6 relative">
-            <button
-              onClick={() => setIsTopUpModalOpen(false)}
-              className="absolute top-4 right-4 p-2 rounded-full text-secondary hover:bg-surface-container"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <h3 className="font-serif-title font-bold text-xl text-brand-espresso">
-              Pengajuan Top-Up Plafon Kas Kecil
-            </h3>
-            <p className="text-xs text-secondary mt-1">
-              Permohonan transfer pengisian saldo laci kasir dari rekening pusat.
-            </p>
-            <div className="my-4 p-4 rounded-xl bg-surface-container-low space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-secondary">Plafon Sekarang:</span>
-                <span className="font-bold text-brand-espresso">
-                  Rp {(outlets.length * 2000000).toLocaleString('id-ID')}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-secondary">Rekomendasi Top-Up:</span>
-                <span className="font-bold text-emerald-700">Rp 2.000.000 / Cabang</span>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                showNotification('Permohonan Top-Up telah dikirim ke WhatsApp Owner!', 'success');
-                setIsTopUpModalOpen(false);
-              }}
-              className="w-full py-3 rounded-xl bg-brand-espresso hover:bg-brand-espresso-muted text-brand-gold text-xs font-bold shadow-md transition-all"
-            >
-              Kirim Notifikasi Pengajuan ke Owner
-            </button>
-          </div>
         </div>
       )}
 
