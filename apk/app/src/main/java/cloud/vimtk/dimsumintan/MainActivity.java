@@ -22,6 +22,7 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -91,7 +92,9 @@ public class MainActivity extends AppCompatActivity {
         });
 
         configureWebView();
-        webView.loadUrl(TARGET_URL);
+        if (!handleDeepLinkIntent(getIntent())) {
+            webView.loadUrl(TARGET_URL);
+        }
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
@@ -139,6 +142,31 @@ public class MainActivity extends AppCompatActivity {
                 Uri uri = request.getUrl();
                 String scheme = uri.getScheme() != null ? uri.getScheme().toLowerCase() : "";
                 String host = uri.getHost() != null ? uri.getHost().toLowerCase() : "";
+                String path = uri.getPath() != null ? uri.getPath() : "";
+
+                // Buka Login Google lewat Chrome Custom Tabs agar otomatis memakai akun Google di HP
+                if (("http".equals(scheme) || "https".equals(scheme))
+                        && (path.contains("/auth/google/start") || host.endsWith("accounts.google.com"))) {
+                    Uri launchUri = uri.buildUpon()
+                            .clearQuery()
+                            .appendQueryParameter("redirect_origin", "dimsumintan://auth")
+                            .build();
+                    if (host.endsWith("accounts.google.com")) {
+                        launchUri = uri;
+                    }
+                    try {
+                        CustomTabsIntent customTabsIntent = new CustomTabsIntent.Builder()
+                                .setShowTitle(true)
+                                .build();
+                        customTabsIntent.launchUrl(MainActivity.this, launchUri);
+                    } catch (Exception e) {
+                        try {
+                            startActivity(new Intent(Intent.ACTION_VIEW, launchUri));
+                        } catch (Exception ignored) {
+                        }
+                    }
+                    return true;
+                }
 
                 if ("http".equals(scheme) || "https".equals(scheme)) {
                     if (host.endsWith("vimtk.cloud")
@@ -195,6 +223,26 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleDeepLinkIntent(intent);
+    }
+
+    private boolean handleDeepLinkIntent(Intent intent) {
+        if (intent == null || intent.getData() == null) return false;
+        Uri data = intent.getData();
+        if ("dimsumintan".equalsIgnoreCase(data.getScheme()) && "auth".equalsIgnoreCase(data.getHost())) {
+            String query = data.getEncodedQuery();
+            if (query != null && !query.isEmpty() && webView != null) {
+                webView.loadUrl(TARGET_URL + "?" + query);
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
