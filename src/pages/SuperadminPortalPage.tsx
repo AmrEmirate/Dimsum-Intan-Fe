@@ -691,8 +691,8 @@ export const SuperadminPortalPage: React.FC = () => {
                     onChange={(val) => setFormPlan(val)}
                     options={[
                       { value: 'PAKET_100K', label: 'Paket 1: Rp 100.000 / bln', sublabel: 'Kuota 6.000 Tx/Bulan (200/hr)', badge: 'Starter' },
-                      { value: 'PAKET_150K', label: 'Paket 2: Rp 150.000 / bln', sublabel: 'Kuota 9.000 Tx/Bulan (300/hr)', badge: 'Basic' },
-                      { value: 'PAKET_200K', label: 'Paket 3: Rp 200.000 / bln', sublabel: 'Kuota 15.000 Tx/Bulan (500/hr)', badge: 'Pro' },
+                      { value: 'PAKET_150K', label: 'Paket 3: Rp 150.000 / bln', sublabel: 'Kuota 10.500 Tx/Bulan (350/hr)', badge: 'Bisnis' },
+                      { value: 'PAKET_200K', label: 'Paket 4: Rp 200.000 / bln', sublabel: 'Unlimited Transaksi', badge: 'Unlimited' },
                       { value: 'PAKET_250K', label: 'Paket 4: Rp 250.000 / bln', sublabel: 'Unlimited Transaksi / Bulan', badge: 'Enterprise' },
                     ]}
                   />
@@ -980,8 +980,8 @@ export const SuperadminPortalPage: React.FC = () => {
                     onChange={(val) => setEditingTenant({ ...editingTenant, plan: val })}
                     options={[
                       { value: 'PAKET_100K', label: 'Paket 1: 100K', sublabel: '6.000 Tx/bln', badge: 'Starter' },
-                      { value: 'PAKET_150K', label: 'Paket 2: 150K', sublabel: '9.000 Tx/bln', badge: 'Basic' },
-                      { value: 'PAKET_200K', label: 'Paket 3: 200K', sublabel: '15.000 Tx/bln', badge: 'Pro' },
+                      { value: 'PAKET_150K', label: 'Paket 3: 150K', sublabel: '10.500 Tx/bln', badge: 'Bisnis' },
+                      { value: 'PAKET_200K', label: 'Paket 4: 200K', sublabel: 'Unlimited', badge: 'Unlimited' },
                       { value: 'PAKET_250K', label: 'Paket 4: 250K', sublabel: 'Unlimited', badge: 'Enterprise' },
                     ]}
                   />

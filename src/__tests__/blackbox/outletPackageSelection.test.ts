@@ -7,9 +7,9 @@ describe('Outlet Package Selection & Transaction Quotas (Black-Box & White-Box)'
       code: 'PAKET_50K',
       name: 'Paket 1: Starter',
       price: 50000,
-      dailyLimit: 100,
-      monthlyTx: 3000,
-      monthlyLimit: '3.000 Tx/bln',
+      dailyLimit: 50,
+      monthlyTx: 1500,
+      monthlyLimit: '1.500 Tx/bln',
     },
     {
       code: 'PAKET_100K',
@@ -23,17 +23,17 @@ describe('Outlet Package Selection & Transaction Quotas (Black-Box & White-Box)'
       code: 'PAKET_150K',
       name: 'Paket 3: Bisnis Pro',
       price: 150000,
-      dailyLimit: 300,
-      monthlyTx: 9000,
-      monthlyLimit: '9.000 Tx/bln',
+      dailyLimit: 350,
+      monthlyTx: 10500,
+      monthlyLimit: '10.500 Tx/bln',
     },
     {
       code: 'PAKET_200K',
-      name: 'Paket 4: Pro Fleet',
+      name: 'Paket 4: Pro Unlimited',
       price: 200000,
-      dailyLimit: 500,
-      monthlyTx: 15000,
-      monthlyLimit: '15.000 Tx/bln',
+      dailyLimit: 0,
+      monthlyTx: 0,
+      monthlyLimit: 'Unlimited',
     },
     {
       code: 'PAKET_CUSTOM',
@@ -41,7 +41,7 @@ describe('Outlet Package Selection & Transaction Quotas (Black-Box & White-Box)'
       price: 0,
       dailyLimit: 0,
       monthlyTx: 0,
-      monthlyLimit: 'Custom / Hubungi Kami',
+      monthlyLimit: 'Custom (BE+FE & DB Tersendiri)',
     },
   ];
 
@@ -50,8 +50,8 @@ describe('Outlet Package Selection & Transaction Quotas (Black-Box & White-Box)'
 
     const paket50k = OUTLET_AVAILABLE_PLANS.find((p) => p.code === 'PAKET_50K');
     expect(paket50k?.price).toBe(50000);
-    expect(paket50k?.dailyLimit).toBe(100);
-    expect(paket50k?.monthlyTx).toBe(3000);
+    expect(paket50k?.dailyLimit).toBe(50);
+    expect(paket50k?.monthlyTx).toBe(1500);
 
     const paket100k = OUTLET_AVAILABLE_PLANS.find((p) => p.code === 'PAKET_100K');
     expect(paket100k?.price).toBe(100000);
@@ -60,13 +60,13 @@ describe('Outlet Package Selection & Transaction Quotas (Black-Box & White-Box)'
 
     const paket150k = OUTLET_AVAILABLE_PLANS.find((p) => p.code === 'PAKET_150K');
     expect(paket150k?.price).toBe(150000);
-    expect(paket150k?.dailyLimit).toBe(300);
-    expect(paket150k?.monthlyTx).toBe(9000);
+    expect(paket150k?.dailyLimit).toBe(350);
+    expect(paket150k?.monthlyTx).toBe(10500);
 
     const paket200k = OUTLET_AVAILABLE_PLANS.find((p) => p.code === 'PAKET_200K');
     expect(paket200k?.price).toBe(200000);
-    expect(paket200k?.dailyLimit).toBe(500);
-    expect(paket200k?.monthlyTx).toBe(15000);
+    expect(paket200k?.dailyLimit).toBe(0);
+    expect(paket200k?.monthlyTx).toBe(0);
 
     const paketCustom = OUTLET_AVAILABLE_PLANS.find((p) => p.code === 'PAKET_CUSTOM');
     expect(paketCustom?.price).toBe(0);

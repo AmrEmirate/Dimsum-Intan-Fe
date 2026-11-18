@@ -35,11 +35,11 @@ export const OFFICIAL_SAAS_PLANS = [
     code: 'PAKET_50K',
     name: 'Paket 1: Starter',
     price: 50000,
-    dailyTxLimit: 100,
-    monthlyTxLimit: 3000,
-    description: 'Kuota 3.000 transaksi per bulan (100 tx/hari)',
+    dailyTxLimit: 50,
+    monthlyTxLimit: 1500,
+    description: 'Kuota 1.500 transaksi (per struk) / bulan (50 tx/hari)',
     features: [
-      '3.000 Transaksi / Bulan (Rata-rata 100/hari)',
+      '1.500 Transaksi (Per Struk) / Bulan = 50 Tx / Hari',
       'Akumulatif Bulanan (Hari ramai tetap aman)',
       'Kasir POS & Cetak Struk Realtime',
       'Manajemen Menu & Stok Bahan Pokok (HPP)',
@@ -55,9 +55,9 @@ export const OFFICIAL_SAAS_PLANS = [
     price: 100000,
     dailyTxLimit: 200,
     monthlyTxLimit: 6000,
-    description: 'Kuota 6.000 transaksi per bulan (200 tx/hari)',
+    description: 'Kuota 200 transaksi per hari (6.000 tx/bulan)',
     features: [
-      '6.000 Transaksi / Bulan (Rata-rata 200/hari)',
+      '200 Transaksi / Hari (Akumulasi 6.000 Tx / Bulan)',
       'Akumulatif Bulanan (Hari ramai tetap aman)',
       'Kasir POS & Cetak Struk Realtime',
       'Rekonsiliasi Shift & Tutup Kasir',
@@ -71,11 +71,11 @@ export const OFFICIAL_SAAS_PLANS = [
     code: 'PAKET_150K',
     name: 'Paket 3: Bisnis Pro',
     price: 150000,
-    dailyTxLimit: 300,
-    monthlyTxLimit: 9000,
-    description: 'Kuota 9.000 transaksi per bulan (300 tx/hari)',
+    dailyTxLimit: 350,
+    monthlyTxLimit: 10500,
+    description: 'Kuota 350 transaksi per hari (10.500 tx/bulan)',
     features: [
-      '9.000 Transaksi / Bulan (Rata-rata 300/hari)',
+      '350 Transaksi / Hari (Akumulasi 10.500 Tx / Bulan)',
       'Akumulatif Bulanan (Hari ramai tetap aman)',
       'Multi-Outlet & Manajemen Karyawan',
       'Laporan Laba Rugi & Arus Kas Otomatis',
@@ -88,18 +88,18 @@ export const OFFICIAL_SAAS_PLANS = [
   },
   {
     code: 'PAKET_200K',
-    name: 'Paket 4: Pro Fleet',
+    name: 'Paket 4: Pro Unlimited',
     price: 200000,
-    dailyTxLimit: 500,
-    monthlyTxLimit: 15000,
-    description: 'Kuota 15.000 transaksi per bulan (500 tx/hari)',
+    dailyTxLimit: 0,
+    monthlyTxLimit: 0,
+    description: 'Unlimited transaksi kasir tanpa batas kuota',
     features: [
-      '15.000 Transaksi / Bulan (Rata-rata 500/hari)',
-      'Akumulatif Bulanan (Hari ramai tetap aman)',
-      'Dukungan Transaksi Kasir Volume Tinggi',
+      'Unlimited Transaksi (Tanpa Batas Kuota Harian/Bulanan)',
+      'Bebas Transaksi Kasir Volume Tinggi',
+      'Prioritas Sinkronisasi Cloud Engine',
       'Dashboard Analitik Performa Multi-Cabang',
     ],
-    badge: 'PRO CABANG',
+    badge: 'UNLIMITED',
     accentBorder: 'border-border-subtle hover:border-brand-terracotta/60',
     headerBg: 'bg-surface-container-low',
     badgeClass: 'bg-brand-terracotta/10 text-brand-terracotta font-bold border border-brand-terracotta/30',
@@ -110,14 +110,14 @@ export const OFFICIAL_SAAS_PLANS = [
     price: 0,
     dailyTxLimit: 0,
     monthlyTxLimit: 0,
-    description: 'Custom - Hubungi Kami (Skala Besar)',
+    description: 'Sistem BE & FE Tersendiri + Database Tersendiri',
     features: [
-      'Kuota Khusus / Unlimited Sesuai Kesepakatan',
-      'Bebas Transaksi Kasir Tanpa Takut Terkunci',
-      'Prioritas Sinkronisasi Cloud Engine',
-      'Dukungan Layanan Dedicated 24/7',
+      'Sistem Backend (BE) & Frontend (FE) Tersendiri (Dedicated)',
+      'Database Terpisah Khusus Bisnis Anda (Isolated DB)',
+      'Unlimited Transaksi & Custom Fitur Sesuai Request',
+      'Harga Menyesuaikan Kebutuhan & Request',
     ],
-    badge: 'HUBUNGI KAMI',
+    badge: 'CUSTOM REQUEST',
     accentBorder: 'border-border-subtle hover:border-brand-espresso/60',
     headerBg: 'bg-surface-container-low',
     badgeClass: 'bg-brand-espresso text-brand-gold font-bold',
@@ -215,6 +215,13 @@ export const SubscriptionBillingPage: React.FC = () => {
 
   // Open Checkout Modal for specific action
   const openCheckout = (type: 'CHANGE_PLAN' | 'RENEWAL' | 'ADD_OUTLET' | 'ADD_TX_QUOTA', defaultPlan?: string) => {
+    if (defaultPlan === 'PAKET_CUSTOM') {
+      showNotification(
+        'Paket Custom (Sistem BE & FE serta Database tersendiri) — harga menyesuaikan request. Silakan hubungi tim developer/admin untuk penawaran.',
+        'info'
+      );
+      return;
+    }
     setCheckoutType(type);
     const activePlan = billingStatus?.plan || 'PAKET_100K';
     if (type === 'RENEWAL') {
@@ -664,15 +671,25 @@ export const SubscriptionBillingPage: React.FC = () => {
 
                   <div className="mb-5 pb-4 border-b border-border-subtle">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-bold text-brand-espresso font-mono">
-                        Rp {plan.price.toLocaleString('id-ID')}
-                      </span>
-                      <span className="text-xs text-secondary">/ bln</span>
+                      {plan.code === 'PAKET_CUSTOM' ? (
+                        <span className="text-xl font-bold text-brand-espresso">
+                          Harga Sesuai Request
+                        </span>
+                      ) : (
+                        <>
+                          <span className="text-2xl font-bold text-brand-espresso font-mono">
+                            Rp {plan.price.toLocaleString('id-ID')}
+                          </span>
+                          <span className="text-xs text-secondary">/ bln</span>
+                        </>
+                      )}
                     </div>
                     <span className="text-[11px] text-secondary mt-1 block">
-                      {plan.dailyTxLimit === 0
+                      {plan.code === 'PAKET_CUSTOM'
+                        ? 'Sistem BE & FE + Database tersendiri'
+                        : plan.dailyTxLimit === 0
                         ? 'Unlimited transaksi kasir'
-                        : `Batas ritme ${plan.dailyTxLimit} tx / hari`}
+                        : `Batas ritme ${plan.dailyTxLimit} tx / hari (${plan.monthlyTxLimit.toLocaleString('id-ID')} tx/bln)`}
                     </span>
                   </div>
 
