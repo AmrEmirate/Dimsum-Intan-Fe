@@ -56,7 +56,8 @@ export const PosPage: React.FC = () => {
 
   const [selectedCategory, setSelectedCategory] = useState<MenuCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [discountType, setDiscountType] = useState<'RP' | 'PERCENT'>('RP');
+  const [discountInput, setDiscountInput] = useState<string>('0');
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState<boolean>(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod>('CASH');
   const [cashGiven, setCashGiven] = useState<string>('');
@@ -80,6 +81,11 @@ export const PosPage: React.FC = () => {
   // Cart calculations
   const totalCartQty = cart.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const parsedDiscountVal = Math.max(0, parseFloat(discountInput) || 0);
+  const discountAmount =
+    discountType === 'PERCENT'
+      ? Math.min(subtotal, Math.round((subtotal * Math.min(100, parsedDiscountVal)) / 100))
+      : Math.min(subtotal, parsedDiscountVal);
   const finalTotal = Math.max(0, subtotal - discountAmount);
 
   // Filter menus
@@ -129,6 +135,9 @@ export const PosPage: React.FC = () => {
     setCashGiven(finalTotal.toString());
     setIsMobileCartOpen(false);
     setIsCheckoutModalOpen(true);
+    if (method === 'DUITKU_QRIS') {
+      generateDuitkuQr();
+    }
   };
 
   const handleSwitchPaymentMethod = async (method: PaymentMethod) => {
@@ -189,7 +198,8 @@ export const PosPage: React.FC = () => {
 
     const order = await processCheckout(selectedPaymentMethod, cashVal, discountAmount);
     setIsCheckoutModalOpen(false);
-    setDiscountAmount(0);
+    setDiscountInput('0');
+    setDuitkuQrData(null);
     if (order) {
       setCompletedOrder(order);
     }
@@ -512,23 +522,67 @@ export const PosPage: React.FC = () => {
 
             {/* Calculations & Checkout Button */}
             <div className="p-3.5 sm:p-4 bg-surface-container-low border-t border-border-subtle flex flex-col gap-2.5">
-              {/* Discount Selector */}
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-secondary">Diskon Promo:</span>
-                <div className="flex items-center gap-1">
-                  {[0, 5000, 10000].map((amt) => (
+              {/* Discount Selector (Nominal Rp atau Persentase %) */}
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-secondary">Diskon Promo:</span>
+                  <div className="inline-flex rounded-lg bg-surface-card border border-border-subtle p-0.5">
                     <button
-                      key={amt}
-                      onClick={() => setDiscountAmount(amt)}
+                      type="button"
+                      onClick={() => {
+                        setDiscountType('RP');
+                        setDiscountInput('0');
+                      }}
                       className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer transition-colors ${
-                        discountAmount === amt
+                        discountType === 'RP'
                           ? 'bg-brand-espresso text-brand-gold'
-                          : 'bg-surface-card text-secondary hover:bg-surface-container'
+                          : 'text-secondary hover:text-brand-espresso'
                       }`}
                     >
-                      {amt === 0 ? '0' : `-${amt / 1000}k`}
+                      Rp
                     </button>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDiscountType('PERCENT');
+                        setDiscountInput('0');
+                      }}
+                      className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer transition-colors ${
+                        discountType === 'PERCENT'
+                          ? 'bg-brand-espresso text-brand-gold'
+                          : 'text-secondary hover:text-brand-espresso'
+                      }`}
+                    >
+                      %
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    min="0"
+                    max={discountType === 'PERCENT' ? 100 : subtotal}
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value)}
+                    placeholder={discountType === 'PERCENT' ? 'Contoh: 10' : 'Contoh: 5000'}
+                    className="w-24 px-2 py-1 rounded-lg bg-surface-card border border-border-subtle text-xs font-bold text-brand-espresso focus:outline-none focus:ring-1 focus:ring-brand-gold"
+                  />
+                  <div className="flex items-center gap-1 flex-wrap">
+                    {(discountType === 'PERCENT' ? [0, 10, 20] : [0, 5000, 10000]).map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setDiscountInput(String(val))}
+                        className={`px-2 py-1 rounded-md text-[10px] font-bold cursor-pointer transition-colors ${
+                          parsedDiscountVal === val
+                            ? 'bg-brand-espresso text-brand-gold'
+                            : 'bg-surface-card text-secondary hover:bg-surface-container border border-border-subtle'
+                        }`}
+                      >
+                        {val === 0 ? '0' : discountType === 'PERCENT' ? `${val}%` : `-${val / 1000}k`}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -540,7 +594,7 @@ export const PosPage: React.FC = () => {
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-red-600 font-medium">
-                    <span>Diskon:</span>
+                    <span>Diskon{discountType === 'PERCENT' ? ` (${Math.min(100, parsedDiscountVal)}%)` : ''}:</span>
                     <span className="tabular-nums">-Rp {discountAmount.toLocaleString('id-ID')}</span>
                   </div>
                 )}
@@ -552,25 +606,34 @@ export const PosPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Payment Action Buttons */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              {/* Payment Action Buttons (3 Metode: Tunai, QRIS Toko, QRIS Aplikasi) */}
+              <div className="grid grid-cols-3 gap-1.5 pt-1">
                 <button
                   type="button"
                   onClick={() => handleOpenCheckout('CASH')}
                   disabled={cart.length === 0}
-                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-brand-espresso hover:bg-[#2e211e] text-brand-gold text-xs font-bold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer min-h-[44px]"
+                  className="flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-xl bg-brand-espresso hover:bg-[#2e211e] text-brand-gold text-[11px] font-bold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer min-h-[48px]"
                 >
                   <Banknote className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Bayar Tunai</span>
+                  <span className="truncate">Tunai</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleOpenCheckout('QRIS')}
                   disabled={cart.length === 0}
-                  className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-stone-950 text-xs font-black shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer min-h-[44px]"
+                  className="flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-stone-950 text-[11px] font-black shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer min-h-[48px]"
                 >
                   <QrCode className="w-4 h-4 shrink-0" />
                   <span className="truncate">QRIS Toko</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenCheckout('DUITKU_QRIS')}
+                  disabled={cart.length === 0}
+                  className="flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 cursor-pointer min-h-[48px]"
+                >
+                  <QrCode className="w-4 h-4 shrink-0" />
+                  <span className="truncate">QRIS Aplikasi</span>
                 </button>
               </div>
             </div>
@@ -721,23 +784,67 @@ export const PosPage: React.FC = () => {
 
             {/* Bottom Checkout Actions inside Bottom Sheet */}
             <div className="p-4 safe-area-pb pb-6 bg-surface-container-low border-t border-border-subtle flex flex-col gap-3">
-              {/* Promo discounts */}
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-secondary font-medium">Diskon Promo:</span>
-                <div className="flex items-center gap-1.5">
-                  {[0, 5000, 10000].map((amt) => (
+              {/* Promo discounts (Rp / %) */}
+              <div className="space-y-2 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-secondary font-medium">Diskon Promo:</span>
+                  <div className="inline-flex rounded-lg bg-surface-card border border-border-subtle p-0.5">
                     <button
-                      key={amt}
-                      onClick={() => setDiscountAmount(amt)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
-                        discountAmount === amt
+                      type="button"
+                      onClick={() => {
+                        setDiscountType('RP');
+                        setDiscountInput('0');
+                      }}
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold ${
+                        discountType === 'RP'
                           ? 'bg-brand-espresso text-brand-gold'
-                          : 'bg-surface-card text-secondary border border-border-subtle'
+                          : 'text-secondary'
                       }`}
                     >
-                      {amt === 0 ? 'Normal' : `-${amt / 1000}k`}
+                      Rp
                     </button>
-                  ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDiscountType('PERCENT');
+                        setDiscountInput('0');
+                      }}
+                      className={`px-2.5 py-1 rounded-md text-xs font-bold ${
+                        discountType === 'PERCENT'
+                          ? 'bg-brand-espresso text-brand-gold'
+                          : 'text-secondary'
+                      }`}
+                    >
+                      %
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min="0"
+                    max={discountType === 'PERCENT' ? 100 : subtotal}
+                    value={discountInput}
+                    onChange={(e) => setDiscountInput(e.target.value)}
+                    placeholder={discountType === 'PERCENT' ? '10' : '5000'}
+                    className="w-24 px-2.5 py-1.5 rounded-lg bg-surface-card border border-border-subtle text-xs font-bold text-brand-espresso"
+                  />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {(discountType === 'PERCENT' ? [0, 10, 20] : [0, 5000, 10000]).map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setDiscountInput(String(val))}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                          parsedDiscountVal === val
+                            ? 'bg-brand-espresso text-brand-gold'
+                            : 'bg-surface-card text-secondary border border-border-subtle'
+                        }`}
+                      >
+                        {val === 0 ? 'Normal' : discountType === 'PERCENT' ? `${val}%` : `-${val / 1000}k`}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -749,23 +856,31 @@ export const PosPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Pay Tunai / QRIS buttons */}
-              <div className="grid grid-cols-2 gap-2.5 pt-1">
+              {/* Pay Tunai / QRIS Toko / QRIS Aplikasi buttons */}
+              <div className="grid grid-cols-3 gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => handleOpenCheckout('CASH')}
-                  className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-brand-espresso text-brand-gold text-xs font-bold shadow-md active:scale-95 transition-all cursor-pointer min-h-[44px]"
+                  className="flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-2xl bg-brand-espresso text-brand-gold text-[11px] font-bold shadow-md active:scale-95 transition-all cursor-pointer min-h-[48px]"
                 >
                   <Banknote className="w-4 h-4 shrink-0" />
-                  <span>Bayar Tunai</span>
+                  <span>Tunai</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleOpenCheckout('QRIS')}
-                  className="flex items-center justify-center gap-2 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 text-xs font-black shadow-md active:scale-95 transition-all cursor-pointer min-h-[44px]"
+                  className="flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 text-[11px] font-black shadow-md active:scale-95 transition-all cursor-pointer min-h-[48px]"
                 >
                   <QrCode className="w-4 h-4 shrink-0" />
                   <span>QRIS Toko</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleOpenCheckout('DUITKU_QRIS')}
+                  className="flex flex-col items-center justify-center gap-1 py-2.5 px-2 rounded-2xl bg-emerald-600 text-white text-[11px] font-bold shadow-md active:scale-95 transition-all cursor-pointer min-h-[48px]"
+                >
+                  <QrCode className="w-4 h-4 shrink-0" />
+                  <span>QRIS Aplikasi</span>
                 </button>
               </div>
             </div>
@@ -791,31 +906,43 @@ export const PosPage: React.FC = () => {
               Pilih metode transaksi pelanggan:
             </p>
 
-            {/* Payment Method Switcher Tabs: Tunai & QRIS Foto Toko */}
-            <div className="grid grid-cols-2 gap-2 my-3 p-1 rounded-2xl bg-surface-container-low border border-border-subtle">
+            {/* Payment Method Switcher Tabs: Tunai, QRIS Toko, QRIS Aplikasi */}
+            <div className="grid grid-cols-3 gap-1.5 my-3 p-1 rounded-2xl bg-surface-container-low border border-border-subtle">
               <button
                 type="button"
-                onClick={() => setSelectedPaymentMethod('CASH')}
-                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all text-center cursor-pointer min-h-[44px] ${
+                onClick={() => handleSwitchPaymentMethod('CASH')}
+                className={`flex flex-col items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold transition-all text-center cursor-pointer min-h-[48px] ${
                   selectedPaymentMethod === 'CASH'
                     ? 'bg-brand-espresso text-brand-gold shadow-sm'
                     : 'text-secondary hover:text-brand-espresso'
                 }`}
               >
                 <Banknote className="w-4 h-4 shrink-0" />
-                <span>Tunai (Cash)</span>
+                <span>Tunai</span>
               </button>
               <button
                 type="button"
-                onClick={() => setSelectedPaymentMethod('QRIS')}
-                className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold transition-all text-center cursor-pointer min-h-[44px] ${
+                onClick={() => handleSwitchPaymentMethod('QRIS')}
+                className={`flex flex-col items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold transition-all text-center cursor-pointer min-h-[48px] ${
                   selectedPaymentMethod === 'QRIS'
                     ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-stone-950 font-black shadow-sm'
                     : 'text-secondary hover:text-brand-espresso'
                 }`}
               >
                 <QrCode className="w-4 h-4 shrink-0" />
-                <span>QRIS Toko (Foto)</span>
+                <span>QRIS Toko</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSwitchPaymentMethod('DUITKU_QRIS')}
+                className={`flex flex-col items-center justify-center gap-1 py-2 px-2 rounded-xl text-[11px] font-bold transition-all text-center cursor-pointer min-h-[48px] ${
+                  selectedPaymentMethod === 'DUITKU_QRIS'
+                    ? 'bg-emerald-600 text-white font-black shadow-sm'
+                    : 'text-secondary hover:text-brand-espresso'
+                }`}
+              >
+                <QrCode className="w-4 h-4 shrink-0" />
+                <span>QRIS Aplikasi</span>
               </button>
             </div>
 
@@ -857,32 +984,63 @@ export const PosPage: React.FC = () => {
                   </span>
                 </div>
               </div>
-            ) : (
-              /* Real QRIS Image Display (Dimsum Intan Photo) */
+            ) : selectedPaymentMethod === 'DUITKU_QRIS' ? (
+              /* QRIS Aplikasi (Payment Gateway Dinamis) */
               <div className="flex flex-col items-center py-2 space-y-3">
-                <div className="p-3 bg-white rounded-3xl border-2 border-brand-espresso shadow-md max-w-[260px] overflow-hidden">
-                  <img
-                    src="/qris.jpeg"
-                    alt="QRIS Resmi Dimsum Intan"
-                    className="w-full h-auto max-h-64 object-contain rounded-2xl"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020101021226580016ID.CO.DIMSUMINTAN.POS015204581253033605802ID5912Dimsum+Intan6007Bandung62070703A0163046D5E';
-                    }}
-                  />
-                </div>
-                <div className="text-center px-2 space-y-1">
+                {duitkuQrData?.isLoading ? (
+                  <div className="p-6 text-center text-xs text-secondary font-medium">
+                    Membuat QRIS Payment Gateway...
+                  </div>
+                ) : duitkuQrData?.qrString ? (
+                  <>
+                    <div className="p-3 bg-white rounded-3xl border-2 border-emerald-600 shadow-md max-w-[240px]">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(duitkuQrData.qrString)}`}
+                        alt="QRIS Aplikasi Payment Gateway"
+                        className="w-48 h-48 object-contain rounded-xl"
+                      />
+                    </div>
+                    <div className="text-center space-y-1">
+                      <span className="text-xs font-bold text-brand-espresso block">
+                        {duitkuQrData.providerName || 'QRIS Payment Gateway'}
+                      </span>
+                      <p className="text-[11px] text-secondary">
+                        Order ID: {duitkuQrData.orderId}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCheckDuitkuPayment}
+                      disabled={isCheckingDuitku}
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer disabled:opacity-50"
+                    >
+                      {isCheckingDuitku ? 'Memeriksa...' : 'Cek Status Pembayaran Gateway'}
+                    </button>
+                  </>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-center space-y-2 w-full">
+                    <p className="text-xs font-bold text-amber-900">
+                      Payment Gateway QRIS Aplikasi belum aktif / kunci API belum diatur.
+                    </p>
+                    <p className="text-[11px] text-amber-800">
+                      Atur kunci Duitku/Midtrans pada menu Dompet & Tarik Saldo, atau gunakan metode Tunai / QRIS Toko.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* QRIS Toko (Statis di meja kasir - tanpa file lama yang salah) */
+              <div className="flex flex-col items-center py-3 space-y-3">
+                <div className="w-full p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-center space-y-1.5">
+                  <QrCode className="w-8 h-8 text-amber-600 mx-auto" />
                   <span className="text-xs font-bold text-brand-espresso block">
-                    Pindai QRIS Resmi Dimsum Intan
+                    Pembayaran via QRIS Fisik / Stand Toko
                   </span>
-                  <p className="text-[11px] text-secondary max-w-xs leading-relaxed">
-                    Menerima seluruh m-Banking (BCA, Mandiri, BRI, BNI) & E-Wallet (GoPay, OVO, ShopeePay, Dana)
+                  <p className="text-[11px] text-secondary leading-relaxed">
+                    Minta pelanggan memindai QRIS fisik toko senilai{' '}
+                    <strong className="text-brand-espresso">Rp {finalTotal.toLocaleString('id-ID')}</strong>, lalu cek mutasi masuk sebelum konfirmasi.
                   </p>
                 </div>
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-300 px-3 py-1 rounded-full animate-pulse">
-                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Siap Scan Pelanggan • Total Rp {finalTotal.toLocaleString('id-ID')}</span>
-                </span>
               </div>
             )}
 
