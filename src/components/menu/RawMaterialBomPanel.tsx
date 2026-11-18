@@ -371,46 +371,60 @@ export const RawMaterialBomPanel: React.FC<RawMaterialBomPanelProps> = ({ forced
                   </span>
                 </div>
               )}
-              {recipeRows.map((row, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <select
-                    value={row.rawMaterialId}
-                    onChange={(e) => {
-                      const next = [...recipeRows];
-                      next[idx].rawMaterialId = e.target.value;
-                      setRecipeRows(next);
-                    }}
-                    className="flex-1 px-2.5 py-2 rounded-xl bg-white border border-border-subtle text-xs font-semibold text-brand-espresso"
-                  >
-                    <option value="">-- Pilih Bahan --</option>
-                    {rawMaterials.map((rm) => (
-                      <option key={rm.id} value={rm.id}>
-                        {rm.name} ({rm.unit})
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    placeholder="Qty"
-                    value={row.quantityUsed}
-                    onChange={(e) => {
-                      const next = [...recipeRows];
-                      next[idx].quantityUsed = e.target.value;
-                      setRecipeRows(next);
-                    }}
-                    className="w-24 px-2.5 py-2 rounded-xl bg-white border border-border-subtle text-xs font-bold text-brand-espresso"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setRecipeRows(recipeRows.filter((_, i) => i !== idx))}
-                    className="p-2 rounded-xl text-red-600 hover:bg-red-50 cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+              {recipeRows.length > 0 && (
+                <div className="flex items-center justify-between px-1 text-[10px] font-bold uppercase tracking-wider text-secondary">
+                  <span>Bahan Baku</span>
+                  <span className="pr-10">Takaran / Porsi</span>
                 </div>
-              ))}
+              )}
+              {recipeRows.map((row, idx) => {
+                const selectedMat = rawMaterials.find((rm) => rm.id === row.rawMaterialId);
+                return (
+                  <div key={idx} className="flex items-center gap-2">
+                    <select
+                      value={row.rawMaterialId}
+                      onChange={(e) => {
+                        const next = [...recipeRows];
+                        next[idx].rawMaterialId = e.target.value;
+                        setRecipeRows(next);
+                      }}
+                      className="flex-1 min-w-0 px-2.5 py-2 rounded-xl bg-white border border-border-subtle text-xs font-semibold text-brand-espresso"
+                    >
+                      <option value="">-- Pilih Bahan --</option>
+                      {rawMaterials.map((rm) => (
+                        <option key={rm.id} value={rm.id}>
+                          {rm.name} ({rm.unit})
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex items-center rounded-xl bg-white border border-border-subtle overflow-hidden shrink-0">
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        placeholder="Qty"
+                        value={row.quantityUsed}
+                        onChange={(e) => {
+                          const next = [...recipeRows];
+                          next[idx].quantityUsed = e.target.value;
+                          setRecipeRows(next);
+                        }}
+                        className="w-16 sm:w-20 px-2.5 py-2 text-xs font-bold text-brand-espresso text-right focus:outline-none"
+                      />
+                      <span className="px-2 py-2 bg-surface-container text-[11px] font-bold text-secondary border-l border-border-subtle min-w-[38px] text-center">
+                        {selectedMat ? selectedMat.unit : 'qty'}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setRecipeRows(recipeRows.filter((_, i) => i !== idx))}
+                      className="p-2 rounded-xl text-red-600 hover:bg-red-50 cursor-pointer shrink-0"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
 
               {selectedMenu && (
                 <div className="p-3 rounded-xl bg-white border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
