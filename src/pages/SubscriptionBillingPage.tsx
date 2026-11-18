@@ -228,6 +228,14 @@ export const SubscriptionBillingPage: React.FC = () => {
       setTargetPlanCode(defaultPlan || activePlan);
       // Default to select all registered outlets
       setSelectedOutletIds(registeredOutlets.map((o) => o.id));
+    } else if (type === 'CHANGE_PLAN') {
+      if (defaultPlan && defaultPlan !== activePlan) {
+        setTargetPlanCode(defaultPlan);
+      } else {
+        const nextPlan = OFFICIAL_SAAS_PLANS.find((p) => p.code !== activePlan);
+        setTargetPlanCode(nextPlan?.code || 'PAKET_150K');
+      }
+      setSelectedOutletIds(registeredOutlets.map((o) => o.id));
     } else if (defaultPlan && defaultPlan !== activePlan) {
       setTargetPlanCode(defaultPlan);
     } else {
@@ -367,7 +375,7 @@ export const SubscriptionBillingPage: React.FC = () => {
     }
   };
 
-  const isUnlimited = billingStatus?.isUnlimited || billingStatus?.dailyTxLimitPerOutlet === 0;
+  const isUnlimited = billingStatus?.isUnlimited || billingStatus?.monthlyTxLimitPerOutlet === 0;
   const currentPlan = OFFICIAL_SAAS_PLANS.find(
     (p) => p.code === billingStatus?.plan || p.code === billingStatus?.planDetails?.code
   ) || OFFICIAL_SAAS_PLANS[0];
@@ -377,9 +385,7 @@ export const SubscriptionBillingPage: React.FC = () => {
   const maxOutlets = billingStatus?.maxOutlets ?? 4;
   const activeOperationalOutlets = Math.max(1, currentOutlets || maxOutlets);
   const totalMonthlyBill = pricePerOutlet * activeOperationalOutlets;
-  const dailyTxLimit = isUnlimited ? 0 : (billingStatus?.effectiveDailyTxLimit ?? billingStatus?.dailyTxLimitPerOutlet ?? 200);
-  const monthlyTxLimit = isUnlimited ? 0 : (billingStatus?.effectiveMonthlyTxLimit ?? (dailyTxLimit * 30));
-  const todayTxCount = billingStatus?.todayOrdersCount || 0;
+  const monthlyTxLimit = isUnlimited ? 0 : (billingStatus?.effectiveMonthlyTxLimit ?? currentPlan.monthlyTxLimit ?? 6000);
   const monthTxCount = billingStatus?.monthOrdersCount || 0;
 
   const monthPercentage = isUnlimited
@@ -393,8 +399,16 @@ export const SubscriptionBillingPage: React.FC = () => {
   let priceDifference = 0;
   if (checkoutType === 'CHANGE_PLAN') {
     const selectedPlanObj = OFFICIAL_SAAS_PLANS.find((p) => p.code === targetPlanCode) || OFFICIAL_SAAS_PLANS[0];
-    const currentPrice = billingStatus?.pricePerOutlet || currentPlan.price || 100000;
-    priceDifference = Math.max(0, selectedPlanObj.price - currentPrice);
+    if (registeredOutlets.length > 0 && selectedOutletIds.length > 0) {
+      priceDifference = selectedOutletIds.reduce((sum, oid) => {
+        const outletStat = billingStatus?.outlets?.find((o) => o.id === oid);
+        const outletCurPrice = outletStat?.planPrice ?? billingStatus?.pricePerOutlet ?? currentPlan.price ?? 100000;
+        return sum + Math.max(0, selectedPlanObj.price - outletCurPrice);
+      }, 0);
+    } else {
+      const currentPrice = billingStatus?.pricePerOutlet || currentPlan.price || 100000;
+      priceDifference = Math.max(0, selectedPlanObj.price - currentPrice);
+    }
     previewAmount = priceDifference;
   } else if (checkoutType === 'ADD_OUTLET') {
     previewAmount = pricePerOutlet * outletQuantity;
@@ -596,10 +610,7 @@ export const SubscriptionBillingPage: React.FC = () => {
                 )}
               </div>
               <p className="text-xs text-secondary">
-                Transaksi Hari Ini:{' '}
-                <span className="font-semibold text-brand-espresso">
-                  {todayTxCount} / {isUnlimited ? '∞' : dailyTxLimit} Tx
-                </span>
+                Reset kuota transaksi otomatis setiap awal bulan
               </p>
             </div>
           </div>
@@ -687,9 +698,9 @@ export const SubscriptionBillingPage: React.FC = () => {
                     <span className="text-[11px] text-secondary mt-1 block">
                       {plan.code === 'PAKET_CUSTOM'
                         ? 'Sistem BE & FE + Database tersendiri'
-                        : plan.dailyTxLimit === 0
+                        : plan.monthlyTxLimit === 0
                         ? 'Unlimited transaksi kasir'
-                        : `Batas ritme ${plan.dailyTxLimit} tx / hari (${plan.monthlyTxLimit.toLocaleString('id-ID')} tx/bln)`}
+                        : `Kuota ${plan.monthlyTxLimit.toLocaleString('id-ID')} tx / bulan (reset tiap bulan)`}
                     </span>
                   </div>
 
@@ -1122,45 +1133,80 @@ export const SubscriptionBillingPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Dropdown Pasangkan ke Outlet / Cabang Mana */}
+                    {/* Pilih Cabang / Outlet yang Di-upgrade */}
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-bold text-brand-espresso">
-                          Pasangkan Paket ke Cabang / Outlet
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsCheckoutModalOpen(false);
-                            setCurrentView('master-cabang-outlet');
-                          }}
-                          className="text-[11px] text-brand-terracotta hover:text-brand-espresso font-bold flex items-center gap-1 cursor-pointer"
-                        >
-                          <Plus className="w-3 h-3 text-brand-gold" />
-                          <span>+ Tambah Cabang Baru</span>
-                        </button>
-                      </div>
-                      <select
-                        value={selectedOutletId}
-                        onChange={(e) => setSelectedOutletId(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-border-strong bg-surface-card text-xs font-medium text-brand-espresso focus:outline-none focus:ring-2 focus:ring-brand-gold cursor-pointer"
-                      >
-                        <option value="all">Semua Cabang (Standar Tenant &amp; Cabang Baru)</option>
-                        {billingStatus?.outlets && billingStatus.outlets.length > 0 ? (
-                          billingStatus.outlets.map((o) => (
-                            <option key={o.id} value={o.id}>
-                              {o.name} ({o.code}) — Kuota: {o.isUnlimited ? 'Unlimited' : `${o.monthlyLimit?.toLocaleString('id-ID')} tx/bln`}
-                            </option>
-                          ))
-                        ) : (
-                          <option value="new_primary">
-                            Cabang Utama #1 (Belum ada gerai fisik terdaftar — otomatis dipasangkan saat cabang dibuat)
-                          </option>
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <div>
+                          <label className="text-xs font-bold text-brand-espresso block">
+                            Pilih Cabang / Outlet yang Di-upgrade
+                          </label>
+                          <span className="text-[10px] text-secondary">
+                            Setiap cabang bisa punya paket sendiri — centang cabang yang ingin dinaikkan paketnya
+                          </span>
+                        </div>
+                        {registeredOutlets.length > 0 && (
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={handleSelectAllOutlets}
+                              className="text-[10px] text-primary hover:underline font-bold cursor-pointer"
+                            >
+                              Centang Semua
+                            </button>
+                            <span className="text-secondary/40 text-xs">•</span>
+                            <button
+                              type="button"
+                              onClick={handleDeselectAllOutlets}
+                              className="text-[10px] text-secondary hover:underline cursor-pointer"
+                            >
+                              Kosongkan
+                            </button>
+                          </div>
                         )}
-                      </select>
-                      <p className="text-[11px] text-secondary mt-1">
-                        Paket baru dan batas kuota transaksi akan otomatis dipasangkan ke cabang yang Anda pilih.
-                      </p>
+                      </div>
+                      {registeredOutlets.length > 0 ? (
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                          {registeredOutlets.map((o) => {
+                            const checked = selectedOutletIds.includes(o.id);
+                            const stat = billingStatus?.outlets?.find((s) => s.id === o.id);
+                            const monthOrders = stat?.monthOrders ?? ('monthOrders' in o ? o.monthOrders : 0) ?? 0;
+                            const monthlyLimit = stat?.monthlyLimit ?? ('monthlyLimit' in o ? o.monthlyLimit : 0) ?? 0;
+                            const isOutletUnlimited = stat?.isUnlimited ?? ('isUnlimited' in o ? o.isUnlimited : false);
+                            const planLabel = stat?.planName ?? ('planName' in o ? o.planName : undefined) ?? o.plan ?? 'Paket Aktif';
+                            return (
+                              <label
+                                key={o.id}
+                                className={`flex items-center justify-between gap-2 p-2.5 rounded-xl border text-xs cursor-pointer transition-all ${
+                                  checked
+                                    ? 'border-brand-gold bg-brand-gold-subtle/60 text-brand-espresso font-semibold'
+                                    : 'border-border-subtle bg-surface-card text-secondary hover:bg-surface-container-low'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => {
+                                      setSelectedOutletIds((prev) =>
+                                        prev.includes(o.id) ? prev.filter((id) => id !== o.id) : [...prev, o.id]
+                                      );
+                                    }}
+                                    className="rounded border-border-strong text-brand-gold focus:ring-brand-gold"
+                                  />
+                                  <span className="truncate">{o.name} ({o.code})</span>
+                                </div>
+                                <span className="text-[10px] text-secondary shrink-0">
+                                  {planLabel} • {monthOrders}/{isOutletUnlimited ? '∞' : monthlyLimit.toLocaleString('id-ID')} tx
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="p-3 rounded-xl bg-surface-container-low text-xs text-secondary">
+                          Cabang Utama #1 (otomatis dipasangkan saat cabang dibuat)
+                        </div>
+                      )}
                     </div>
 
                     {/* Banner Masa Aktif Tetap (Risiko Outlet) */}

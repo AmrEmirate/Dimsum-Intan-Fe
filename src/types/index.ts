@@ -204,6 +204,9 @@ export interface BillingOutletStat {
   id: string;
   code: string;
   name: string;
+  plan?: string;
+  planName?: string;
+  planPrice?: number;
   todayOrders: number;
   monthOrders?: number;
   dailyLimit: number;
