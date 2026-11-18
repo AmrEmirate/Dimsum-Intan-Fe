@@ -553,7 +553,7 @@ export const SubscriptionBillingPage: React.FC = () => {
             <div className="flex flex-col">
               <span className="text-xs text-secondary">Total Tagihan Bulanan</span>
               <span className="text-[10px] text-secondary/80">
-                {activeOperationalOutlets} Cabang × Rp {pricePerOutlet.toLocaleString('id-ID')} (+1 Semua Cabang)
+                {activeOperationalOutlets} Cabang × Rp {pricePerOutlet.toLocaleString('id-ID')}
               </span>
             </div>
             <span className="text-sm font-bold text-primary font-mono">
@@ -570,18 +570,18 @@ export const SubscriptionBillingPage: React.FC = () => {
                 2. Kuota Outlet (Cabang)
               </span>
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand-gold-subtle text-primary border border-brand-gold/30">
-                {currentOutlets} / {maxOutlets} Cabang (+1 Semua)
+                {currentOutlets} / {maxOutlets} Cabang
               </span>
             </div>
             <div className="space-y-1">
               <div className="text-2xl font-bold text-brand-espresso font-serif-title flex items-baseline gap-2">
                 <span>{currentOutlets} / {maxOutlets}</span>
-                <span className="text-sm font-normal text-secondary">Cabang (+1 Akses Semua Cabang)</span>
+                <span className="text-sm font-normal text-secondary">Cabang Operasional</span>
               </div>
               <p className="text-xs text-secondary">
                 {currentOutlets === 0
                   ? `Belum ada cabang terdaftar (Tersedia ${maxOutlets} slot lisensi siap pakai).`
-                  : `${currentOutlets} cabang operasional aktif + 1 akses untuk melihat semua kondisi cabang.`}
+                  : `${currentOutlets} cabang operasional aktif (Semua Cabang adalah tampilan rekap, bukan slot cabang).`}
               </p>
             </div>
           </div>
