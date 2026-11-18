@@ -52,8 +52,7 @@ export type AppView =
   | 'laporan-laba-rugi-arus-kas'
   | 'dompet-penarikan-saldo'
   | 'langganan-billing'
-  | 'superadmin-portal'
-  | 'pengaturan-payment-gateway';
+  | 'superadmin-portal';
 
 interface NotificationState {
   id: string;

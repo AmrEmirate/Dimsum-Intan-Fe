@@ -313,24 +313,17 @@ export const WalletWithdrawalPage: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-bold text-sm text-brand-espresso">
-                Direct Merchant Gateway: Duitku &amp; Midtrans Terhubung
+                Dompet Penampungan &amp; Pencairan Dana Terpusat
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-status-lunas-bg text-status-lunas-text border border-status-lunas-border font-bold">
-                BYOK Mode Aktif
+                Pencairan Langsung
               </span>
             </div>
             <p className="text-xs text-secondary mt-0.5 max-w-3xl leading-relaxed">
-              Penerimaan QRIS dinamis di kasir langsung masuk ke saldo penampungan merchant tanpa potongan pihak ketiga perantara. Settled real-time ke rekening toko Anda.
+              Seluruh penerimaan pembayaran digital &amp; QRIS otomatis masuk ke saldo dompet outlet dan dapat ditarik langsung ke rekening bank terdaftar melalui halaman ini.
             </p>
           </div>
         </div>
-        <button
-          onClick={() => setCurrentView('pengaturan-payment-gateway')}
-          className="min-h-[40px] whitespace-nowrap px-4 py-2 bg-surface-card hover:bg-surface-muted text-brand-espresso border border-border-strong rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer self-start md:self-auto shrink-0 shadow-2xs"
-        >
-          <span>Kelola Payment Gateway</span>
-          <ChevronRight className="w-3.5 h-3.5 text-secondary" />
-        </button>
       </div>
 
       {/* ================= 3. 4 METRIC SUMMARY CARDS ================= */}

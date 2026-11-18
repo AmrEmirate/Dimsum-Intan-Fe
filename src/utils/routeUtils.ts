@@ -18,7 +18,6 @@ export const VIEW_TO_SLUG: Record<AppView, string> = {
   'beban-operasional-tetap': 'beban-operasional',
   'laporan-laba-rugi-arus-kas': 'laba-rugi',
   'dompet-penarikan-saldo': 'dompet',
-  'pengaturan-payment-gateway': 'payment-gateway',
   'master-cabang-outlet': 'cabang',
   'langganan-billing': 'langganan',
   'superadmin-portal': 'superadmin',
@@ -68,12 +67,6 @@ export const SLUG_TO_VIEW: Record<string, AppView> = {
   laporan: 'laporan-laba-rugi-arus-kas',
   pl: 'laporan-laba-rugi-arus-kas',
 
-  // Payment Gateway
-  'payment-gateway': 'pengaturan-payment-gateway',
-  gateway: 'pengaturan-payment-gateway',
-  payment: 'pengaturan-payment-gateway',
-  qris: 'pengaturan-payment-gateway',
-
   // Dashboard
   dashboard: 'dashboard-utama',
   home: 'dashboard-utama',
@@ -97,7 +90,6 @@ export const VIEW_TITLES: Record<AppView, string> = {
   'beban-operasional-tetap': 'Beban Operasional Tetap',
   'laporan-laba-rugi-arus-kas': 'Laporan Laba Rugi & Arus Kas',
   'dompet-penarikan-saldo': 'Dompet Digital & Tarik Saldo',
-  'pengaturan-payment-gateway': 'Pengaturan Payment Gateway',
   'master-cabang-outlet': 'Kelola Cabang Outlet',
   'langganan-billing': 'Langganan & Billing',
   'superadmin-portal': 'Superadmin Portal',
