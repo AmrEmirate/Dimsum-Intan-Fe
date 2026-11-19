@@ -1,0 +1,117 @@
+name: Build & Release Desktop App (Tauri)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/build-desktop.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: macos
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux Tauri dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Install Tauri CLI
+        working-directory: desktop
+        run: npm install
+
+      - name: Generate App Icons from logo.png
+        working-directory: desktop
+        run: npx tauri icon ../public/logo.png
+
+      - name: Build Desktop App
+        working-directory: desktop
+        run: npx tauri build
+
+      - name: Prepare Windows artifact
+        if: matrix.platform == 'windows'
+        shell: bash
+        run: |
+          mkdir -p release-files
+          cp desktop/src-tauri/target/release/bundle/nsis/*.exe release-files/dimsum-intan-windows-setup.exe
+
+      - name: Prepare Linux artifact
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          mkdir -p release-files
+          cp desktop/src-tauri/target/release/bundle/appimage/*.AppImage release-files/dimsum-intan-linux.AppImage
+
+      - name: Prepare macOS artifact
+        if: matrix.platform == 'macos'
+        shell: bash
+        run: |
+          mkdir -p release-files
+          cp desktop/src-tauri/target/release/bundle/dmg/*.dmg release-files/dimsum-intan-macos.dmg
+
+      - name: Upload Desktop Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.platform }}
+          path: release-files/*
+
+  release:
+    needs: build-desktop
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all desktop artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Publish to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: desktop-v1.0.0
+          make_latest: false
+          name: Dimsum Intan POS Desktop (v1.0.0)
+          body: |
+            Aplikasi Desktop resmi (Tauri v2) untuk **https://dimsumintan.vimtk.cloud/**
+            - **Windows**: `dimsum-intan-windows-setup.exe`
+            - **Linux**: `dimsum-intan-linux.AppImage`
+            - **Apple (macOS)**: `dimsum-intan-macos.dmg`
+            - Otomatis update mengikuti versi web terbaru & mendukung Login Google
+          files: |
+            artifacts/dimsum-intan-windows-setup.exe
+            artifacts/dimsum-intan-linux.AppImage
+            artifacts/dimsum-intan-macos.dmg

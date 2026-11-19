@@ -9,6 +9,9 @@ import {
   AlertCircle,
   Shield,
   ChefHat,
+  Download,
+  Monitor,
+  Smartphone,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { getTenantSlug } from '../services/apiClient';
@@ -248,19 +251,62 @@ export const LoginPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Download Android APK Link (sembunyikan jika sudah di dalam APK) */}
-          {typeof navigator !== 'undefined' && !navigator.userAgent.includes('DimsumIntanAPK') && (
-            <div className="mt-5 flex justify-center">
-              <a
-                href="https://github.com/AmrEmirate/Dimsum-Intan-Fe/releases/latest/download/dimsum-intan.apk"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high border border-border-subtle text-brand-espresso text-xs font-bold transition-all min-h-[40px]"
-              >
-                <span>Download Aplikasi Android (.apk)</span>
-              </a>
-            </div>
-          )}
+          {/* Download App Links: Desktop (Windows/Linux/Apple) vs Tablet/Mobile (APK), sembunyikan jika sudah di dalam APK/Desktop */}
+          {typeof navigator !== 'undefined' &&
+            !navigator.userAgent.includes('DimsumIntanAPK') &&
+            !navigator.userAgent.includes('DimsumIntanDesktop') && (
+              <>
+                {/* Mode Tablet & Mobile: Android APK */}
+                <div className="mt-5 flex lg:hidden justify-center">
+                  <a
+                    href="https://github.com/AmrEmirate/Dimsum-Intan-Fe/releases/latest/download/dimsum-intan.apk"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high border border-border-subtle text-brand-espresso text-xs font-bold transition-all min-h-[40px]"
+                  >
+                    <Smartphone className="w-4 h-4 shrink-0" />
+                    <span>Download Aplikasi Android (.apk)</span>
+                  </a>
+                </div>
+
+                {/* Mode Desktop: Windows, Linux, Apple */}
+                <div className="mt-5 hidden lg:flex flex-col items-center gap-2.5">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-brand-espresso/70">
+                    <Monitor className="w-3.5 h-3.5" />
+                    <span>Download Aplikasi Desktop</span>
+                  </span>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <a
+                      href="https://github.com/AmrEmirate/Dimsum-Intan-Fe/releases/download/desktop-v1.0.0/dimsum-intan-windows-setup.exe"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-border-subtle text-brand-espresso text-xs font-bold transition-all min-h-[40px]"
+                    >
+                      <Download className="w-3.5 h-3.5 shrink-0" />
+                      <span>Windows</span>
+                    </a>
+                    <a
+                      href="https://github.com/AmrEmirate/Dimsum-Intan-Fe/releases/download/desktop-v1.0.0/dimsum-intan-linux.AppImage"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-border-subtle text-brand-espresso text-xs font-bold transition-all min-h-[40px]"
+                    >
+                      <Download className="w-3.5 h-3.5 shrink-0" />
+                      <span>Linux</span>
+                    </a>
+                    <a
+                      href="https://github.com/AmrEmirate/Dimsum-Intan-Fe/releases/download/desktop-v1.0.0/dimsum-intan-macos.dmg"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-border-subtle text-brand-espresso text-xs font-bold transition-all min-h-[40px]"
+                    >
+                      <Download className="w-3.5 h-3.5 shrink-0" />
+                      <span>Apple</span>
+                    </a>
+                  </div>
+                </div>
+              </>
+            )}
 
           {/* Security Notice Footer */}
           <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-border-subtle flex items-center justify-center gap-1.5 text-secondary text-[10px] sm:text-xs text-center">

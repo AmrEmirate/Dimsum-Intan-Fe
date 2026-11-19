@@ -1,0 +1,12 @@
+{
+  "name": "dimsum-intan-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dimsum Intan POS Desktop Wrapper (Tauri v2)",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.2.0"
+  }
+}
