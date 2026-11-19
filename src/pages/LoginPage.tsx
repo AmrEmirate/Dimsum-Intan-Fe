@@ -11,6 +11,7 @@ import {
   ChefHat,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { getTenantSlug } from '../services/apiClient';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
@@ -36,7 +37,12 @@ export const LoginPage: React.FC = () => {
   const handleGoogleRedirectLogin = () => {
     setIsLoading(true);
     const redirectOrigin = window.location.origin;
-    window.location.href = `${API_BASE_URL}/auth/google/start?redirect_origin=${encodeURIComponent(redirectOrigin)}`;
+    const tenantSlug = getTenantSlug();
+    const params = new URLSearchParams({ redirect_origin: redirectOrigin });
+    if (tenantSlug) {
+      params.set('tenant_slug', tenantSlug);
+    }
+    window.location.href = `${API_BASE_URL}/auth/google/start?${params.toString()}`;
   };
 
   const brandName = currentTenant?.name || 'DIMSUM INTAN';
