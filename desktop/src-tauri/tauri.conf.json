@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "identifier": "cloud.vimtk.dimsumintan.desktop",
   "build": {
-    "frontendDist": "../dist"
+    "frontendDist": "../web"
   },
   "app": {
     "windows": [
