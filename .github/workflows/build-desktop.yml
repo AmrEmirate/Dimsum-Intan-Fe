@@ -55,7 +55,7 @@ jobs:
 
       - name: Generate App Icons from logo.png
         working-directory: desktop
-        run: npx tauri icon ../public/logo.png
+        run: npx tauri icon ../public/logo.png --fit contain
 
       - name: Build Desktop App
         working-directory: desktop
