@@ -544,7 +544,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const applyAuthenticatedSession = async (token: string, u: User) => {
     setAuthToken(token);
     setIsAuthenticated(true);
-    const avatarMap: Record<UserRole, string> = {
+    const avatarMap: Record<string, string> = {
       OWNER: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
       SUPERVISOR: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
       KASIR: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
