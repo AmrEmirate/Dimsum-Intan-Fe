@@ -548,6 +548,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       OWNER: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
       SUPERVISOR: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
       KASIR: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+      AKUNTAN: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+      INVENTORY: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&auto=format&fit=crop&q=80',
     };
     const updatedUser: User = {
       id: u.id,
@@ -631,13 +633,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const loginWithToken = async (token: string): Promise<boolean> => {
     try {
       setAuthToken(token);
-      const res = await api.get<{ success: boolean; data: User }>('/auth/me');
-      if (res.success && res.data) {
-        await applyAuthenticatedSession(token, res.data);
+      const res = await api.get<{ success: boolean; user?: User; data?: User }>('/auth/me');
+      const userObj = res.user || res.data;
+      if (res.success && userObj) {
+        await applyAuthenticatedSession(token, userObj);
         return true;
       }
+      clearAuthToken();
+      showNotification('Gagal memuat profil akun Google.', 'error');
     } catch (err: any) {
-      setAuthToken('');
+      clearAuthToken();
       showNotification(err?.message || 'Gagal memverifikasi sesi Google.', 'error');
     }
     return false;
