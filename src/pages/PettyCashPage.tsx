@@ -38,7 +38,10 @@ export const PettyCashPage: React.FC = () => {
 
   const isKasir = currentUser.role === 'KASIR';
   const isOwner = currentUser.role === 'OWNER';
-  const isSupervisorOrOwner = currentUser.role === 'SUPERVISOR' || currentUser.role === 'OWNER';
+  const isSupervisorOrOwner =
+    currentUser.role === 'SUPERVISOR' ||
+    currentUser.role === 'OWNER' ||
+    currentUser.role === 'AKUNTAN';
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [previewReceiptImage, setPreviewReceiptImage] = useState<string | null>(null);

@@ -25,6 +25,8 @@ import {
   ArrowRight,
   Wallet,
   Edit2,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { useApp, AppView } from '../../context/AppContext';
 import { UserRole } from '../../types';
@@ -59,7 +61,14 @@ export const Header: React.FC = () => {
     pettyCashList,
     factoryInvoices,
     fixedExpenses,
+    isKioskLocked,
+    lockKiosk,
+    unlockKiosk,
   } = useApp();
+
+  const [isKioskPinModalOpen, setIsKioskPinModalOpen] = useState<'lock' | 'unlock' | null>(null);
+  const [kioskPinInput, setKioskPinInput] = useState<string>('');
+  const [kioskPinError, setKioskPinError] = useState<string | null>(null);
 
   const [currentTime, setCurrentTime] = useState<string>('');
   const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState<boolean>(false);
@@ -267,6 +276,10 @@ export const Header: React.FC = () => {
         return 'bg-brand-espresso text-brand-gold border border-brand-gold/30';
       case 'SUPERVISOR':
         return 'bg-brand-terracotta text-white border border-brand-terracotta-dark';
+      case 'AKUNTAN':
+        return 'bg-emerald-700 text-white border border-emerald-800';
+      case 'INVENTORY':
+        return 'bg-amber-600 text-white border border-amber-700';
       case 'KASIR':
         return 'bg-surface-muted text-brand-espresso border border-border-strong';
     }
@@ -319,18 +332,20 @@ export const Header: React.FC = () => {
 
   return (
     <>
-      <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-surface/90 backdrop-blur-md border-b border-border-subtle z-40 flex items-center justify-between px-2.5 sm:px-6 shadow-xs select-none">
+      <header className={`fixed top-0 left-0 ${isKioskLocked ? '' : 'lg:left-72'} right-0 h-16 bg-surface/90 backdrop-blur-md border-b border-border-subtle z-40 flex items-center justify-between px-2.5 sm:px-6 shadow-xs select-none`}>
         {/* Left items: Mobile hamburger & Active shift status & Network status */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-          {/* Hamburger toggle button for Mobile/Tablet */}
-          <button
-            type="button"
-            onClick={() => setIsSidebarOpen(true)}
-            className="lg:hidden p-2 rounded-xl text-brand-espresso hover:bg-surface-container active:scale-95 transition-all cursor-pointer shrink-0"
-            title="Buka Menu Navigasi"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
+          {/* Hamburger toggle button for Mobile/Tablet (disembunyikan saat terkunci) */}
+          {!isKioskLocked && (
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden p-2 rounded-xl text-brand-espresso hover:bg-surface-container active:scale-95 transition-all cursor-pointer shrink-0"
+              title="Buka Menu Navigasi"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+          )}
 
           {/* Shift status pill - Interactive for Cashier/Owner */}
           <button
@@ -384,10 +399,43 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Right items: Outlet Switcher, Notifications & Interactive Role Switcher */}
+        {/* Right items: Kiosk Lock, Outlet Switcher, Notifications & Interactive Role Switcher */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-          {/* Quick Outlet Selector on Desktop/Tablet Topbar */}
-          <OutletDropdown variant="compact" className="hidden md:block" />
+          {/* Kiosk App Lock / Unlock Button */}
+          {isKioskLocked ? (
+            <button
+              type="button"
+              onClick={() => {
+                setKioskPinInput('');
+                setKioskPinError(null);
+                setIsKioskPinModalOpen('unlock');
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-sm active:scale-95 transition-all cursor-pointer min-h-[40px]"
+              title="Buka Kunci Mode Kiosk dengan PIN"
+            >
+              <Unlock className="w-4 h-4 shrink-0" />
+              <span>Buka Kunci (PIN)</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setKioskPinInput('');
+                setKioskPinError(null);
+                setIsKioskPinModalOpen('lock');
+              }}
+              className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high border border-border-subtle text-brand-espresso text-xs font-bold transition-all cursor-pointer min-h-[38px]"
+              title="Kunci Aplikasi (Mode Kiosk Kasir) dengan PIN"
+            >
+              <Lock className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span className="hidden md:inline">Kunci Aplikasi</span>
+            </button>
+          )}
+
+          {!isKioskLocked && (
+            <>
+              {/* Quick Outlet Selector on Desktop/Tablet Topbar */}
+              <OutletDropdown variant="compact" className="hidden md:block" />
 
           {/* Quick Activate Branch CTA for Owner when 0 outlets */}
           {currentUser.role === 'OWNER' && outlets.length === 0 && (
@@ -722,6 +770,8 @@ export const Header: React.FC = () => {
               </div>
             )}
           </div>
+            </>
+          )}
         </div>
       </header>
 
@@ -875,6 +925,115 @@ export const Header: React.FC = () => {
         isOpen={isCloseShiftModalOpen}
         onClose={() => setIsCloseShiftModalOpen(false)}
       />
+
+      {/* Modal: Mode Kunci Kasir (Kiosk Lock / Unlock PIN) */}
+      {isKioskPinModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-espresso/65 backdrop-blur-sm p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setKioskPinError(null);
+              if (isKioskPinModalOpen === 'lock') {
+                if (kioskPinInput.trim().length < 4) {
+                  setKioskPinError('PIN minimal 4 digit angka!');
+                  return;
+                }
+                lockKiosk(kioskPinInput);
+                setIsKioskPinModalOpen(null);
+                setKioskPinInput('');
+              } else {
+                const ok = unlockKiosk(kioskPinInput);
+                if (!ok) {
+                  setKioskPinError('PIN salah! Hubungi Supervisor/Owner untuk membuka kunci.');
+                  return;
+                }
+                setIsKioskPinModalOpen(null);
+                setKioskPinInput('');
+              }
+            }}
+            className="bg-surface-card rounded-3xl border border-border-strong p-6 w-full max-w-sm shadow-2xl space-y-4"
+          >
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                {isKioskPinModalOpen === 'lock' ? (
+                  <Lock className="w-5 h-5 text-primary" />
+                ) : (
+                  <Unlock className="w-5 h-5 text-red-600" />
+                )}
+                <h3 className="font-serif-title font-bold text-base text-brand-espresso">
+                  {isKioskPinModalOpen === 'lock' ? 'Kunci Aplikasi (Mode Kiosk)' : 'Buka Kunci Aplikasi'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsKioskPinModalOpen(null)}
+                className="p-1.5 rounded-lg text-secondary hover:text-brand-espresso cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-secondary leading-relaxed">
+              {isKioskPinModalOpen === 'lock'
+                ? 'Saat dikunci, kasir tidak bisa keluar dari layar aplikasi, pindah menu, atau logout tanpa memasukkan PIN ini (mendukung Screen Pinning di HP Android perusahaan).'
+                : 'Masukkan PIN yang dibuat saat mengunci aplikasi untuk kembali membuka seluruh navigasi dan keluar dari Mode Kiosk.'}
+            </p>
+
+            {kioskPinError && (
+              <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
+                {kioskPinError}
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[11px] font-bold text-secondary uppercase">
+                PIN Keamanan (4–6 Digit) *
+              </label>
+              <input
+                type="password"
+                inputMode="numeric"
+                maxLength={6}
+                autoFocus
+                value={kioskPinInput}
+                onChange={(e) => setKioskPinInput(e.target.value.replace(/\D/g, ''))}
+                placeholder="Masukkan 4–6 digit PIN..."
+                className="w-full p-3 rounded-xl bg-surface-container border border-border-subtle text-center text-lg font-mono tracking-[0.4em] text-brand-espresso focus:outline-none focus:border-brand-gold"
+                required
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsKioskPinModalOpen(null)}
+                className="px-4 py-2.5 min-h-[44px] rounded-xl border border-border-strong text-xs font-bold text-brand-espresso cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className={`px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 ${
+                  isKioskPinModalOpen === 'lock'
+                    ? 'bg-brand-gold hover:bg-brand-gold-hover text-brand-espresso'
+                    : 'bg-red-600 hover:bg-red-700 text-white'
+                }`}
+              >
+                {isKioskPinModalOpen === 'lock' ? (
+                  <>
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Kunci Sekarang</span>
+                  </>
+                ) : (
+                  <>
+                    <Unlock className="w-3.5 h-3.5" />
+                    <span>Buka Kunci</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </>
   );
 };

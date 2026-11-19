@@ -53,9 +53,9 @@ jobs:
         working-directory: desktop
         run: npm install
 
-      - name: Generate App Icons from logo.png
+      - name: Generate App Icons from logo_intan.png
         working-directory: desktop
-        run: npx tauri icon ../public/logo.png --fit contain
+        run: npx tauri icon ../public/logo_intan.png --fit contain
 
       - name: Build Desktop App
         working-directory: desktop

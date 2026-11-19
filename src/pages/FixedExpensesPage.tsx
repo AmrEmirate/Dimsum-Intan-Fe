@@ -35,7 +35,7 @@ export const FixedExpensesPage: React.FC = () => {
     showNotification,
   } = useApp();
 
-  const isOwner = currentUser.role === 'OWNER';
+  const isOwner = currentUser.role === 'OWNER' || currentUser.role === 'AKUNTAN';
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formTitle, setFormTitle] = useState('');

@@ -23,17 +23,25 @@ describe('Black Box Testing: Role-Based User Access Matrix & Permissions', () =>
       case 'langganan-billing':
       case 'pengaturan-payment-gateway':
       case 'dompet-penarikan-saldo':
+        return role === 'OWNER';
+
       case 'beban-operasional':
       case 'laporan-laba-rugi':
-        return role === 'OWNER';
+        return role === 'OWNER' || role === 'AKUNTAN';
 
       case 'kelola-staf-karyawan':
       case 'kelola-cabang-outlet':
-      case 'kelola-menu-hpp':
-      case 'tagihan-supplier':
-      case 'verifikasi-kas-kecil':
       case 'batal-transaksi-void':
         return role === 'OWNER' || role === 'SUPERVISOR';
+
+      case 'kelola-menu-hpp':
+        return role === 'OWNER' || role === 'SUPERVISOR' || role === 'INVENTORY';
+
+      case 'tagihan-supplier':
+        return role === 'OWNER' || role === 'SUPERVISOR' || role === 'AKUNTAN';
+
+      case 'verifikasi-kas-kecil':
+        return role === 'OWNER' || role === 'SUPERVISOR' || role === 'AKUNTAN';
 
       case 'transaksi-kasir-pos':
         return role === 'KASIR'; // Hanya Kasir yang menginput transaksi POS
@@ -95,6 +103,45 @@ describe('Black Box Testing: Role-Based User Access Matrix & Permissions', () =>
     });
 
     it('should NOT access front-counter POS terminal', () => {
+      expect(checkUserCanAccessFeature(role, 'transaksi-kasir-pos')).toBe(false);
+    });
+  });
+
+  describe('Black Box: AKUNTAN Role Boundary', () => {
+    const role: UserRole = 'AKUNTAN';
+
+    it('should access financial reports, fixed expenses, supplier bills, and petty cash verification', () => {
+      expect(checkUserCanAccessFeature(role, 'laporan-laba-rugi')).toBe(true);
+      expect(checkUserCanAccessFeature(role, 'beban-operasional')).toBe(true);
+      expect(checkUserCanAccessFeature(role, 'tagihan-supplier')).toBe(true);
+      expect(checkUserCanAccessFeature(role, 'verifikasi-kas-kecil')).toBe(true);
+      expect(checkUserCanAccessFeature(role, 'sesi-shift-kasir')).toBe(true);
+    });
+
+    it('should NOT access owner wallet/billing, staff/outlet management, or POS terminal', () => {
+      expect(checkUserCanAccessFeature(role, 'dompet-penarikan-saldo')).toBe(false);
+      expect(checkUserCanAccessFeature(role, 'langganan-billing')).toBe(false);
+      expect(checkUserCanAccessFeature(role, 'pengaturan-payment-gateway')).toBe(false);
+      expect(checkUserCanAccessFeature(role, 'kelola-cabang-outlet')).toBe(false);
+      expect(checkUserCanAccessFeature(role, 'kelola-menu-hpp')).toBe(false);
+      expect(checkUserCanAccessFeature(role, 'transaksi-kasir-pos')).toBe(false);
+    });
+  });
+
+  describe('Black Box: INVENTORY Role Boundary', () => {
+    const role: UserRole = 'INVENTORY';
+
+    it('should access menu/materials/recipes and shift opname audit', () => {
+      expect(checkUserCanAccessFeature(role, 'kelola-menu-hpp')).toBe(true);
+      expect(checkUserCanAccessFeature(role, 'sesi-shift-kasir')).toBe(true);
+    });
+
+    it('should NOT access financial reports, wallet, billing, or voiding POS orders', () => {
+      expect(checkUserCanAccessFeature(role, 'laporan-laba-rugi')).toBe(false);
+      expect(checkUserCanAccessFeature(role, 'beban-operasional')).toBe(false);
+      expect(checkUserCanAccessFeature(role, 'dompet-penarikan-saldo')).toBe(false);
+      expect(checkUserCanAccessFeature(role, 'langganan-billing')).toBe(false);
+      expect(checkUserCanAccessFeature(role, 'batal-transaksi-void')).toBe(false);
       expect(checkUserCanAccessFeature(role, 'transaksi-kasir-pos')).toBe(false);
     });
   });

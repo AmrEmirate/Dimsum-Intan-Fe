@@ -32,6 +32,7 @@ import { RupiahInput } from '../components/common/RupiahInput';
 export const PosPage: React.FC = () => {
   const {
     menuItems,
+    menuRecipes,
     cart,
     addToCart,
     updateCartQty,
@@ -91,8 +92,11 @@ export const PosPage: React.FC = () => {
       : Math.min(subtotal, parsedDiscountVal);
   const finalTotal = Math.max(0, subtotal - discountAmount);
 
-  // Filter menus
+  // Filter menus: hanya tampilkan menu yang sudah memiliki konfigurasi BOM (resep bahan baku)
+  const configuredBomMenuIds = new Set(menuRecipes.map((r) => r.menuId));
   const filteredMenus = menuItems.filter((menu) => {
+    const hasBom = configuredBomMenuIds.has(menu.id);
+    if (!hasBom) return false;
     const matchesCat = selectedCategory === 'all' || menu.category === selectedCategory;
     const matchesSearch =
       menu.name.toLowerCase().includes(searchQuery.toLowerCase()) ||

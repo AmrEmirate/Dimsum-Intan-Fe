@@ -28,7 +28,7 @@ export const ProfitLossPage: React.FC = () => {
     showNotification,
   } = useApp();
 
-  const isOwner = currentUser.role === 'OWNER';
+  const isOwner = currentUser.role === 'OWNER' || currentUser.role === 'AKUNTAN';
   const activeOutlet = outlets.find((o) => o.id === selectedOutletId);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
 
@@ -43,7 +43,7 @@ export const ProfitLossPage: React.FC = () => {
           Akses Laporan Finansial Terkunci
         </h2>
         <p className="text-xs text-secondary mt-1.5 max-w-md leading-relaxed">
-          Modul Laporan Laba Rugi, HPP, dan Arus Kas hanya dapat diakses oleh akun berwenang dengan hak akses <strong>OWNER</strong>.
+          Modul Laporan Laba Rugi, HPP, dan Arus Kas hanya dapat diakses oleh akun berwenang dengan hak akses <strong>OWNER</strong> atau <strong>AKUNTAN</strong>.
         </p>
         <button
           onClick={logout}

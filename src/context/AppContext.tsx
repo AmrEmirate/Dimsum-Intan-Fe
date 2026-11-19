@@ -201,6 +201,11 @@ interface AppContextType {
   markInvoicePaid: (id: string, proofImageUrl?: string) => Promise<void>;
   deleteFactoryInvoice: (id: string) => Promise<boolean>;
 
+  // Kiosk / App Lock Mode
+  isKioskLocked: boolean;
+  lockKiosk: (pin: string) => void;
+  unlockKiosk: (pin: string) => boolean;
+
   // Fixed OPEX
   fixedExpenses: FixedExpense[];
   addFixedExpense: (expense: Omit<FixedExpense, 'id' | 'code'>) => Promise<void>;
@@ -309,6 +314,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return 'dashboard-utama';
   });
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [isKioskLocked, setIsKioskLocked] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('dimsum_kiosk_locked') === 'true';
+    }
+    return false;
+  });
   const [notification, setNotification] = useState<NotificationState | null>(null);
 
   // Multi-Tenant State
@@ -661,6 +672,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Logout Method
   const logout = () => {
+    if (isKioskLocked) {
+      showNotification('Mode Kunci Kasir aktif. Masukkan PIN untuk membuka kunci terlebih dahulu.', 'error');
+      return;
+    }
     clearAuthToken();
     clearActiveTenantId();
     setIsAuthenticated(false);
@@ -668,6 +683,79 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     localStorage.removeItem('dimsum_outlet_id');
     showNotification('Anda telah berhasil keluar dari sistem.', 'info');
   };
+
+  // Kiosk Lock / Unlock Handlers
+  const lockKiosk = (pin: string) => {
+    const cleanPin = pin.trim();
+    if (cleanPin.length < 4) {
+      showNotification('PIN kunci aplikasi minimal 4 digit!', 'error');
+      return;
+    }
+    localStorage.setItem('dimsum_kiosk_pin', cleanPin);
+    localStorage.setItem('dimsum_kiosk_locked', 'true');
+    setIsKioskLocked(true);
+    setIsSidebarOpen(false);
+    if (currentUser.role === 'KASIR') {
+      setCurrentView('transaksi-kasir-pos');
+    }
+    try {
+      (window as any).DimsumIntanNative?.setKioskLock?.(true);
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } catch {
+      // ignore fullscreen/native bridge errors
+    }
+    showNotification('Mode Kunci Kasir aktif. Keluar aplikasi atau pindah menu memerlukan PIN.', 'info');
+  };
+
+  const unlockKiosk = (pin: string): boolean => {
+    const savedPin = localStorage.getItem('dimsum_kiosk_pin') || '';
+    if (!savedPin || pin.trim() !== savedPin) {
+      return false;
+    }
+    localStorage.removeItem('dimsum_kiosk_locked');
+    localStorage.removeItem('dimsum_kiosk_pin');
+    setIsKioskLocked(false);
+    try {
+      (window as any).DimsumIntanNative?.setKioskLock?.(false);
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    } catch {
+      // ignore
+    }
+    showNotification('Kunci aplikasi berhasil dibuka.', 'success');
+    return true;
+  };
+
+  // Guard back navigation & tab close when Kiosk Lock is active
+  useEffect(() => {
+    if (!isKioskLocked) return;
+
+    try {
+      (window as any).DimsumIntanNative?.setKioskLock?.(true);
+    } catch {
+      // ignore
+    }
+
+    window.history.pushState(null, '', window.location.href);
+    const handlePopState = () => {
+      window.history.pushState(null, '', window.location.href);
+      showNotification('Aplikasi sedang dikunci (Mode Kiosk). Masukkan PIN untuk keluar.', 'info');
+    };
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isKioskLocked]);
 
   // Switch Role Guide
   const switchRole = async (_role: UserRole) => {
@@ -1922,6 +2010,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         markInvoicePaid,
         deleteFactoryInvoice,
         fixedExpenses,
+        isKioskLocked,
+        lockKiosk,
+        unlockKiosk,
         addFixedExpense,
         updateFixedExpense,
         toggleFixedExpenseStatus,

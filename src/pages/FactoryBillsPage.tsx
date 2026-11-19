@@ -37,7 +37,7 @@ export const FactoryBillsPage: React.FC = () => {
     showNotification,
   } = useApp();
 
-  const isOwner = currentUser.role === 'OWNER';
+  const isOwner = currentUser.role === 'OWNER' || currentUser.role === 'AKUNTAN';
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<FactoryInvoice | null>(null);

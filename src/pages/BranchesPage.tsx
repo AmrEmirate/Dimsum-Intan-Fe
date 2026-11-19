@@ -226,7 +226,7 @@ export const BranchesPage: React.FC = () => {
     setOutletAddress(outlet.address);
     setOutletPhone(outlet.phone);
     setOutletTarget(String(outlet.targetDailySales || 4000000));
-    setSelectedPlan(outlet.plan || billingStatus?.plan || 'PAKET_100K');
+    setSelectedPlan(billingStatus?.plan || outlet.plan || 'PAKET_100K');
     setOutletError(null);
     setIsOutletModalOpen(true);
   };
@@ -1158,6 +1158,10 @@ export const BranchesPage: React.FC = () => {
                             ? 'bg-brand-espresso text-brand-gold'
                             : staff.role === 'SUPERVISOR'
                             ? 'bg-brand-terracotta text-white'
+                            : staff.role === 'AKUNTAN'
+                            ? 'bg-emerald-700 text-white'
+                            : staff.role === 'INVENTORY'
+                            ? 'bg-amber-600 text-white'
                             : 'bg-surface-container text-brand-espresso border border-border-subtle'
                         }`}
                       >
@@ -1223,6 +1227,10 @@ export const BranchesPage: React.FC = () => {
                               ? 'bg-brand-espresso text-brand-gold'
                               : staff.role === 'SUPERVISOR'
                               ? 'bg-brand-terracotta text-white'
+                              : staff.role === 'AKUNTAN'
+                              ? 'bg-emerald-700 text-white'
+                              : staff.role === 'INVENTORY'
+                              ? 'bg-amber-600 text-white'
                               : 'bg-surface-container text-brand-espresso border border-border-subtle'
                           }`}
                         >
@@ -1367,85 +1375,55 @@ export const BranchesPage: React.FC = () => {
                 </div>
               )}
 
-              {/* SECTION: Package Selection */}
-              <div className="flex flex-col gap-2 p-3 sm:p-3.5 rounded-2xl bg-surface-container/50 border border-border-subtle">
-                <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-brand-gold" />
-                    Pilihan Paket Kuota Transaksi Cabang *
-                  </label>
-                  <span className="text-[10px] text-secondary font-medium">
-                    Kuota kasir per cabang
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {OUTLET_AVAILABLE_PLANS.map((planItem) => {
-                    const isSelected = selectedPlan === planItem.code;
-                    return (
-                      <button
-                        key={planItem.code}
-                        type="button"
-                        onClick={() => setSelectedPlan(planItem.code)}
-                        className={`p-3 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer min-h-[92px] ${
-                          isSelected
-                            ? 'border-brand-gold bg-brand-gold-subtle ring-2 ring-brand-gold/30 shadow-sm'
-                            : 'border-border-subtle bg-surface-container hover:border-brand-gold/40 hover:bg-surface-container-high'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-1 w-full">
-                          <div>
-                            <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider mb-1 ${planItem.badgeClass}`}>
-                              {planItem.badge}
-                            </span>
-                            <div className="font-bold text-xs text-brand-espresso">
-                              {planItem.name}
-                            </div>
-                          </div>
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all ${
-                            isSelected
-                              ? 'bg-brand-gold text-brand-espresso shadow-xs'
-                              : 'border border-border-strong text-transparent'
-                          }`}>
-                            <Check className="w-3 h-3 stroke-[3]" />
-                          </div>
-                        </div>
-
-                        <div className="mt-2 pt-2 border-t border-border-subtle/60 flex items-end justify-between w-full">
-                          <div>
-                            <div className="text-[10px] text-secondary leading-tight line-clamp-1">
-                              {planItem.desc}
-                            </div>
-                            <div className="font-extrabold text-xs text-brand-espresso mt-0.5">
-                              {planItem.monthlyLimit}
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <span className="text-[11px] font-black text-brand-terracotta">
-                              Rp {(planItem.price / 1000).toLocaleString('id-ID')}k
-                            </span>
-                            <span className="text-[9px] text-secondary block">/bulan</span>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Selected Plan Summary Banner */}
-                {(() => {
-                  const currentPlanInfo = OUTLET_AVAILABLE_PLANS.find((p) => p.code === selectedPlan) || OUTLET_AVAILABLE_PLANS[0];
-                  return (
-                    <div className="p-2.5 rounded-xl bg-surface-card border border-border-subtle flex items-center gap-2 text-xs text-brand-espresso mt-1">
-                      <Sparkles className="w-4 h-4 text-brand-gold shrink-0" />
-                      <span>
-                        Cabang ini dialokasikan <strong>{currentPlanInfo.name}</strong> dengan kapasitas transaksi{' '}
-                        <strong>{currentPlanInfo.monthlyLimit}</strong> ({currentPlanInfo.dailyLimit > 0 ? `~${currentPlanInfo.dailyLimit} tx/hari` : 'Bebas sepuasnya tanpa batas'}).
+              {/* SECTION: Locked Active Subscription Package */}
+              {(() => {
+                const activePlanCode = billingStatus?.plan || selectedPlan || 'PAKET_100K';
+                const currentPlanInfo =
+                  OUTLET_AVAILABLE_PLANS.find((p) => p.code === activePlanCode) ||
+                  OUTLET_AVAILABLE_PLANS[1];
+                return (
+                  <div className="flex flex-col gap-2 p-3 sm:p-3.5 rounded-2xl bg-surface-container/50 border border-border-subtle">
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-[11px] font-bold text-secondary uppercase tracking-wider flex items-center gap-1.5">
+                        <Zap className="w-3.5 h-3.5 text-brand-gold" />
+                        Paket Langganan Aktif Cabang
+                      </label>
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-brand-gold/20 text-brand-espresso border border-brand-gold/40">
+                        Terkunci Otomatis
                       </span>
                     </div>
-                  );
-                })()}
-              </div>
+
+                    <div className="p-3 rounded-2xl border border-brand-gold bg-brand-gold-subtle flex items-center justify-between gap-3">
+                      <div>
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider mb-1 ${currentPlanInfo.badgeClass}`}>
+                          {currentPlanInfo.badge}
+                        </span>
+                        <div className="font-bold text-xs text-brand-espresso">
+                          {currentPlanInfo.name}
+                        </div>
+                        <div className="text-[10px] text-secondary mt-0.5">
+                          {currentPlanInfo.monthlyLimit} ({currentPlanInfo.dailyLimit > 0 ? `~${currentPlanInfo.dailyLimit} tx/hari` : 'Unlimited transaksi/hari'})
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-xs font-black text-brand-terracotta">
+                          {currentPlanInfo.price > 0 ? `Rp ${(currentPlanInfo.price / 1000).toLocaleString('id-ID')}k` : 'Custom'}
+                        </span>
+                        {currentPlanInfo.price > 0 && (
+                          <span className="text-[9px] text-secondary block">/outlet/bln</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-xl bg-surface-card border border-border-subtle flex items-center gap-2 text-[11px] text-secondary">
+                      <Sparkles className="w-4 h-4 text-brand-gold shrink-0" />
+                      <span>
+                        Cabang baru otomatis mengikuti paket aktif akun Anda (<strong>{currentPlanInfo.name}</strong>). Untuk ubah atau upgrade paket, silakan melalui menu <strong>Langganan &amp; Tagihan</strong>.
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Branch Code & City */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1647,16 +1625,34 @@ export const BranchesPage: React.FC = () => {
                     onChange={(val) => setStaffRole(val)}
                     options={[
                       {
-                        value: 'KASIR',
-                        label: 'KASIR',
-                        sublabel: 'Hanya akses modul kasir POS dan shift di cabang terkait',
-                        badge: 'Kasir',
+                        value: 'OWNER',
+                        label: 'OWNER',
+                        sublabel: 'Akses penuh seluruh cabang, keuangan, stok & manajemen staf',
+                        badge: 'Owner',
                       },
                       {
                         value: 'SUPERVISOR',
                         label: 'SUPERVISOR',
                         sublabel: 'Akses pembatalan void pesanan, kas kecil & operasional',
                         badge: 'Otorisasi',
+                      },
+                      {
+                        value: 'KASIR',
+                        label: 'KASIR',
+                        sublabel: 'Hanya akses modul kasir POS dan shift di cabang terkait',
+                        badge: 'Kasir',
+                      },
+                      {
+                        value: 'AKUNTAN',
+                        label: 'AKUNTAN',
+                        sublabel: 'Akses laporan laba rugi, beban tetap, tagihan & audit kas',
+                        badge: 'Keuangan',
+                      },
+                      {
+                        value: 'INVENTORY',
+                        label: 'INVENTORY',
+                        sublabel: 'Akses kelola bahan baku, resep (BOM), stok & opname shift',
+                        badge: 'Gudang',
                       },
                     ]}
                   />

@@ -1,4 +1,4 @@
-export type UserRole = 'OWNER' | 'SUPERVISOR' | 'KASIR';
+export type UserRole = 'OWNER' | 'SUPERVISOR' | 'KASIR' | 'AKUNTAN' | 'INVENTORY';
 
 export interface TenantInfo {
   id: string;

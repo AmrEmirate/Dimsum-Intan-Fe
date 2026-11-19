@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -34,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String TARGET_URL = "https://dimsumintan.vimtk.cloud/";
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
+    private boolean isKioskLocked = false;
 
     private final ActivityResultLauncher<Intent> fileChooserLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
@@ -99,6 +101,10 @@ public class MainActivity extends AppCompatActivity {
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
+                if (isKioskLocked) {
+                    // Blokir tombol Back saat Mode Kunci Kasir (Kiosk) aktif
+                    return;
+                }
                 if (webView.canGoBack()) {
                     webView.goBack();
                 } else {
@@ -108,13 +114,44 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private class KioskBridge {
+        @JavascriptInterface
+        public void setKioskLock(boolean locked) {
+            isKioskLocked = locked;
+            runOnUiThread(() -> {
+                WindowInsetsControllerCompat insetsController =
+                        WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                if (locked) {
+                    try {
+                        startLockTask();
+                    } catch (Exception ignored) {
+                    }
+                    if (insetsController != null) {
+                        insetsController.setSystemBarsBehavior(
+                                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                        );
+                        insetsController.hide(WindowInsetsCompat.Type.systemBars());
+                    }
+                } else {
+                    try {
+                        stopLockTask();
+                    } catch (Exception ignored) {
+                    }
+                    if (insetsController != null) {
+                        insetsController.show(WindowInsetsCompat.Type.systemBars());
+                    }
+                }
+            });
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     private void configureWebView() {
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
-        settings.setAllowFileAccess(true);
+        settings.setAllowFileAccess(false);
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
@@ -135,6 +172,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        webView.addJavascriptInterface(new KioskBridge(), "DimsumIntanNative");
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -169,10 +207,10 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if ("http".equals(scheme) || "https".equals(scheme)) {
-                    if (host.endsWith("vimtk.cloud")
-                            || host.endsWith("google.com")
-                            || host.endsWith("gstatic.com")
-                            || host.endsWith("googleusercontent.com")) {
+                    if (isAllowedHost(host, "vimtk.cloud")
+                            || isAllowedHost(host, "google.com")
+                            || isAllowedHost(host, "gstatic.com")
+                            || isAllowedHost(host, "googleusercontent.com")) {
                         return false;
                     }
                 }
@@ -230,6 +268,10 @@ public class MainActivity extends AppCompatActivity {
         super.onNewIntent(intent);
         setIntent(intent);
         handleDeepLinkIntent(intent);
+    }
+
+    private boolean isAllowedHost(String host, String domain) {
+        return host != null && (host.equals(domain) || host.endsWith("." + domain));
     }
 
     private boolean handleDeepLinkIntent(Intent intent) {

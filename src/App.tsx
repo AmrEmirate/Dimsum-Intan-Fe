@@ -21,7 +21,7 @@ import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { SubscriptionPaywallGuard } from './components/common/SubscriptionPaywallGuard';
 
 export const AppContent: React.FC = () => {
-  const { currentView, isAuthenticated, currentUser, billingStatus, setCurrentView } = useApp();
+  const { currentView, isAuthenticated, currentUser, billingStatus, setCurrentView, isKioskLocked } = useApp();
 
   if (!isAuthenticated) {
     return (
@@ -67,10 +67,12 @@ export const AppContent: React.FC = () => {
 
     const role = currentUser.role;
     const ownerOnlyViews = [
-      'beban-operasional-tetap',
-      'laporan-laba-rugi-arus-kas',
       'dompet-penarikan-saldo',
       'langganan-billing',
+    ];
+    const financeAllowedViews = [
+      'beban-operasional-tetap',
+      'laporan-laba-rugi-arus-kas',
     ];
     const kasirAllowedViews = [
       'transaksi-kasir-pos',
@@ -82,6 +84,15 @@ export const AppContent: React.FC = () => {
       return <PosPage />;
     }
     if (role !== 'OWNER' && ownerOnlyViews.includes(currentView)) {
+      return <DashboardPage />;
+    }
+    if (role !== 'OWNER' && role !== 'AKUNTAN' && financeAllowedViews.includes(currentView)) {
+      return <DashboardPage />;
+    }
+    if (role === 'AKUNTAN' && (currentView === 'master-cabang-outlet' || currentView === 'master-menu-dimsum-hpp')) {
+      return <DashboardPage />;
+    }
+    if (role === 'INVENTORY' && (currentView === 'master-cabang-outlet' || currentView === 'kas-kecil-outlet')) {
       return <DashboardPage />;
     }
     if (role !== 'KASIR' && currentView === 'transaksi-kasir-pos') {
@@ -116,11 +127,11 @@ export const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-surface-canvas text-on-surface antialiased flex">
-      {/* Fixed Left Navigation Sidebar */}
-      <Sidebar />
+      {/* Fixed Left Navigation Sidebar (disembunyikan saat Mode Kunci Kasir / Kiosk aktif) */}
+      {!isKioskLocked && <Sidebar />}
 
       {/* Main Content Area */}
-      <div className="flex-1 pl-0 lg:pl-72 flex flex-col min-h-screen w-full overflow-x-hidden">
+      <div className={`flex-1 pl-0 ${isKioskLocked ? '' : 'lg:pl-72'} flex flex-col min-h-screen w-full overflow-x-hidden`}>
         {/* Fixed Top Header */}
         <Header />
 
