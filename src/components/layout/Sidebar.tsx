@@ -141,7 +141,6 @@ export const Sidebar: React.FC = () => {
   ];
 
   const brandName = currentTenant?.name || 'Dimsum Intan';
-  const brandSlug = currentTenant?.slug ? `${currentTenant.slug}.posmu.cloud` : 'POS & Accounting';
   const brandColor = currentTenant?.themeColor || '#ea580c';
 
   return (
@@ -176,9 +175,6 @@ export const Sidebar: React.FC = () => {
               <div className="flex flex-col leading-tight min-w-0">
                 <span className="font-serif-title font-bold text-base text-brand-espresso tracking-tight truncate">
                   {brandName}
-                </span>
-                <span className="text-[10px] font-bold text-secondary tracking-wider truncate uppercase">
-                  {brandSlug}
                 </span>
               </div>
             </div>

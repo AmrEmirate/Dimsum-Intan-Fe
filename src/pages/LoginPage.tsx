@@ -49,7 +49,6 @@ export const LoginPage: React.FC = () => {
   };
 
   const brandName = currentTenant?.name || 'DIMSUM INTAN';
-  const brandSlug = currentTenant?.slug ? `${currentTenant.slug}.posmu.cloud` : 'Cloud POS & Accounting';
   const brandColor = currentTenant?.themeColor || '#ea580c';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,9 +92,6 @@ export const LoginPage: React.FC = () => {
                 <h1 className="font-serif-title font-bold text-lg leading-tight text-white truncate">
                   {brandName}
                 </h1>
-                <p className="text-[10px] tracking-wider uppercase font-semibold text-brand-gold truncate">
-                  {brandSlug}
-                </p>
               </div>
             </div>
 
@@ -153,9 +149,6 @@ export const LoginPage: React.FC = () => {
               <h1 className="font-serif-title font-bold text-xl text-brand-espresso tracking-tight">
                 {brandName}
               </h1>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-secondary mt-0.5">
-                {brandSlug}
-              </span>
             </div>
 
             <div className="mb-6 text-center lg:text-left">
