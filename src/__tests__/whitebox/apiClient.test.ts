@@ -63,10 +63,10 @@ describe('White Box Testing: apiClient.ts (Token & Multi-Tenant State Storage)',
       expect(getTenantSlug()).toBeNull();
     });
 
-    it('should extract tenant slug from pos-[slug].vimtk.cloud hostname', () => {
+    it('should extract tenant slug from pos-[slug].vaxel.my.id hostname', () => {
       (globalThis as any).window = {
         location: {
-          hostname: 'pos-kedaikopi.vimtk.cloud',
+          hostname: 'pos-kedaikopi.vaxel.my.id',
           search: '',
         },
       };
@@ -77,7 +77,7 @@ describe('White Box Testing: apiClient.ts (Token & Multi-Tenant State Storage)',
     it('should prioritize query parameter ?tenant= over subdomain', () => {
       (globalThis as any).window = {
         location: {
-          hostname: 'pos-default.vimtk.cloud',
+          hostname: 'pos-default.vaxel.my.id',
           search: '?tenant=warungkopi',
         },
       };

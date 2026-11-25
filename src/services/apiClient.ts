@@ -31,9 +31,9 @@ export const getTenantSlug = (): string | null => {
     const querySlug = params.get('tenant');
     if (querySlug) return querySlug.toLowerCase().trim();
 
-    // Check subdomain (e.g. pos-kedaikopi.vimtk.cloud atau kedaikopi.vimtk.cloud)
+    // Check subdomain (e.g. pos-kedaikopi.vaxel.my.id atau kedaikopi.vaxel.my.id)
     const host = window.location.hostname;
-    if (host && (host.includes('.posmu.cloud') || host.includes('.vimtk.cloud'))) {
+    if (host && (host.includes('.posmu.cloud') || host.includes('.vaxel.my.id'))) {
       const parts = host.split('.');
       if (parts.length >= 3 && parts[0] !== 'api' && parts[0] !== 'admin' && parts[0] !== 'www') {
         let extracted = parts[0].toLowerCase();

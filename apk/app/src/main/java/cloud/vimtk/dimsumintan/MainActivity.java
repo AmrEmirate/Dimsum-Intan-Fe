@@ -32,7 +32,7 @@ import androidx.core.view.WindowInsetsControllerCompat;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String TARGET_URL = "https://dimsumintan.vimtk.cloud/";
+    private static final String TARGET_URL = "https://dimsumintan.vaxel.my.id/";
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
     private boolean isKioskLocked = false;
@@ -207,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if ("http".equals(scheme) || "https".equals(scheme)) {
-                    if (isAllowedHost(host, "vimtk.cloud")
+                    if (isAllowedHost(host, "vaxel.my.id")
                             || isAllowedHost(host, "google.com")
                             || isAllowedHost(host, "gstatic.com")
                             || isAllowedHost(host, "googleusercontent.com")) {

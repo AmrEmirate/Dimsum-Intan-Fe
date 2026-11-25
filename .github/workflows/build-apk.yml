@@ -70,7 +70,7 @@ jobs:
           tag_name: v1.0.0
           name: Dimsum Intan POS Android (v1.0.0)
           body: |
-            Aplikasi Android WebView resmi untuk **https://dimsumintan.vimtk.cloud/**
+            Aplikasi Android WebView resmi untuk **https://dimsumintan.vaxel.my.id/**
             - Mode Portrait terkunci (tidak bisa landscape)
             - Penyesuaian poni / notch & status bar aman
             - Keyboard HP otomatis resize agar input & tombol tetap terlihat

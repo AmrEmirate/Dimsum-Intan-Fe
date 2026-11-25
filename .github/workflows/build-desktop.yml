@@ -106,7 +106,7 @@ jobs:
           make_latest: false
           name: Dimsum Intan POS Desktop (v1.0.0)
           body: |
-            Aplikasi Desktop resmi (Tauri v2) untuk **https://dimsumintan.vimtk.cloud/**
+            Aplikasi Desktop resmi (Tauri v2) untuk **https://dimsumintan.vaxel.my.id/**
             - **Windows**: `dimsum-intan-windows-setup.exe`
             - **Linux**: `dimsum-intan-linux.AppImage`
             - **Apple (macOS)**: `dimsum-intan-macos.dmg`
